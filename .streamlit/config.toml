@@ -1,0 +1,65 @@
+# Lekha theme configuration.
+# Every option here was checked against `streamlit config show` for the
+# installed version (Streamlit 1.66.1). Colour names match docs/design-system.md.
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base = "light"
+
+# Brand and surfaces
+primaryColor = "#791A24"              # Manuscript Crimson: primary actions, selected states
+backgroundColor = "#F5EBDD"           # Manuscript Paper: main canvas
+secondaryBackgroundColor = "#FBF7F0"  # Porcelain Paper: inputs and content surfaces
+textColor = "#352821"                 # Sepia Ink: almost all text
+linkColor = "#791A24"
+linkUnderline = true
+
+# Typography. The "Name:URL" form loads the font from Google Fonts;
+# the text after the comma is the fallback if it fails to load.
+font = "Lato:https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap, sans-serif"
+headingFont = "Lora:https://fonts.googleapis.com/css2?family=Lora:wght@500;600&display=swap, serif"
+baseFontSize = 16
+# h1 display, h2 page title, h3 section title, h4 panel title, h5, h6
+headingFontSizes = ["2.75rem", "1.875rem", "1.375rem", "1.125rem", "1rem", "0.875rem"]
+headingFontWeights = [600, 600, 600, 600, 600, 600]
+
+# Gap between the top navigation and the first element (default is 8rem)
+paddingTop = "2rem"
+
+# Shape: square corners everywhere the framework allows
+baseRadius = "none"
+buttonRadius = "none"
+
+# Borders. #8C7A68 is the one colour added beyond the brand palette:
+# input outlines must reach 3:1 contrast against the paper (WCAG 1.4.11),
+# and none of the palette colours do that without looking heavy.
+borderColor = "#8C7A68"
+showWidgetBorder = true
+dataframeBorderColor = "#E3D1B2"            # Aged Parchment: light grid lines
+dataframeHeaderBackgroundColor = "#E3D1B2"
+dataframeHeaderTextColor = "#352821"
+
+# Semantic states, used by st.success / st.warning / st.error / st.info
+greenColor = "#215C42"
+greenTextColor = "#215C42"
+greenBackgroundColor = "#E5F1E8"
+yellowColor = "#704A0E"
+yellowTextColor = "#704A0E"
+yellowBackgroundColor = "#F8EBCB"
+orangeColor = "#704A0E"
+orangeTextColor = "#704A0E"
+orangeBackgroundColor = "#F8EBCB"
+redColor = "#8B1E2D"
+redTextColor = "#8B1E2D"
+redBackgroundColor = "#F8E5E5"
+blueColor = "#254D67"
+blueTextColor = "#254D67"
+blueBackgroundColor = "#E6EFF5"
+
+# Charts: crimson, teal, terracotta, olive, deep wine
+chartCategoricalColors = ["#791A24", "#263F3C", "#A6543C", "#62633D", "#4A111B"]
+# Light-to-dark crimson scale for charts where colour shows "more" or "less"
+chartSequentialColors = ["#F3E4DC", "#E2C7C2", "#D0AAA7", "#BF8D8D", "#AD7173",
+                         "#9C5459", "#8A373E", "#791A24", "#621620", "#4A111B"]

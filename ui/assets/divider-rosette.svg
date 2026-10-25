@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 24" width="120" height="24" aria-hidden="true" focusable="false">
+  <!-- Lekha divider centrepiece: a six-petal rosette between two leaves.
+       Original motif inspired by Indian manuscript borders. Decorative only. -->
+  <g fill="none" stroke="#B28A5C" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 12 L10 8 L14 12 L10 16 Z"/>
+    <path d="M106 12 L110 8 L114 12 L110 16 Z"/>
+    <path d="M17 12 H44"/>
+    <path d="M76 12 H103"/>
+    <path d="M28 12 C32 6 39 5 44 8 C40 12 33 13 28 12 Z" fill="#62633D" fill-opacity="0.35"/>
+    <path d="M92 12 C88 6 81 5 76 8 C80 12 87 13 92 12 Z" fill="#62633D" fill-opacity="0.35"/>
+  </g>
+  <g transform="translate(60 12)" fill="#C98F86" stroke="#B28A5C" stroke-width="0.8">
+    <ellipse cx="0" cy="-5" rx="2.6" ry="5"/>
+    <ellipse cx="0" cy="-5" rx="2.6" ry="5" transform="rotate(60)"/>
+    <ellipse cx="0" cy="-5" rx="2.6" ry="5" transform="rotate(120)"/>
+    <ellipse cx="0" cy="-5" rx="2.6" ry="5" transform="rotate(180)"/>
+    <ellipse cx="0" cy="-5" rx="2.6" ry="5" transform="rotate(240)"/>
+    <ellipse cx="0" cy="-5" rx="2.6" ry="5" transform="rotate(300)"/>
+    <circle r="2.4" fill="#791A24" stroke="none"/>
+  </g>
+</svg>
