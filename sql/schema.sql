@@ -1,6 +1,6 @@
 -- Lekha database schema
 -- ---------------------------------------------------------------------
--- Three tables: books, sales, sale_items.
+-- Tables: books, sales, sale_items, stock_adjustments.
 -- See docs/schema.md for the reasoning behind every column and rule.
 --
 -- Conventions
@@ -59,8 +59,27 @@ CREATE TABLE IF NOT EXISTS sale_items (
 ) STRICT;
 
 
+-- One row per manual change to a book's stock (Phase 3).
+-- Stock never changes silently: every correction records the count
+-- before and after, why it changed, and when.
+CREATE TABLE IF NOT EXISTS stock_adjustments (
+    adjustment_id   INTEGER PRIMARY KEY,
+    book_id         INTEGER NOT NULL REFERENCES books (book_id) ON DELETE RESTRICT,
+    adjusted_at     TEXT NOT NULL
+                    CHECK (strftime('%Y-%m-%d %H:%M:%S', adjusted_at) IS adjusted_at),
+    quantity_before INTEGER NOT NULL CHECK (quantity_before >= 0),
+    quantity_after  INTEGER NOT NULL CHECK (quantity_after >= 0),
+    reason          TEXT NOT NULL
+                    CHECK (reason IN ('shelf_count', 'damaged_or_lost', 'delivery_received', 'other')),
+    note            TEXT,
+    CHECK (quantity_after <> quantity_before),                          -- a correction must change something
+    CHECK (reason <> 'other' OR length(trim(coalesce(note, ''))) > 0)  -- "other" needs an explanation
+) STRICT;
+
+
 -- Indexes: sorted lookup lists that let SQLite find rows without reading
 -- the whole table, like the index at the back of a book.
 -- (sale_id lookups already use the index created by UNIQUE above.)
 CREATE INDEX IF NOT EXISTS idx_sale_items_book_id ON sale_items (book_id);
 CREATE INDEX IF NOT EXISTS idx_sales_sale_datetime ON sales (sale_datetime);
+CREATE INDEX IF NOT EXISTS idx_stock_adjustments_book_id ON stock_adjustments (book_id);

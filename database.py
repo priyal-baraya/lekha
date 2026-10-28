@@ -12,6 +12,8 @@ sample data. This DELETES data/lekha.db first:
 
 import sqlite3
 import sys
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).parent
@@ -36,9 +38,37 @@ def get_connection(db_path: Path | str = DB_PATH) -> sqlite3.Connection:
     return connection
 
 
+@contextmanager
+def connect(db_path: Path | str = DB_PATH) -> Iterator[sqlite3.Connection]:
+    """Open a connection for a block of code and always close it afterwards.
+
+        with connect() as conn:
+            ...use conn...
+
+    (sqlite3's own `with conn:` only commits or rolls back; it does not
+    close the connection. This one closes it.)
+    """
+    conn = get_connection(db_path)
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
 def create_schema(connection: sqlite3.Connection) -> None:
     """Create the tables and indexes if they do not exist yet."""
     connection.executescript(SCHEMA_PATH.read_text(encoding="utf-8"))
+
+
+def ensure_database(db_path: Path | str = DB_PATH) -> None:
+    """Make sure the database file and all its tables exist.
+
+    Safe to call on every page load: every CREATE uses IF NOT EXISTS, so
+    existing data is untouched and new tables (like stock_adjustments)
+    are added to older databases.
+    """
+    with connect(db_path) as conn:
+        create_schema(conn)
 
 
 def load_sample_data(connection: sqlite3.Connection) -> None:
