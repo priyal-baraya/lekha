@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 180" aria-hidden="true" focusable="false">
+  <!-- Lekha arch motif: a pointed (ogee) arch framing one flowering stem.
+       Original motif inspired by Indian miniature arches. Decorative only. -->
+  <path d="M8 180 V78 C8 52 30 40 46 26 C53 20 57 14 60 4 C63 14 67 20 74 26 C90 40 112 52 112 78 V180"
+        fill="none" stroke="#B28A5C" stroke-width="1.5"/>
+  <path d="M16 180 V80 C16 58 36 47 50 35 C55 30 58 25 60 17 C62 25 65 30 70 35 C84 47 104 58 104 80 V180 Z"
+        fill="#791A24" stroke="#B28A5C" stroke-width="1"/>
+  <g fill="none" stroke="#B28A5C" stroke-width="1.2" stroke-linecap="round">
+    <path d="M60 176 C58 150 62 124 60 98"/>
+    <path d="M60 134 C67 126 71 118 73 110"/>
+  </g>
+  <g fill="#62633D" stroke="#B28A5C" stroke-width="0.8">
+    <path d="M60 152 C50 148 44 140 42 132 C52 134 58 142 60 152 Z"/>
+    <path d="M60 144 C70 140 76 132 78 124 C68 126 62 134 60 144 Z"/>
+    <path d="M60 122 C52 118 48 112 47 106 C55 108 59 114 60 122 Z"/>
+  </g>
+  <circle cx="73" cy="106" r="3.6" fill="#C98F86" stroke="#B28A5C" stroke-width="0.8"/>
+  <g transform="translate(60 88)" stroke="#B28A5C" stroke-width="0.8">
+    <g fill="#C98F86">
+      <ellipse cx="0" cy="-8" rx="4.2" ry="8"/>
+      <ellipse cx="0" cy="-8" rx="4.2" ry="8" transform="rotate(45)"/>
+      <ellipse cx="0" cy="-8" rx="4.2" ry="8" transform="rotate(90)"/>
+      <ellipse cx="0" cy="-8" rx="4.2" ry="8" transform="rotate(135)"/>
+      <ellipse cx="0" cy="-8" rx="4.2" ry="8" transform="rotate(180)"/>
+      <ellipse cx="0" cy="-8" rx="4.2" ry="8" transform="rotate(225)"/>
+      <ellipse cx="0" cy="-8" rx="4.2" ry="8" transform="rotate(270)"/>
+      <ellipse cx="0" cy="-8" rx="4.2" ry="8" transform="rotate(315)"/>
+    </g>
+    <circle r="3.6" fill="#B28A5C" stroke="none"/>
+  </g>
+  <path d="M22 176 H98" stroke="#B28A5C" stroke-width="1"/>
+</svg>

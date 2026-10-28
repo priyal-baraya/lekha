@@ -1,20 +1,30 @@
+"""Lekha: application entry point.
+
+This file only sets up the page, loads the shared styles and defines the
+navigation. Each page's content lives in its own file in views/.
+
+Run with:
+    .\\.venv\\Scripts\\python.exe -m streamlit run app.py
+"""
+
 import streamlit as st
+
+from ui import components as ui
 
 st.set_page_config(
     page_title="Lekha",
     page_icon="📚",
-    layout="wide"
+    layout="wide",
 )
 
-st.title("Lekha")
-st.subheader("Reading between the numbers.")
+ui.load_styles()
 
-st.write(
-    "An inventory and sales insights tool "
-    "for independent bookstores."
-)
+pages = [
+    st.Page("views/overview.py", title="Overview", default=True),
+    st.Page("views/books.py", title="Books"),
+    st.Page("views/sales.py", title="Sales"),
+    st.Page("views/inventory.py", title="Inventory"),
+    st.Page("views/insights.py", title="Insights"),
+]
 
-st.info(
-    "We're building the foundation first. "
-    "Book data and analytics will come next."
-)
+st.navigation(pages, position="top").run()
