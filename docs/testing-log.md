@@ -47,3 +47,25 @@ Tested in the Claude desktop app's built-in browser (Chromium), against Streamli
 - **Collapsed navigation is still reachable by Tab.** Below about 640px wide, Streamlit moves the navigation into a collapsed side menu, but its links can still receive keyboard focus while off screen. This is Streamlit's own behaviour. Patching it would need CSS that depends on Streamlit's internal markup.
 - **Live reload not confirmed.** During this session, file edits only appeared after restarting Streamlit. The cause was not confirmed (it may be specific to the testing environment). If edits do not show up, stop the app with `Ctrl+C` and start it again.
 - **Not tested:** other browsers (Firefox, Safari), screen-reader software, Windows high-contrast mode, 200% browser zoom.
+
+---
+
+## 2026-10-28: Database schema and sample data (branch `phase-2/database`)
+
+SQLite 3.49.1, Python 3.13.3, pytest 9.2.0.
+
+| Check | How | Result |
+|---|---|---|
+| Automated tests | `python -m pytest` | **44 passed** |
+| Schema rules refuse bad data | `tests/test_schema.py`: duplicate ISBN, malformed ISBN, blank title, negative numbers, text in a number column, decimal price, six kinds of bad date, unknown status, sale line for a missing book or sale, zero/negative quantity, negative price, the same book twice in one sale, deleting a book that has sales | Every case raised `IntegrityError` |
+| Rules don't block valid data | Valid sale accepted; NULL ISBNs and unknown cost allowed; book without sales can be deleted; schema can run twice | Pass |
+| Tests can fail | Created the schema **without** `PRAGMA foreign_keys = ON` and inserted a sale line for book 999 | Accepted: shows the PRAGMA is essential and the foreign-key test guards it |
+| Sample data matches hand calculations | `tests/test_sample_data.py` vs `docs/sample-data.md` | Revenue 1,114,400 paise; 14 transactions; 29 copies; per-book copies; low stock 2, 5, 9; no completed sales 10, 11, 12; old price kept for book 1 |
+| Database builds from scratch | `python database.py --reset-sample` | 12 books, 15 sales, 23 sale lines |
+| Practice queries | `python query.py sql\01_first_queries.sql`, each result compared with its "Expected" note | All 9 match |
+| Database file not committed | `git status` | `data/lekha.db` ignored |
+
+### Not covered yet
+
+- Sale recording, stock updates and cancellation (Phase 4). The schema allows them, but the transaction logic doesn't exist yet.
+- The app does not read from the database yet (Phase 3).

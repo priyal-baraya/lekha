@@ -1,0 +1,5 @@
+# Settings for pytest, the test runner.
+[tool.pytest.ini_options]
+# Let tests import project files such as database.py
+pythonpath = ["."]
+testpaths = ["tests"]

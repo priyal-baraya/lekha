@@ -95,3 +95,85 @@ Each entry: what was decided, why, and what else was considered. Newest at the b
 **Decision:** Design changes go on `design/manuscript-theme` and are merged into `main` once reviewed.
 
 **Why:** The design pass touches many files. Keeping it off `main` means the public `main` branch always runs.
+
+---
+
+## 2026-10-28: Three core tables: books, sales, sale_items
+
+**Decision:** A sale (the transaction) and its sale items (one line per book) are separate tables, linked by foreign keys.
+
+**Why:** One visit can include several books. Splitting stores each fact once and lets transactions and copies sold be counted separately. See `docs/schema.md`.
+
+---
+
+## 2026-10-28: Money stored as whole paise
+
+**Decision:** All prices are INTEGER paise (₹349.00 → `34900`).
+
+**Why:** Binary floating-point numbers can't represent values like 0.1 exactly, so sums of decimal prices drift. Whole numbers are exact.
+
+---
+
+## 2026-10-28: Sale totals are calculated, not stored
+
+**Decision:** No `total_amount` column. Totals come from `SUM(quantity × unit_price_paise)`.
+
+**Why:** A stored total is a second copy of the same fact that could disagree with the lines. Calculating is always consistent, and fast at this data size.
+
+---
+
+## 2026-10-28: Price recorded on every sale line
+
+**Decision:** `sale_items.unit_price_paise` stores the price paid, separate from `books.selling_price_paise`.
+
+**Why:** Prices change. Past revenue must not change with them.
+
+---
+
+## 2026-10-28: Cancel sales with a status, never delete them
+
+**Decision:** `sales.status` is `completed` or `cancelled`. Analytics count only completed sales.
+
+**Why:** Deleting erases evidence. The column is added now so the table doesn't need changing in Phase 4.
+
+---
+
+## 2026-10-28: STRICT tables, rules in the schema
+
+**Decision:** Every table is `STRICT`, with `CHECK`, `NOT NULL`, `UNIQUE` and foreign-key rules. Foreign keys are switched on in `get_connection()`.
+
+**Why:** The database refuses bad data even if application code has a bug. SQLite's defaults (loose typing, foreign keys off) are too forgiving.
+
+**Considered:** Validating only in Python. Rejected: one missed check would let bad rows in permanently.
+
+---
+
+## 2026-10-28: Dates as ISO text in store local time
+
+**Decision:** `sale_datetime` is text like `2026-10-28 14:30:00` in India Standard Time, validated with `strftime()`.
+
+**Why:** SQLite has no date type. ISO text sorts correctly as plain text and works with SQLite's date functions. A single store in one time zone doesn't need UTC conversion yet.
+
+---
+
+## 2026-10-28: Genre as text, not a separate table
+
+**Decision:** `books.genre` is free text, kept consistent by offering a dropdown in the app (Phase 3).
+
+**Why:** Simpler queries for now. Revisit if variant spellings appear.
+
+---
+
+## 2026-10-28: Sample data as SQL, rebuilt by command
+
+**Decision:** The fictional dataset is `data/sample_data.sql`, loaded by `python database.py --reset-sample`. The database file itself is not committed.
+
+**Why:** Plain INSERT statements are readable and reviewable in Git. The database can always be rebuilt identically.
+
+---
+
+## 2026-10-28: pytest for automated tests
+
+**Decision:** Use pytest, with each test getting a fresh in-memory database.
+
+**Why:** It's the most widely used Python test runner, and plain `assert` statements keep tests readable. In-memory databases keep tests fast and isolated from real data.
