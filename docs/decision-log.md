@@ -391,3 +391,43 @@ Each entry: what was decided, why, and what else was considered. Newest at the b
 ## 2026-11-08: Default period is the last 30 days
 
 **Why:** It's what an owner would check most often. "All time" shows the whole sample, which mostly falls earlier than 30 days ago.
+
+---
+
+## 2026-11-08: Audit before refining
+
+**Decision:** Phase 6 started with a measurement script (contrast of every piece of text against its real background, heading order, text sizes) and a visual review at desktop and phone width, and fixed only what those found.
+
+**Why:** "Polish" without evidence tends to change taste, not usability. The before and after numbers are in the testing log.
+
+---
+
+## 2026-11-08: A spacing scale
+
+**Decision:** Six spacing tokens (4, 8, 16, 24, 40, 64px) replace one-off values in `ui/styles.css`.
+
+**Why:** Consistent rhythm, and a direct match for Figma's spacing variables in a future redesign.
+
+---
+
+## 2026-11-08: Override Streamlit's faded text where it fails contrast
+
+**Decision:** Chart axis text is set to Secondary Text on each Altair axis; input placeholders get Secondary Text through a CSS rule.
+
+**Why:** Streamlit's defaults measured 3.15:1 (chart text) and 3.89:1 (placeholders), below the 4.5:1 target. The placeholder rule uses plain element selectors, not Streamlit class names, so it should survive updates.
+
+---
+
+## 2026-11-08: Sentences instead of grids on narrow screens
+
+**Decision:** Sales basket lines read "1 copy × ₹399.00 = ₹399.00" with a Remove button, instead of a five-column grid.
+
+**Why:** Streamlit stacks columns on phones, which separated every number from its label. A sentence reads correctly at any width.
+
+---
+
+## 2026-11-08: Decision columns first in tables
+
+**Decision:** Tables show the title, then the columns you act on (status, stock, copies, revenue, change), then details (author, genre, dates).
+
+**Why:** On a phone, a table shows only its first two or three columns without scrolling sideways. The low-stock table used to hide its Status column there.

@@ -67,22 +67,21 @@ def render_basket(books_by_id: dict[int, dict]) -> int:
     if not basket:
         st.markdown("The sale is empty. Choose a book above and click **Add to sale**.")
         return 0
-    header = st.columns([4, 1, 1.5, 1.5, 1.2])
-    # Four headings; the fifth column (Remove buttons) has none. An empty
-    # "****" would be drawn by Markdown as a horizontal line.
-    for column, text in zip(header, ["Book", "Copies", "Unit price", "Line total"]):
-        column.markdown(f"**{text}**")
+    # Each line is one sentence ("2 × ₹399.00 = ₹798.00") next to its Remove
+    # button. A five-column grid looked tidy on desktop, but on a phone
+    # Streamlit stacks columns, which separated every number from its label.
+    st.markdown("**This sale**")
     total = 0
     for book_id, line in list(basket.items()):
         title = books_by_id.get(book_id, {}).get("title", f"Book #{book_id} (no longer in the catalogue)")
         line_total = line["quantity"] * line["unit_price_paise"]
         total += line_total
-        row = st.columns([4, 1, 1.5, 1.5, 1.2], vertical_alignment="center")
-        row[0].write(title)
-        row[1].write(str(line["quantity"]))
-        row[2].write(format_rupees(line["unit_price_paise"]))
-        row[3].write(format_rupees(line_total))
-        if row[4].button("Remove", key=f"sale_remove_{book_id}", help=f"Remove “{title}” from this sale"):
+        text_col, button_col = st.columns([5, 1.2], vertical_alignment="center")
+        text_col.markdown(
+            f"{title}  \n{copies(line['quantity'])} × {format_rupees(line['unit_price_paise'])} "
+            f"= **{format_rupees(line_total)}**"
+        )
+        if button_col.button("Remove", key=f"sale_remove_{book_id}", help=f"Remove “{title}” from this sale"):
             del basket[book_id]
             st.rerun()
     copies_total = sum(line["quantity"] for line in basket.values())
@@ -144,7 +143,7 @@ def render_recent_sales(conn) -> None:
     table["status"] = table["status"].str.capitalize()
     st.markdown(f"The latest {len(rows)} sales, newest first. Cancelled sales stay listed but don't count as revenue.")
     st.dataframe(
-        table[["sale_id", "sale_datetime", "copies", "total", "status"]],
+        table[["sale_id", "sale_datetime", "total", "status", "copies"]],
         hide_index=True,
         column_config={
             "sale_id": st.column_config.NumberColumn("Sale #", format="%d"),
@@ -214,13 +213,11 @@ def render_recent_sales(conn) -> None:
 
 # ------------------------------------------------------------------ page
 
-ui.section_header(
+ui.page_intro(
     eyebrow="At the till",
     title="Sales",
     description="Record what was sold, and cancel a sale entered by mistake.",
-    page_title=True,
 )
-ui.sample_data_notice()
 ui.show_flash()
 
 with connect() as conn:

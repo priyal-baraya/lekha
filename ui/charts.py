@@ -19,11 +19,16 @@ INK_SECONDARY = "#67554A"
 
 BUCKET_NAMES = {"day": "Day", "week": "Week starting", "month": "Month"}
 
+# Streamlit's chart theme draws axis text in a faded ink that measured
+# 3.15:1 against the paper (below 4.5:1). Secondary Text measures about 6:1.
+# Set on each axis, because settings on the axis win over the theme.
+AXIS_TEXT = {"labelColor": INK_SECONDARY, "titleColor": INK_SECONDARY}
+
 
 def _rupee_axis(title: str) -> alt.Axis:
     # Axis labels like ₹2,000. (Vega's number format has no Indian
     # grouping; it matches below one lakh, which covers this data.)
-    return alt.Axis(title=title, labelExpr="'₹' + format(datum.value, ',.0f')", tickCount=5)
+    return alt.Axis(title=title, labelExpr="'₹' + format(datum.value, ',.0f')", tickCount=5, **AXIS_TEXT)
 
 
 def revenue_over_time(table: pd.DataFrame, grain: str) -> alt.Chart:
@@ -42,7 +47,7 @@ def revenue_over_time(table: pd.DataFrame, grain: str) -> alt.Chart:
         .mark_bar(stroke=CRIMSON, strokeWidth=1.5)
         .encode(
             x=alt.X("label:N", sort=order, title=BUCKET_NAMES[grain],
-                    axis=alt.Axis(labelAngle=0 if len(order) <= 12 else -45)),
+                    axis=alt.Axis(labelAngle=0 if len(order) <= 12 else -45, **AXIS_TEXT)),
             y=alt.Y("rupees:Q", axis=_rupee_axis("Revenue")),
             # Shape, not colour, marks a partial period: filled = complete,
             # outline only = partial or in progress.
@@ -69,7 +74,7 @@ def revenue_by_genre(rows: list[dict]) -> alt.Chart:
     ]
     order = list(data["genre"])
     base = alt.Chart(data).encode(
-        y=alt.Y("genre:N", sort=order, title=None, axis=alt.Axis(labelLimit=160)),
+        y=alt.Y("genre:N", sort=order, title=None, axis=alt.Axis(labelLimit=160, **AXIS_TEXT)),
         x=alt.X("rupees:Q", axis=_rupee_axis("Revenue"),
                 # Leave room on the right for the "₹4,040.00 · 36.3%" labels.
                 # They need a fixed ~115px, so on a phone (about 270px of

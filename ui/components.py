@@ -103,12 +103,17 @@ def section_header(
     page_title=True makes the title the page's main heading (h1) on pages
     that have no hero. Otherwise it is a section heading (h2).
     """
+    st.html(_section_header_html(eyebrow, title, description, tag, page_title))
+
+
+def _section_header_html(
+    eyebrow: str, title: str, description: str | None, tag: str | None, page_title: bool
+) -> str:
     level, extra_class = ("h1", " lekha-page-title") if page_title else ("h2", "")
     description_html = (
         f'<p class="lekha-section__description">{escape(description)}</p>' if description else ""
     )
-    st.html(
-        f"""
+    return f"""
         <header class="lekha-section">
           <p class="lekha-section__eyebrow">{escape(eyebrow)}</p>
           <div class="lekha-section__heading-row">
@@ -118,6 +123,16 @@ def section_header(
           {description_html}
         </header>
         """
+
+
+def page_intro(eyebrow: str, title: str, description: str) -> None:
+    """The opening of every page except Overview, always the same shape:
+    label, main title (h1), description, sample-data notice, then a
+    section-sized gap before the content."""
+    st.html(
+        f'<div class="lekha-page-intro">'
+        f"{_section_header_html(eyebrow, title, description, None, page_title=True)}"
+        f"{SAMPLE_DATA_NOTICE}</div>"
     )
 
 
@@ -162,13 +177,6 @@ def empty_state(message: str, tag: str | None = None) -> None:
     )
 
 
-def planned_page(title: str, purpose: str, plan: str, phase: str) -> None:
-    """A page that exists in the navigation but is not built yet, and says so."""
-    section_header(eyebrow="Lekha", title=title, description=purpose, page_title=True)
-    divider()
-    empty_state(f"Not built yet. {plan}", tag=f"Planned · {phase}")
-
-
 # ------------------------------------------------------------ data pages
 
 def sample_data_notice() -> None:
@@ -177,10 +185,13 @@ def sample_data_notice() -> None:
     Lekha has only ever held the fictional sample dataset, so every page
     showing data carries this notice. Remove it if real data is loaded.
     """
-    st.html(
-        '<p class="lekha-notice"><span class="lekha-tag">Sample data</span> '
-        "Every book and sale shown here is fictional.</p>"
-    )
+    st.html(SAMPLE_DATA_NOTICE)
+
+
+SAMPLE_DATA_NOTICE = (
+    '<p class="lekha-notice"><span class="lekha-tag">Sample data</span>'
+    "<span>Every book and sale shown here is fictional.</span></p>"
+)
 
 
 def flash(kind: str, message: str, details: list[str] | None = None) -> None:
