@@ -5,6 +5,11 @@
 [browser]
 gatherUsageStats = false
 
+[client]
+# Show a plain message instead of Python tracebacks in the browser. Full
+# details still print in the terminal. For debugging, change to "full".
+showErrorDetails = "none"
+
 [theme]
 base = "light"
 
