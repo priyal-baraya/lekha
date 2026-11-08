@@ -9,6 +9,9 @@ gatherUsageStats = false
 # Show a plain message instead of Python tracebacks in the browser. Full
 # details still print in the terminal. For debugging, change to "full".
 showErrorDetails = "none"
+# Hide developer controls (Deploy, Rerun, Clear cache) from the toolbar:
+# a shop owner never needs them. While developing, change to "auto".
+toolbarMode = "viewer"
 
 [theme]
 base = "light"
