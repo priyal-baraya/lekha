@@ -13,6 +13,7 @@ books 1 ───────< sale_items >─────── 1 sales
 - **books**: one row per title the store stocks
 - **sales**: one row per transaction at the till
 - **sale_items**: one row per book within a sale
+- **sale_cancellations**: when and why a sale was cancelled (added in Phase 4)
 - **stock_adjustments**: one row per manual stock correction (added in Phase 3)
 
 ## Key ideas
@@ -61,6 +62,18 @@ books 1 ───────< sale_items >─────── 1 sales
 | `unit_price_paise` | INTEGER | ≥ 0 | Price per copy **at the time of sale** |
 | (`sale_id`, `book_id`) | | unique together | One line per book per sale |
 
+### `sale_cancellations` (Phase 4)
+
+| Column | Type | Rule | Purpose |
+|---|---|---|---|
+| `sale_id` | INTEGER | **primary key** and foreign key → `sales` | Which sale. Being the primary key, it can appear only once: the database itself refuses a second cancellation |
+| `cancelled_at` | TEXT | real date and time | When |
+| `reason` | TEXT | required, not blank | Why |
+
+`sales.status` is set to `cancelled` in the same transaction that inserts this row, and a test checks that the two always agree.
+
+**Why a new table instead of new columns on `sales`?** Adding columns to a table that already holds data needs a *migration* (a script that upgrades existing databases), and SQLite limits which rules can be added that way. A new table is created by `CREATE TABLE IF NOT EXISTS` on start-up, like `stock_adjustments`.
+
 ### `stock_adjustments` (Phase 3)
 
 | Column | Type | Rule | Purpose |
@@ -85,7 +98,7 @@ The change itself (`quantity_after − quantity_before`) is calculated, not stor
 
 **A sale's total is calculated, not stored.** The total is `SUM(quantity × unit_price_paise)` over the sale's lines. Storing it as well would create two copies of one truth that could disagree.
 
-**Cancelled sales are marked, not deleted.** Analytics count only `status = 'completed'`. Phase 4 will cancel a sale and return its stock in one transaction.
+**Cancelled sales are marked, not deleted.** Analytics count only `status = 'completed'`. `services.sales.cancel_sale` marks the sale, returns its stock and records when and why, in one transaction.
 
 **Books with sales history can't be deleted** (`ON DELETE RESTRICT`), because that would orphan their sale lines.
 
@@ -93,14 +106,14 @@ The change itself (`quantity_after − quantity_before`) is calculated, not stor
 
 **Foreign keys must be switched on per connection.** SQLite ignores them by default. `database.get_connection()` runs `PRAGMA foreign_keys = ON` every time. A check in the testing log showed that without it, a sale line for a missing book is accepted.
 
-## Rules the schema cannot enforce (handled in application code later)
+## Rules the schema cannot enforce (handled in application code)
 
 | Rule | Where it will be enforced |
 |---|---|
-| A sale has at least one line | Phase 4 sale recording |
-| A sale can't sell more copies than are in stock | Phase 4, inside the same transaction |
-| Recording a sale reduces stock exactly once | Phase 4, one transaction |
-| Cancelling a sale returns its stock exactly once | Phase 4, one transaction |
+| A sale has at least one line | Done (Phase 4): `record_sale` refuses an empty sale |
+| A sale can't sell more copies than are in stock | Done (Phase 4): `UPDATE … SET stock_quantity = stock_quantity - n WHERE … AND stock_quantity >= n`, checked and changed in one statement |
+| Recording a sale reduces stock exactly once | Done (Phase 4): sale, lines and stock updates in one transaction |
+| Cancelling a sale returns its stock exactly once | Done (Phase 4): only a `completed` sale can change, and `sale_cancellations.sale_id` is a primary key |
 | Stock corrections update stock and history together | Done (Phase 3): `services.inventory.correct_stock`, one transaction |
 | A correction is checked against the stock the user saw | Done (Phase 3): `UPDATE … WHERE stock_quantity = <number shown>` |
 

@@ -1,6 +1,6 @@
 -- Lekha database schema
 -- ---------------------------------------------------------------------
--- Tables: books, sales, sale_items, stock_adjustments.
+-- Tables: books, sales, sale_items, sale_cancellations, stock_adjustments.
 -- See docs/schema.md for the reasoning behind every column and rule.
 --
 -- Conventions
@@ -56,6 +56,18 @@ CREATE TABLE IF NOT EXISTS sale_items (
     quantity         INTEGER NOT NULL CHECK (quantity > 0),
     unit_price_paise INTEGER NOT NULL CHECK (unit_price_paise >= 0),  -- price at the time of sale
     UNIQUE (sale_id, book_id)   -- the same book appears once per sale; use quantity for copies
+) STRICT;
+
+
+-- One row per cancelled sale (Phase 4): when and why it was cancelled.
+-- sale_id is the PRIMARY KEY, so the database itself refuses a second
+-- cancellation of the same sale. sales.status is set to 'cancelled' in
+-- the same transaction that inserts this row.
+CREATE TABLE IF NOT EXISTS sale_cancellations (
+    sale_id      INTEGER PRIMARY KEY REFERENCES sales (sale_id) ON DELETE RESTRICT,
+    cancelled_at TEXT NOT NULL
+                 CHECK (strftime('%Y-%m-%d %H:%M:%S', cancelled_at) IS cancelled_at),
+    reason       TEXT NOT NULL CHECK (length(trim(reason)) > 0)
 ) STRICT;
 
 

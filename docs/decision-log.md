@@ -251,3 +251,63 @@ Each entry: what was decided, why, and what else was considered. Newest at the b
 **Decision:** Overview, Books and Inventory always show "Sample data: every book and sale shown here is fictional."
 
 **Why:** Screenshots of the app must never pass for a real store's figures. Assumption: Lekha has only ever held the fictional dataset. Remove the notice if real data is ever loaded.
+
+---
+
+## 2026-11-08: Recording a sale is one transaction
+
+**Decision:** `services.sales.record_sale` inserts the sale, inserts each line and reduces each book's stock inside one transaction. Every problem found raises an error at the end, which rolls back everything, including stock already reduced for earlier lines.
+
+**Why:** A sale must never be half-saved, and stock must never change without a matching sale. A test makes the second of two lines fail and checks that the first line's stock change is undone. A deliberately broken version (no rollback) was shown to fail that test.
+
+---
+
+## 2026-11-08: Check and reduce stock in one statement
+
+**Decision:** `UPDATE books SET stock_quantity = stock_quantity - :n WHERE book_id = :id AND stock_quantity >= :n`. If it changes no rows, there wasn't enough stock.
+
+**Why:** Reading the stock, checking it in Python and then writing it leaves a gap where something else could change the stock ("check, then act"). One statement leaves no gap, and stock can never go negative.
+
+---
+
+## 2026-11-08: The sale uses the price shown on screen, or not at all
+
+**Decision:** Each basket line carries the price shown when the book was added. If the book's current price differs at save time, the sale is refused.
+
+**Why:** The saved sale must match what the customer was told. No discounts yet: the price is the shelf price.
+
+---
+
+## 2026-11-08: The basket lives in session state
+
+**Decision:** The basket is kept in `st.session_state` until "Complete sale". Nothing is written to the database before then.
+
+**Why:** An unfinished sale isn't a fact yet. The cost: refreshing the browser loses an unfinished basket, which is acceptable for a till.
+
+---
+
+## 2026-11-08: Sales are cancelled, never edited or deleted
+
+**Decision:** `cancel_sale` marks a sale `cancelled`, returns its copies to stock and records when and why in `sale_cancellations`, in one transaction. Only a `completed` sale can be cancelled. To fix a mistake: cancel and record again.
+
+**Why:** Editing or deleting would erase evidence and make stock history unreliable.
+
+**Considered:** Partial returns (one book out of three). Left for later.
+
+---
+
+## 2026-11-08: Cancellations in a new table, not new columns
+
+**Decision:** `sale_cancellations` with `sale_id` as its primary key.
+
+**Why:** The primary key lets the database itself refuse a second cancellation of the same sale. A new table is created by `CREATE TABLE IF NOT EXISTS`, so no migration of existing databases is needed.
+
+**Trade-off:** The cancellation is stored in two places (`sales.status` and this table). Both are written in the same transaction, and a test checks they always agree.
+
+---
+
+## 2026-11-08: Sales can be dated in the past, not the future
+
+**Decision:** A sale is dated "now" unless "This sale happened earlier" is ticked. Future dates are refused.
+
+**Why:** Owners often enter paper receipts at the end of the day.

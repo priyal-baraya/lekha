@@ -14,14 +14,14 @@ Lekha is meant to help a small bookstore owner answer everyday questions from th
 | Design foundation | Theme, typography, layout shell, ornaments | Done (visual design to be refined separately) |
 | 2. Database and sample data | Schema, constraints, fictional sample data, tests, first queries | Done |
 | 3. Catalogue and inventory | Book list, search, add/edit, low-stock alerts, recorded stock corrections | Done |
-| 4. Sales | Recording sales safely, updating stock | Not started |
+| 4. Sales | Recording and cancelling sales, updating stock in one transaction | Done |
 | 5. Analytics | Business questions, SQL queries, charts | Not started |
 | 6. Visual refinement | Accessibility and layout polish | Not started |
 | 7. Quality and portfolio | Tests, documentation, case study | Not started |
 
-**Working now:** the Books page (browse, search, filter, sort, add and edit books) and the Inventory page (low-stock alerts, stock corrections with a reason, and their history). The Overview shows live stock figures.
+**Working now:** the Books page (browse, search, filter, sort, add and edit books), the Inventory page (low-stock alerts, stock corrections with a reason, and their history), and the Sales page (record a sale from a basket, see recent sales, cancel a sale with a reason). The Overview shows live stock figures.
 
-**Not built yet:** recording sales (Phase 4) and sales analysis (Phase 5). Revenue, copies sold and transactions on the Overview are labelled placeholders, and the Sales and Insights pages say "Not built yet".
+**Not built yet:** sales analysis (Phase 5). Revenue, copies sold and transactions on the Overview are labelled placeholders, and the Insights page says "Not built yet".
 
 ## Run it locally (Windows, PowerShell)
 

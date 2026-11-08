@@ -50,7 +50,7 @@ def test_tables_exist(empty_db):
         row["name"]
         for row in empty_db.execute("SELECT name FROM sqlite_schema WHERE type = 'table'")
     }
-    assert {"books", "sales", "sale_items", "stock_adjustments"} <= names
+    assert {"books", "sales", "sale_items", "sale_cancellations", "stock_adjustments"} <= names
 
 
 def test_foreign_keys_are_switched_on(empty_db):

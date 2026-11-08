@@ -73,4 +73,8 @@ INSERT INTO sale_items (sale_id, book_id, quantity, unit_price_paise) VALUES
     (14,  6, 1, 59900),
     (15,  3, 1, 34900);
 
+-- Every cancelled sale has a cancellation record (added in Phase 4).
+INSERT INTO sale_cancellations (sale_id, cancelled_at, reason) VALUES
+    (9, '2026-10-14 11:20:00', 'Customer changed their mind before paying');
+
 COMMIT;
