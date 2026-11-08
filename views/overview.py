@@ -1,15 +1,21 @@
 """Overview: Lekha's front page.
 
-The stock figures here come from the database. Sales figures arrive in
-Phase 5, and until then their slots say so on screen.
+Every figure here comes from the database. Sales figures cover the last
+30 days and come from services/analytics.py, the same code the Insights
+page uses, so the two pages always agree.
 """
+
+from datetime import date
 
 import pandas as pd
 import streamlit as st
 
 from database import connect
+from services import analytics
 from services.books import count_books, list_genres
 from services.inventory import count_low_stock, low_stock_books
+from services.money import format_rupees
+from ui import charts
 from ui import components as ui
 
 ui.hero(
@@ -29,36 +35,40 @@ with connect() as conn:
     genre_count = len(list_genres(conn))
     low_stock_count = count_low_stock(conn)
     low_stock = low_stock_books(conn)
+    period = analytics.period_for(conn, "last_30", date.today())
+    totals = analytics.summary(conn, period)
+    weekly = analytics.revenue_over_time(conn, period, "week")
 
 ui.divider()
 ui.section_header(
     eyebrow="Summary",
     title="The daily read",
-    description=(
-        "Four figures worth checking each morning. The stock figure is live; "
-        "the sales figures arrive with sales analysis in Phase 5."
-    ),
-    tag="Partly connected",
+    description=(f"Four figures worth checking each morning. Sales figures cover the last 30 days "
+                 f"({period.start:%d %b} to {period.end:%d %b %Y})."),
 )
 ui.sample_data_notice()
 ui.metric_strip([
-    ("Revenue", None, "Arrives in Phase 5"),
-    ("Copies sold", None, "Arrives in Phase 5"),
-    ("Transactions", None, "Arrives in Phase 5"),
-    ("Books low on stock", str(low_stock_count), "At or below their reorder level"),
+    ("Revenue", format_rupees(totals["revenue_paise"]), "Last 30 days, completed sales"),
+    ("Copies sold", str(totals["copies"]), "Last 30 days"),
+    ("Transactions", str(totals["transactions"]), "Last 30 days"),
+    ("Books low on stock", str(low_stock_count), "At or below their reorder level, today"),
 ])
 
 ui.divider()
 ui.section_header(
     eyebrow="Sales",
     title="Sales and trends",
-    description="How revenue and copies sold change over time, and which titles and genres lead.",
+    description="Revenue per week over the last 30 days. Outlined bars are partial weeks.",
 )
-ui.empty_state(
-    "Charts of revenue over time, best-selling titles and revenue by genre "
-    "will appear here once sales analysis is built.",
-    tag="Planned · Phase 5",
-)
+if weekly["revenue_paise"].sum() == 0:
+    ui.empty_state("No completed sales in the last 30 days.")
+else:
+    best = weekly.loc[weekly["revenue_paise"].idxmax()]
+    trend_summary = (f"Highest week: week of {best['bucket_start']:%d %b %Y}, "
+                     f"{format_rupees(int(best['revenue_paise']))}.")
+    st.altair_chart(charts.revenue_over_time(weekly, "week"), width="stretch", alt=trend_summary)
+    st.markdown(trend_summary)
+st.page_link("views/insights.py", label="Open Insights for genres, best sellers and more →")
 
 ui.divider()
 books_column, inventory_column = st.columns(2, gap="large")

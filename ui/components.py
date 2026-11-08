@@ -142,7 +142,9 @@ def metric_strip(metrics: list[tuple[str, str | None, str]]) -> None:
         """
         for label, value, note in metrics
     )
-    st.html(f'<div class="lekha-metrics">{cells}</div>')
+    # The strip is laid out for four figures; a single figure takes the full width.
+    style = ' style="grid-template-columns: 1fr"' if len(metrics) == 1 else ""
+    st.html(f'<div class="lekha-metrics"{style}>{cells}</div>')
 
 
 def empty_state(message: str, tag: str | None = None) -> None:

@@ -163,3 +163,42 @@ Streamlit 1.66.1, SQLite 3.49.1, pytest 9.2.0. Browser checks in the Claude desk
 - No partial returns or discounts.
 - Refreshing the browser loses an unfinished basket.
 - The local database still contains test sale #16 (recorded, then cancelled). It doesn't count as revenue. `python database.py --reset-sample` removes it.
+
+---
+
+## 2026-11-08: Analytics (branch `phase-5/analytics`)
+
+Streamlit 1.66.1, Altair 6.3.0, SQLite 3.49.1, pytest 9.2.0. Browser checks in the Claude desktop app's built-in browser (Chromium).
+
+### Automated tests: **179 passed** (34 new, in `tests/test_analytics.py`)
+
+Every expected value was worked out by hand first (see `docs/analytics.md`): headline figures, the Mystery filter, an empty period, cancelled sales excluded, both date edges, all six genres and their rounded shares (summing to 100.2%), all nine books' copies, revenue and tied ranks, unsold books for three periods, estimated profit with coverage and margin, weekly buckets with partial flags, zero-filled days, the monthly bucket, the in-progress current week, all period choices (including "last month" in January), and the wording of observations.
+
+### Manual checks in the browser
+
+| Check | Result |
+|---|---|
+| Insights, last 30 days (10 Oct – 8 Nov) | ₹6,948.00, 17 copies, 8 sales, average ₹868.50. **Checked by hand**: sales 7, 8, 10–15 |
+| Genre chart, last 30 days | Fiction ₹2,544.00 (36.6%) … Poetry ₹250.00; totals ₹6,948.00; note says shares add to 99.9% |
+| Trend chart, last 30 days | Week of 5 Oct outlined (period starts 10 Oct); week of 2 Nov outlined (in progress, ₹0) |
+| Insights, all time | Every figure matches `docs/analytics.md`: ₹11,144.00, 29, 14, ₹796.00, all genres, profit ₹3,992.00 at 39.0% on 92.0% of revenue |
+| Mystery filter | ₹2,034.00, 6 copies, 4 sales; trend recalculated; genre chart stays on all genres and says so; profit ₹804.00 at 39.5% (checked by hand) |
+| Overview | Last-30-day figures identical to the Insights page; weekly chart shown |
+| Screen readers | Each chart's alt text reaches its toolbar buttons; each bar is announced with its period, revenue, copies, sales and completeness |
+| Phone width (375px) | No sideways scrolling, nothing past the edge, no rounded corners |
+
+### Issues found and fixed
+
+1. **Genre chart labels cut off on phones.** "₹2,544.00 · 36.6%" lost its end at 375px. **Fix:** extend the value scale to 1.8× the largest bar to leave room for labels. Re-checked on a phone-sized screen.
+2. **One figure in a four-column strip.** The profit figure would have filled a quarter of its box. **Fix:** a single-figure strip spans the full width.
+3. **Ambiguous labels with a genre selected.** "Per sale that included Mystery" became "Mystery revenue ÷ sales that included it", and "Every book had at least one sale" became "Every Mystery book…".
+4. **Month names lowercased** ("10 oct") in the Overview description. Fixed before release.
+5. **Limits shown in faded caption text** were switched to normal text, so they aren't harder to read than the finding.
+6. **One wrong test expectation (mine):** I assumed tied best sellers are listed alphabetically. They're listed by revenue, so *The Clockmaker's Cat* (₹897.00) comes before *Ten Thousand Mangoes* (₹825.00).
+7. **A claim in my design notes was wrong:** the week of 26 Oct is only partial when the period ends on 26 Oct. Corrected in `docs/analytics.md`.
+
+### Known limitations
+
+- Western digit grouping inside Streamlit tables and chart axes (₹1,047.00) versus Indian grouping in text; identical below one lakh.
+- No comparison with a previous period.
+- The 30-sale "hint, not a pattern" threshold is a judgement call, not a statistical test.

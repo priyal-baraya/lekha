@@ -15,13 +15,13 @@ Lekha is meant to help a small bookstore owner answer everyday questions from th
 | 2. Database and sample data | Schema, constraints, fictional sample data, tests, first queries | Done |
 | 3. Catalogue and inventory | Book list, search, add/edit, low-stock alerts, recorded stock corrections | Done |
 | 4. Sales | Recording and cancelling sales, updating stock in one transaction | Done |
-| 5. Analytics | Business questions, SQL queries, charts | Not started |
+| 5. Analytics | Revenue, best sellers, genres, trends, estimated profit, observations, date and genre filters | Done |
 | 6. Visual refinement | Accessibility and layout polish | Not started |
 | 7. Quality and portfolio | Tests, documentation, case study | Not started |
 
-**Working now:** the Books page (browse, search, filter, sort, add and edit books), the Inventory page (low-stock alerts, stock corrections with a reason, and their history), and the Sales page (record a sale from a basket, see recent sales, cancel a sale with a reason). The Overview shows live stock figures.
+**Working now:** the Books page (browse, search, filter, sort, add and edit books), the Inventory page (low-stock alerts, stock corrections with a reason, and their history), and the Sales page (record a sale from a basket, see recent sales, cancel a sale with a reason), and the Insights page (revenue, copies, transactions, revenue over time, revenue by genre, best sellers, unsold books, estimated gross profit and plain-language observations, filtered by period and genre). The Overview shows live figures for the last 30 days.
 
-**Not built yet:** sales analysis (Phase 5). Revenue, copies sold and transactions on the Overview are labelled placeholders, and the Insights page says "Not built yet".
+**Next:** visual refinement (Phase 6) and portfolio quality (Phase 7).
 
 ## Run it locally (Windows, PowerShell)
 
@@ -76,6 +76,7 @@ lekha/
 │   └── lekha.db           The database file (created locally, not committed)
 ├── sql/
 │   ├── schema.sql         Tables and rules
+│   ├── analytics/         The analytics queries, one file each
 │   └── 01_first_queries.sql  Practice queries with expected results
 ├── tests/                 Automated tests (pytest)
 └── docs/                  Product brief, schema, design system, decisions, logs
@@ -86,6 +87,7 @@ lekha/
 - [Product brief](docs/product-brief.md): user, problem, goals and core features
 - [Database schema](docs/schema.md): tables, relationships and the reasons behind them
 - [Sample data](docs/sample-data.md): what the fictional dataset contains and its hand-checked results
+- [Analytics](docs/analytics.md): every metric's definition, with the hand calculations the tests check
 - [Design system](docs/design-system.md): colours, fonts, spacing, shapes and motifs
 - [Decision log](docs/decision-log.md): important technical and design decisions
 - [Testing log](docs/testing-log.md): checks performed, issues found, fixes made

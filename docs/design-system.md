@@ -134,6 +134,15 @@ Rules:
 
 The jaali lattice in the hero is two repeating CSS gradients at 22% gold opacity. No image file is involved.
 
+## Charts (`ui/charts.py`, Altair)
+
+- **One series, one colour.** Revenue charts use Manuscript Crimson only and need no colour legend: the title and axis say what is shown.
+- **Bars, square.** Revenue over time uses vertical bars (discrete periods); revenue by genre uses horizontal bars sorted largest first, labelled `₹4,040.00 · 36.3%`. No pie charts: lengths are easier to compare than angles.
+- **Shape, not colour, for partial periods:** filled bar = complete, outlined bar = partial or in progress.
+- **Every chart has** a hover tooltip, alt text for screen readers (`st.altair_chart(alt=...)`), a written summary under it, and a "Show as a table" view.
+- **Value labels** use Secondary Text, never the bar colour.
+- Fonts, grid and background come from the Streamlit theme. The categorical palette in `config.toml` is reserved for future charts with several series.
+
 ## Components (`ui/components.py`)
 
 | Function | What it draws |
