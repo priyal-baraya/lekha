@@ -25,6 +25,7 @@ from pathlib import Path
 PROJECT_DIR = Path(__file__).parent
 DEFAULT_DB_PATH = PROJECT_DIR / "data" / "lekha.db"
 SCHEMA_PATH = PROJECT_DIR / "sql" / "schema.sql"
+MIGRATIONS_DIR = PROJECT_DIR / "sql" / "migrations"
 SAMPLE_DATA_PATH = PROJECT_DIR / "data" / "sample_data.sql"
 
 
@@ -73,8 +74,41 @@ def connect(db_path: Path | str | None = None) -> Iterator[sqlite3.Connection]:
 
 
 def create_schema(connection: sqlite3.Connection) -> None:
-    """Create the tables and indexes if they do not exist yet."""
+    """Create the tables and indexes if they do not exist yet, then bring
+    the database up to date with any migrations it hasn't had."""
     connection.executescript(SCHEMA_PATH.read_text(encoding="utf-8"))
+    apply_migrations(connection)
+
+
+def schema_version(connection: sqlite3.Connection) -> int:
+    """How many migrations this database has had.
+
+    SQLite keeps a spare whole number in every database file's header,
+    `PRAGMA user_version` (0 in a new file). Lekha uses it to remember
+    which numbered migration ran last.
+    """
+    return connection.execute("PRAGMA user_version").fetchone()[0]
+
+
+def apply_migrations(connection: sqlite3.Connection) -> list[int]:
+    """Run, in order, every sql/migrations/NNN_*.sql newer than the database.
+
+    Each migration and its version number are saved in one transaction,
+    so a failure leaves the database exactly as it was. Returns the
+    numbers of the migrations applied (usually none).
+    """
+    applied = []
+    for path in sorted(MIGRATIONS_DIR.glob("[0-9][0-9][0-9]_*.sql")):
+        number = int(path.name[:3])
+        if number <= schema_version(connection):
+            continue
+        connection.executescript(
+            "BEGIN;\n"
+            + path.read_text(encoding="utf-8")
+            + f"\nPRAGMA user_version = {number};\nCOMMIT;"
+        )
+        applied.append(number)
+    return applied
 
 
 def ensure_database(db_path: Path | str | None = None) -> None:

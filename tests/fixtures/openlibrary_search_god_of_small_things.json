@@ -1,0 +1,122 @@
+{
+  "numFound": 248,
+  "start": 0,
+  "numFoundExact": true,
+  "num_found": 248,
+  "documentation_url": "https://openlibrary.org/dev/docs/api/search",
+  "q": "the god of small things",
+  "offset": null,
+  "docs": [
+    {
+      "author_name": [
+        "Arundhati Roy"
+      ],
+      "cover_i": 10513792,
+      "first_publish_year": 1997,
+      "key": "/works/OL1052133W",
+      "title": "The God of Small Things",
+      "subject": [
+        "Literary Fiction",
+        "Women's Fiction",
+        "dalit",
+        "Catholicism",
+        "fraternal twins",
+        "Psychological fiction",
+        "Domestic fiction",
+        "award:man_booker_prize=1997",
+        "Fiction",
+        "Romance",
+        "Twins",
+        "Gemelos",
+        "Twins in fiction",
+        "Literatura de expressão inglesa",
+        "Romans",
+        "Downing",
+        "Cousins",
+        "Romans, nouvelles",
+        "Man Booker Prize Winner",
+        "Classes sociales",
+        "India in fiction",
+        "Literatura indiana",
+        "Social classes",
+        "Roman indien (de l'Inde) de langue anglaise",
+        "Jumeaux",
+        "Family",
+        "Social classes in fiction",
+        "Ficción",
+        "Clases sociales",
+        "open_syllabus_project",
+        "Literatura de expressäao inglesa",
+        "Medicine in Literature",
+        "Large type books",
+        "French language",
+        "Littérature de l'Inde (anglaise)",
+        "Roman de l'Inde (anglais)",
+        "Literatura india (Inglés)",
+        "India, fiction",
+        "Fiction, psychological",
+        "Twins, fiction",
+        "Fiction, family life",
+        "Fiction, family life, general",
+        "English literature",
+        "Fiction, general"
+      ]
+    },
+    {
+      "author_name": [
+        "Julie Mullaney"
+      ],
+      "cover_i": 630473,
+      "first_publish_year": 2002,
+      "key": "/works/OL5951419W",
+      "title": "Arundhati Roy's The God of small things",
+      "subject": [
+        "In literature",
+        "Twins in literature",
+        "God of small things (Roy, Arundhati)",
+        "Literature",
+        "Jumeaux dans la litterature",
+        "Inde dans la litterature",
+        "India, in literature",
+        "Indic literature, history and criticism"
+      ]
+    },
+    {
+      "author_name": [
+        "Nilanshu Kumar Agarwal"
+      ],
+      "first_publish_year": 2012,
+      "key": "/works/OL23384614W",
+      "title": "Arundhati Roy's the God of small things",
+      "subject": [
+        "God of small things (Roy, Arundhati)"
+      ]
+    },
+    {
+      "author_name": [
+        "Amitash Roy"
+      ],
+      "cover_i": 5002640,
+      "first_publish_year": 2007,
+      "key": "/works/OL9253198W",
+      "title": "The God of Small Things"
+    },
+    {
+      "author_name": [
+        "Alex Tickell"
+      ],
+      "cover_i": 13295458,
+      "first_publish_year": 2007,
+      "key": "/works/OL18818343W",
+      "title": "Arundhati Roy's The god of small things",
+      "subject": [
+        "Women authors",
+        "Authors, indic",
+        "LITERARY CRITICISM",
+        "European",
+        "English, Irish, Scottish, Welsh",
+        "God of small things (Roy, Arundhati)"
+      ]
+    }
+  ]
+}

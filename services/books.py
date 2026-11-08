@@ -5,6 +5,7 @@ whatever fills a placeholder strictly as data, never as SQL, which
 blocks SQL injection (typing SQL into a search box to make it run).
 """
 
+import re
 import sqlite3
 from dataclasses import dataclass
 from decimal import Decimal
@@ -39,6 +40,10 @@ class BookInput:
 
     Prices are in rupees, as typed. stock_quantity is only used when
     adding a book; afterwards stock changes through services.inventory.
+
+    The last four fields come from Open Library (services/openlibrary.py)
+    and are only saved when a book is added, so editing a book's price can
+    never wipe its cover or publisher.
     """
 
     title: str
@@ -49,6 +54,10 @@ class BookInput:
     cost_price: float | Decimal | str | None = None
     stock_quantity: int | None = 0
     reorder_level: int | None = 0
+    publisher: str | None = None
+    published_year: int | None = None
+    cover_id: int | None = None
+    openlibrary_key: str | None = None
 
 
 # ---------------------------------------------------------------- reading
@@ -88,6 +97,7 @@ def search_books(
         SELECT book_id, isbn, title, author, genre,
                selling_price_paise, cost_price_paise,
                stock_quantity, reorder_level,
+               publisher, published_year, cover_id, openlibrary_key,
                {STOCK_STATUS_SQL} AS stock_status
         FROM books
         WHERE (title LIKE :pattern ESCAPE '\\' OR author LIKE :pattern ESCAPE '\\')
@@ -159,6 +169,21 @@ def _price(value, label: str, errors: list[str], required: bool) -> int | None:
         return None
 
 
+def _book_details(data: BookInput, errors: list[str]) -> dict:
+    """Check the optional Open Library details: publisher, year, cover, record."""
+    publisher = " ".join((data.publisher or "").split()) or None
+    year = data.published_year
+    if year is not None and (isinstance(year, bool) or not isinstance(year, int) or not 1450 <= year <= 2100):
+        errors.append("Published year must be a year between 1450 and 2100.")
+    cover_id = data.cover_id
+    if cover_id is not None and (isinstance(cover_id, bool) or not isinstance(cover_id, int) or cover_id <= 0):
+        errors.append("The cover reference from Open Library isn't valid.")
+    key = data.openlibrary_key
+    if key is not None and not re.fullmatch(r"/(books/OL\d+M|works/OL\d+W)", key):
+        errors.append("The Open Library record reference isn't valid.")
+    return {"publisher": publisher, "published_year": year, "cover_id": cover_id, "openlibrary_key": key}
+
+
 def validate_book(
     conn: sqlite3.Connection,
     data: BookInput,
@@ -210,8 +235,9 @@ def validate_book(
     clean["selling_price_paise"] = _price(data.selling_price, "Selling price", errors, required=True)
     clean["cost_price_paise"] = _price(data.cost_price, "Cost price", errors, required=False)
     clean["reorder_level"] = _whole_number(data.reorder_level, "Reorder level", errors)
-    if include_stock:
+    if include_stock:   # adding a new book
         clean["stock_quantity"] = _whole_number(data.stock_quantity, "Opening stock", errors)
+        clean.update(_book_details(data, errors))
 
     if errors:
         raise ValidationError(errors)
