@@ -431,3 +431,75 @@ Each entry: what was decided, why, and what else was considered. Newest at the b
 **Decision:** Tables show the title, then the columns you act on (status, stock, copies, revenue, change), then details (author, genre, dates).
 
 **Why:** On a phone, a table shows only its first two or three columns without scrolling sideways. The low-stock table used to hide its Status column there.
+
+---
+
+## 2026-11-08: Database location from an environment variable
+
+**Decision:** `LEKHA_DB_PATH` chooses the database file (default `data/lekha.db`). `database.database_path()` reads it on every call.
+
+**Why:** Tests, the demo dataset and any future deployment each need their own database without code changes. Reading it at call time, not import time, lets a test switch files just by setting the variable.
+
+---
+
+## 2026-11-08: One error handler around every page
+
+**Decision:** `app.py` runs each page inside `try/except`: database errors and anything unexpected show a plain message; full details go to the terminal log. `showErrorDetails = "none"` covers anything outside it.
+
+**Why:** A Python traceback means nothing to a shop owner and exposes the code. `st.rerun()` and `st.stop()` are unaffected: Streamlit signals them with a `BaseException`, which `except Exception` lets through (checked before relying on it).
+
+---
+
+## 2026-11-08: Page tests with Streamlit's AppTest
+
+**Decision:** 11 tests run the pages without a browser, including the brief's example (sell 2 copies, stock falls by exactly 2) through the real Sales page.
+
+**Why:** The rules were tested; the wiring between pages and rules wasn't. AppTest is part of Streamlit, so it adds nothing new to install.
+
+---
+
+## 2026-11-08: Tests run on GitHub for every push and pull request
+
+**Decision:** A GitHub Actions workflow installs `requirements.txt` on Linux with Python 3.13 and runs pytest.
+
+**Why:** A broken change can't be merged unnoticed, it proves the project works outside the development machine, and the badge shows it to visitors.
+
+---
+
+## 2026-11-08: A generated demo dataset, separate from the tested one
+
+**Decision:** `demo_data.py` builds `data/demo.db` (30 invented books, about 14 weeks of invented sales) from a fixed random seed and fixed dates, recording everything through Lekha's own service functions. The small hand-checked sample dataset stays the one the tests and hand calculations use.
+
+**Why:** 14 sales make near-empty charts in screenshots. Generating through the services exercises the real rules hundreds of times. Every screenshot and the case study say which dataset is shown.
+
+**Supersedes:** the Phase 5 decision to keep only the small dataset, which deferred this to Phase 7.
+
+---
+
+## 2026-11-08: Screenshots with Playwright, as a development-only tool
+
+**Decision:** `scripts/capture_screenshots.py` uses Playwright to drive the installed Microsoft Edge. Playwright is listed in `requirements-dev.txt`, not `requirements.txt`.
+
+**Why:** Headless Edge alone captured only the loading skeleton, because Streamlit draws after the page loads. Playwright can wait for Streamlit to finish. Running Lekha doesn't need it, so it stays out of the main requirements.
+
+---
+
+## 2026-11-08: Hide Streamlit's developer controls
+
+**Decision:** `toolbarMode = "viewer"`.
+
+**Why:** The Deploy and Rerun buttons are for developers, not shop owners. `docs/setup.md` explains how to switch back while developing.
+
+---
+
+## 2026-11-08: Remove the Overview's placeholder message
+
+**Decision:** Removed "We're building the foundation first. Book data and analytics will come next."
+
+**Why:** It was no longer true, and the hero and sample-data notice already explain the page. Removed with the owner's agreement.
+
+---
+
+## 2026-11-08: Resume bullets stay out of the repository
+
+**Why:** A resume is personal and changes per application. The case study holds the verified facts the bullets are drawn from.

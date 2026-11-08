@@ -25,11 +25,6 @@ ui.hero(
     description="An inventory and sales insights tool for independent bookstores.",
 )
 
-st.info(
-    "We're building the foundation first. "
-    "Book data and analytics will come next."
-)
-
 with connect() as conn:
     total_books = count_books(conn)
     genre_count = len(list_genres(conn))

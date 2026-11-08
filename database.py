@@ -4,12 +4,18 @@ Everything else in the app talks to SQLite through get_connection(), so
 the important settings (foreign keys on, rows readable by column name)
 are applied in exactly one place.
 
-Run this file directly to rebuild the local database with the fictional
-sample data. This DELETES data/lekha.db first:
+Where the database lives: data/lekha.db by default. Setting the
+environment variable LEKHA_DB_PATH points Lekha at a different file
+instead (the page tests and the demo dataset use this), without
+changing any code.
+
+Run this file directly to rebuild the database with the fictional
+sample data. This DELETES the database file first:
 
     .\\.venv\\Scripts\\python.exe database.py --reset-sample
 """
 
+import os
 import sqlite3
 import sys
 from collections.abc import Iterator
@@ -17,18 +23,29 @@ from contextlib import contextmanager
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).parent
-DB_PATH = PROJECT_DIR / "data" / "lekha.db"
+DEFAULT_DB_PATH = PROJECT_DIR / "data" / "lekha.db"
 SCHEMA_PATH = PROJECT_DIR / "sql" / "schema.sql"
 SAMPLE_DATA_PATH = PROJECT_DIR / "data" / "sample_data.sql"
 
 
-def get_connection(db_path: Path | str = DB_PATH) -> sqlite3.Connection:
+def database_path() -> Path:
+    """The database file to use: LEKHA_DB_PATH if it is set, else data/lekha.db.
+
+    Read on every call (not once at start-up), so a test can point Lekha
+    at a temporary file just by setting the variable.
+    """
+    configured = os.environ.get("LEKHA_DB_PATH")
+    return Path(configured) if configured else DEFAULT_DB_PATH
+
+
+def get_connection(db_path: Path | str | None = None) -> sqlite3.Connection:
     """Open a connection to the database with Lekha's settings applied.
 
-    db_path can be ":memory:" for a temporary database that lives only in
-    memory, which the tests use so they never touch the real file.
+    db_path defaults to database_path(). It can be ":memory:" for a
+    temporary database that lives only in memory, which the rule tests
+    use so they never touch a real file.
     """
-    connection = sqlite3.connect(db_path)
+    connection = sqlite3.connect(db_path or database_path())
     # Rows behave like dictionaries: row["title"] instead of row[2].
     connection.row_factory = sqlite3.Row
     # SQLite ignores foreign keys unless this is switched on for every
@@ -39,7 +56,7 @@ def get_connection(db_path: Path | str = DB_PATH) -> sqlite3.Connection:
 
 
 @contextmanager
-def connect(db_path: Path | str = DB_PATH) -> Iterator[sqlite3.Connection]:
+def connect(db_path: Path | str | None = None) -> Iterator[sqlite3.Connection]:
     """Open a connection for a block of code and always close it afterwards.
 
         with connect() as conn:
@@ -60,7 +77,7 @@ def create_schema(connection: sqlite3.Connection) -> None:
     connection.executescript(SCHEMA_PATH.read_text(encoding="utf-8"))
 
 
-def ensure_database(db_path: Path | str = DB_PATH) -> None:
+def ensure_database(db_path: Path | str | None = None) -> None:
     """Make sure the database file and all its tables exist.
 
     Safe to call on every page load: every CREATE uses IF NOT EXISTS, so
@@ -76,8 +93,10 @@ def load_sample_data(connection: sqlite3.Connection) -> None:
     connection.executescript(SAMPLE_DATA_PATH.read_text(encoding="utf-8"))
 
 
-def reset_with_sample_data(db_path: Path = DB_PATH) -> None:
+def reset_with_sample_data(db_path: Path | None = None) -> None:
     """Delete the database file and rebuild it with the sample data."""
+    db_path = Path(db_path or database_path())
+    db_path.parent.mkdir(parents=True, exist_ok=True)
     db_path.unlink(missing_ok=True)
     connection = get_connection(db_path)
     try:
@@ -99,4 +118,4 @@ if __name__ == "__main__":
         reset_with_sample_data()
     else:
         print("Usage: python database.py --reset-sample")
-        print("Deletes data/lekha.db and rebuilds it with the fictional sample data.")
+        print(f"Deletes {database_path()} and rebuilds it with the fictional sample data.")

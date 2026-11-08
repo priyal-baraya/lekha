@@ -242,3 +242,27 @@ Headings: one h1 per page, h2 for each section, no skipped levels. No text under
 - Western digit grouping inside tables and chart axes.
 - Collapsed navigation reachable by Tab on narrow screens (Streamlit behaviour).
 - Not tested: screen-reader software, Firefox, Safari, 200% browser zoom.
+
+---
+
+## 2026-11-08: Quality and portfolio (branch `phase-7/portfolio`)
+
+### Automated tests: **192 passed** (13 new)
+
+| File | Tests | What it covers |
+|---|---|---|
+| `tests/test_pages.py` | 11 | Streamlit's `AppTest` runs the pages without a browser, each against its own copy of the sample data (via `LEKHA_DB_PATH`): Books, Sales, Inventory and Insights open with no error and show the sample-data notice; the whole app opens on the Overview without the old message; **2 copies of book 1 sold through the Sales page: stock 8 → 6 and "Sale #16 recorded: 2 copies, ₹798.00"**; an out-of-stock book offers no Add button; search "menon" shows 2 of 12; a stock correction through the Inventory form saves 8 → 5; Insights "All time" shows ₹11,144.00, ₹796.00 and ₹3,992.00; **a corrupt database file shows the friendly message, not a traceback** |
+| `tests/test_demo_data.py` | 2 | The demo dataset is identical on every run, has 30 books, more than 300 completed sales, some cancellations, no negative stock, status and cancellation records that agree, and exactly 2 unsold books |
+
+**On GitHub:** the workflow `.github/workflows/tests.yml` ran all tests on a fresh Linux machine with Python 3.13: every step passed.
+
+### Issues found and fixed
+
+1. **The Overview can't be tested on its own.** Its links to other pages need `app.py`'s navigation, so `AppTest` raised "Could not find page". **Fix:** test the Overview through `app.py`, which opens on it by default.
+2. **A form test saved nothing.** The test pressed `run()` between typing a number and clicking Save; inside a form, typed values only count on submit. **Fix:** type and submit in one step, as a person would. The app was fine; the test was wrong.
+3. **Headless Edge screenshots showed only Streamlit's loading skeleton.** The page content arrives after "load" over a live connection. **Fix:** Playwright drives Edge and waits until Streamlit reports it has finished running the page.
+4. **Streamlit's "Deploy" button appeared in every screenshot.** **Fix:** `toolbarMode = "viewer"` in `config.toml` hides developer controls.
+
+### Screenshots
+
+Seven screenshots in `docs/screenshots/` (desktop at 1280px, phone at 390px), captured by `scripts/capture_screenshots.py` from the demo dataset. Each was opened and checked by eye: the right page, fully drawn, the sample-data notice visible, no developer controls.

@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from database import DB_PATH, get_connection
+from database import database_path, get_connection
 
 
 def split_statements(sql_text: str) -> list[str]:
@@ -37,7 +37,7 @@ def main() -> None:
     if len(sys.argv) != 2:
         print(__doc__)
         return
-    if not DB_PATH.exists():
+    if not database_path().exists():
         print("No database yet. Create it first with:")
         print("    .\\.venv\\Scripts\\python.exe database.py --reset-sample")
         return
