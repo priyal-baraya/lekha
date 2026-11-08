@@ -69,3 +69,54 @@ SQLite 3.49.1, Python 3.13.3, pytest 9.2.0.
 
 - Sale recording, stock updates and cancellation (Phase 4). The schema allows them, but the transaction logic doesn't exist yet.
 - The app does not read from the database yet (Phase 3).
+
+---
+
+## 2026-11-08: Catalogue and inventory (branch `phase-3/catalogue`)
+
+Streamlit 1.66.1, SQLite 3.49.1, pytest 9.2.0. Browser checks in the Claude desktop app's built-in browser (Chromium).
+
+### Automated tests: **118 passed** (74 new)
+
+| File | What it covers |
+|---|---|
+| `tests/test_money.py` | Exact rupee-to-paise conversion, including values where plain floats lose a paisa (19.99, 4.35, 0.57); rejecting negative, non-numeric and sub-paisa amounts; Indian digit grouping |
+| `tests/test_books.py` | Search by title or author, ignoring case; genre filter; sorting; `%` and `_` matched literally; SQL typed into search treated as text; stock status words; adding with tidying, genre matching and optional fields; all errors reported at once; duplicate ISBN message; editing without touching stock; past sale prices unchanged after a price edit |
+| `tests/test_inventory.py` | Low-stock list and count; a correction updates stock and history; invalid corrections refused with nothing saved; stale count refused; the same correction submitted twice applied once; a failure inside the transaction rolls back the stock update; the history table's own rules |
+
+### Manual checks in the browser
+
+| Check | Result |
+|---|---|
+| Books: search "menon" as you type | 2 of 12 books, both by Tara Menon |
+| Books: search with no match | "Showing 0 of 12" and a hint |
+| Books: sort by stock | Out-of-stock book first, then 1, then 2 copies |
+| Add: title and a bad ISBN only | One box listing 4 problems; typed values kept |
+| Add: genre typed "poetry", price 19.99 | Saved as genre "Poetry" (no new genre) and 1999 paise |
+| Add: same title and author again | Saved, with a note naming the existing book |
+| Edit: price of book 1 to ₹425 | 42500 paise saved; stock still 8; past sale lines still 34900 and 39900 |
+| Inventory: save without changing the count | Refused: "nothing to correct" |
+| Inventory: count book 1 as 5 (shelf count) | Stock 5; history row 8 → 5, −3, "Shelf count" |
+| Inventory: stock changed in the database while the page showed 5, then saved 4 | Refused: "stock changed since the page was loaded"; stock stayed 7; no history row added |
+| Overview: books low on stock | 3, matching the hand-checked sample data (books 2, 5, 9) |
+| Overview: "Open Inventory →" | Opens the Inventory page |
+| Rounded corners on Inventory | None found |
+
+The database was rebuilt from the sample data afterwards, removing the test books and corrections.
+
+### Issues found and fixed
+
+1. **Add form didn't empty after saving.** Deleting the field values from `st.session_state` left the typed text on screen, so a second click would have added the book twice. **Fix:** a version number in the form's keys, increased after each save. Re-tested: the form empties.
+2. **Two wrong expectations in my own tests.** I guessed a title order ("The…" before "Ten…") instead of working it out: the second letters are "e" and "h", so "Ten" comes first. I also claimed `349.99 * 100` goes wrong as a float; it happens not to. I checked which values really fail (19.99, 4.35, 0.57) and used those. Lesson: work expected values out, don't guess them.
+3. **"None" shown for empty notes** in the correction history. **Fix:** show blank.
+4. **The duplicate warning mixed two string-formatting styles**, which would crash on a title containing `{` or `}`. Fixed before testing.
+
+### Not problems
+
+- Opening a page address directly (for example `/books`) logs two "404 Not Found" errors, for `/books/_stcore/health` and `/books/_stcore/host-config`. Streamlit tries those first and then uses the main address. It is Streamlit's own start-up behaviour.
+- In screenshots shrunk from 1280 to 800 pixels, minus signs and dashes in tables disappeared. At full size they display correctly.
+
+### Not covered
+
+- Automated tests of the pages themselves. The rules are tested; the pages were checked by hand.
+- Two people using the app at the same moment, beyond the stale-count check.

@@ -142,6 +142,9 @@ The jaali lattice in the hero is two repeating CSS gradients at 22% gold opacity
 | `hero(...)` | Deep Wine brand panel with gold frame, wordmark, tagline and arch |
 | `divider()` | Ornamental section divider |
 | `section_header(...)` | Section label, Lora title, optional status tag and description |
-| `metric_placeholders(...)` | Connected row of metric slots showing "—" and "Not connected yet" |
+| `metric_strip(...)` | Connected row of figures. A missing value shows "—", and screen readers hear "No data yet" |
+| `sample_data_notice()` | "Sample data" tag and sentence on every page that shows data |
+| `flash(...)` / `show_flash()` | A success or warning message that survives the page reload after saving |
+| `show_errors(...)` | One error box listing every validation problem |
 | `empty_state(...)` | Porcelain panel with small arch, message and status tag |
 | `planned_page(...)` | Full layout for a page that is not built yet |

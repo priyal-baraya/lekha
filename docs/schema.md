@@ -13,6 +13,7 @@ books 1 ───────< sale_items >─────── 1 sales
 - **books**: one row per title the store stocks
 - **sales**: one row per transaction at the till
 - **sale_items**: one row per book within a sale
+- **stock_adjustments**: one row per manual stock correction (added in Phase 3)
 
 ## Key ideas
 
@@ -60,6 +61,20 @@ books 1 ───────< sale_items >─────── 1 sales
 | `unit_price_paise` | INTEGER | ≥ 0 | Price per copy **at the time of sale** |
 | (`sale_id`, `book_id`) | | unique together | One line per book per sale |
 
+### `stock_adjustments` (Phase 3)
+
+| Column | Type | Rule | Purpose |
+|---|---|---|---|
+| `adjustment_id` | INTEGER | primary key | |
+| `book_id` | INTEGER | foreign key → `books`; delete restricted | Which book |
+| `adjusted_at` | TEXT | real date and time, `YYYY-MM-DD HH:MM:SS` | When |
+| `quantity_before` | INTEGER | ≥ 0 | Stock before the correction |
+| `quantity_after` | INTEGER | ≥ 0; must differ from `quantity_before` | Stock after the correction |
+| `reason` | TEXT | `shelf_count`, `damaged_or_lost`, `delivery_received` or `other` | Why it changed |
+| `note` | TEXT | required when the reason is `other` | Explanation |
+
+The change itself (`quantity_after − quantity_before`) is calculated, not stored.
+
 ## Design decisions
 
 **Sales and sale items are separate.** One visit can include several books. Keeping the transaction's facts (date, status) in `sales` and each book's facts in `sale_items` stores every fact once. It also separates **transactions** (rows in `sales`) from **copies sold** (the sum of `quantity`).
@@ -86,7 +101,8 @@ books 1 ───────< sale_items >─────── 1 sales
 | A sale can't sell more copies than are in stock | Phase 4, inside the same transaction |
 | Recording a sale reduces stock exactly once | Phase 4, one transaction |
 | Cancelling a sale returns its stock exactly once | Phase 4, one transaction |
-| Stock corrections are recorded with a reason | Phase 3 (likely a new table) |
+| Stock corrections update stock and history together | Done (Phase 3): `services.inventory.correct_stock`, one transaction |
+| A correction is checked against the stock the user saw | Done (Phase 3): `UPDATE … WHERE stock_quantity = <number shown>` |
 
 ## How it supports the business questions
 

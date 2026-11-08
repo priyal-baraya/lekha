@@ -177,3 +177,77 @@ Each entry: what was decided, why, and what else was considered. Newest at the b
 **Decision:** Use pytest, with each test getting a fresh in-memory database.
 
 **Why:** It's the most widely used Python test runner, and plain `assert` statements keep tests readable. In-memory databases keep tests fast and isolated from real data.
+
+---
+
+## 2026-11-08: A service layer between pages and the database
+
+**Decision:** Business rules live in `services/` (books, inventory, money). Pages in `views/` call those functions and never write SQL themselves.
+
+**Why:** The rules can be tested with pytest without a browser, reused by several pages (low stock is needed on Overview and Inventory), and kept when the interface is redesigned.
+
+---
+
+## 2026-11-08: Stock changes only through recorded corrections
+
+**Decision:** The Books edit form shows stock as read-only. Stock changes on the Inventory page, where each change needs a reason and is saved together with a history row in `stock_adjustments`, in one transaction.
+
+**Why:** An editable number leaves no trace of why it changed (theft, damage, a counting mistake). The history makes every change explainable.
+
+**Considered:** A plain editable stock field. Simpler, but no audit trail.
+
+---
+
+## 2026-11-08: Corrections are checked against the number the user saw
+
+**Decision:** `UPDATE books SET stock_quantity = <counted> WHERE book_id = ? AND stock_quantity = <number shown on screen>`. If no row matches, nothing is saved and the user is told the stock changed.
+
+**Why:** It stops a correction landing on top of a number the user never saw, for example after someone else's change or a double click on Save. This pattern is called *optimistic concurrency control*.
+
+---
+
+## 2026-11-08: "Delivery received" is a correction reason, not a separate feature
+
+**Decision:** Incoming stock is recorded as a correction with the reason "Delivery received".
+
+**Why:** Enough to keep stock and history correct now. A full deliveries feature (suppliers, invoices, costs per delivery) can come later if needed.
+
+---
+
+## 2026-11-08: Rupees converted to paise with Decimal
+
+**Decision:** `services.money.rupees_to_paise` converts through `Decimal(str(value))` and rejects fractions of a paisa.
+
+**Why:** Float arithmetic loses paise: `int(19.99 * 100)` is 1998. A test checks this.
+
+---
+
+## 2026-11-08: Validation in Python, with the database as a safety net
+
+**Decision:** `validate_book` checks every field and reports all problems at once, in plain language. The schema's rules stay in place behind it.
+
+**Why:** Database errors are accurate but unfriendly, and stop at the first problem. Streamlit's own "required" setting only runs in the browser, and its documentation notes it can be bypassed, so the server must check too.
+
+---
+
+## 2026-11-08: Genres matched ignoring case
+
+**Decision:** A typed genre that matches an existing one apart from upper/lower case uses the existing spelling.
+
+**Why:** It prevents "fiction" and "Fiction" becoming two genres in revenue-by-genre analysis, without a separate genres table.
+
+---
+
+## 2026-11-08: Forms reset by changing their key
+
+**Decision:** The add-book and correct-stock forms include a version number in their widget keys, increased after each successful save.
+
+**Why:** Deleting the old values from `st.session_state` did not empty the add-book form in testing; the browser kept showing what was typed. A new key makes Streamlit draw a new, empty form.
+
+---
+
+## 2026-11-08: "Sample data" notice on every data page
+
+**Decision:** Overview, Books and Inventory always show "Sample data: every book and sale shown here is fictional."
+
+**Why:** Screenshots of the app must never pass for a real store's figures. Assumption: Lekha has only ever held the fictional dataset. Remove the notice if real data is ever loaded.
