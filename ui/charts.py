@@ -71,7 +71,10 @@ def revenue_by_genre(rows: list[dict]) -> alt.Chart:
     base = alt.Chart(data).encode(
         y=alt.Y("genre:N", sort=order, title=None, axis=alt.Axis(labelLimit=160)),
         x=alt.X("rupees:Q", axis=_rupee_axis("Revenue"),
-                scale=alt.Scale(domainMax=float(data["rupees"].max()) * 1.35)),  # room for labels
+                # Leave room on the right for the "₹4,040.00 · 36.3%" labels.
+                # They need a fixed ~115px, so on a phone (about 270px of
+                # plot) the scale must reach 1.8 × the largest value.
+                scale=alt.Scale(domainMax=float(data["rupees"].max()) * 1.8)),
         tooltip=[
             alt.Tooltip("genre:N", title="Genre"),
             alt.Tooltip("value_label:N", title="Revenue · share"),
