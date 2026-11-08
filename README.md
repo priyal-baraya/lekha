@@ -16,12 +16,12 @@ Lekha is meant to help a small bookstore owner answer everyday questions from th
 | 3. Catalogue and inventory | Book list, search, add/edit, low-stock alerts, recorded stock corrections | Done |
 | 4. Sales | Recording and cancelling sales, updating stock in one transaction | Done |
 | 5. Analytics | Revenue, best sellers, genres, trends, estimated profit, observations, date and genre filters | Done |
-| 6. Visual refinement | Accessibility and layout polish | Not started |
+| 6. Visual refinement | Contrast fixes, spacing scale, consistent page openings, phone layouts | Done (a fuller redesign from Figma may follow) |
 | 7. Quality and portfolio | Tests, documentation, case study | Not started |
 
 **Working now:** the Books page (browse, search, filter, sort, add and edit books), the Inventory page (low-stock alerts, stock corrections with a reason, and their history), and the Sales page (record a sale from a basket, see recent sales, cancel a sale with a reason), and the Insights page (revenue, copies, transactions, revenue over time, revenue by genre, best sellers, unsold books, estimated gross profit and plain-language observations, filtered by period and genre). The Overview shows live figures for the last 30 days.
 
-**Next:** visual refinement (Phase 6) and portfolio quality (Phase 7).
+**Next:** portfolio quality (Phase 7), and a possible redesign from Figma.
 
 ## Run it locally (Windows, PowerShell)
 

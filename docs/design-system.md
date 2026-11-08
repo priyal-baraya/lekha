@@ -84,6 +84,8 @@ Always paired with words or icons, never colour alone.
 | Aged Parchment on Deep Wine | 10.11 | Pass |
 | Gold on Deep Wine | 4.82 | Pass (hero label) |
 | Border Taupe on Manuscript Paper | 3.49 | Pass for UI outlines |
+| Chart axis text (Secondary Text on Manuscript Paper) | 5.99 | Pass (was 3.15 with Streamlit's default chart text) |
+| Placeholder text (Secondary Text on Porcelain) | 6.61 | Pass (was 3.89 with Streamlit's default) |
 | All four semantic pairs | 6.63–7.72 | Pass |
 
 ## Typography
@@ -110,6 +112,25 @@ Streamlit headings written with `st.header` and similar use the `headingFontSize
 
 Long text is capped at about 42rem (roughly 70 characters per line).
 
+## Spacing
+
+Every margin, padding and gap uses one of six tokens, defined in `ui/styles.css`:
+
+| Token | Size | Use |
+|---|---|---|
+| `--lekha-space-1` | 4px | Hairline details (metric value to its note) |
+| `--lekha-space-2` | 8px | Inside a group (label to title, title to description) |
+| `--lekha-space-3` | 16px | Between related items (description to notice) |
+| `--lekha-space-4` | 24px | Inside panels; after a section header |
+| `--lekha-space-5` | 40px | Between sections; after a page's opening |
+| `--lekha-space-6` | 64px | Hero breathing room |
+
+These map directly onto spacing variables in Figma.
+
+## Page opening
+
+Books, Sales, Inventory and Insights all open with `page_intro()`: section label, page title (the page's only h1), one-line description, the sample-data notice, then a 40px gap before the first section. Overview opens with the hero instead.
+
 ## Shape and layout
 
 - **Corners:** square everywhere. `baseRadius = "none"` and `buttonRadius = "none"` in `config.toml`. A scan of every visible element on the Overview page found no rounded corners.
@@ -117,6 +138,7 @@ Long text is capped at about 42rem (roughly 70 characters per line).
 - **Composition:** full-width bands stacked vertically and separated by the ornamental divider, not a grid of floating cards.
 - **Responsive:** the metric strip goes from 4 columns to 2 (below 900px) to 1 (below 640px). Below 640px the hero hides its decorative strip so the text gets the full width.
 - **Focus:** links and buttons show a 2px crimson outline when reached by keyboard.
+- **Phones:** content that pairs labels with numbers (like the sales basket) is written as sentences rather than column grids, because Streamlit stacks columns on narrow screens. Tables put the columns you decide from (status, stock, copies, revenue) straight after the title, so they stay visible without scrolling sideways.
 
 ## Ornaments
 
@@ -156,4 +178,4 @@ The jaali lattice in the hero is two repeating CSS gradients at 22% gold opacity
 | `flash(...)` / `show_flash()` | A success or warning message that survives the page reload after saving |
 | `show_errors(...)` | One error box listing every validation problem |
 | `empty_state(...)` | Porcelain panel with small arch, message and status tag |
-| `planned_page(...)` | Full layout for a page that is not built yet |
+| `page_intro(...)` | The standard opening of every page except Overview |

@@ -202,3 +202,43 @@ Every expected value was worked out by hand first (see `docs/analytics.md`): hea
 - Western digit grouping inside Streamlit tables and chart axes (₹1,047.00) versus Indian grouping in text; identical below one lakh.
 - No comparison with a previous period.
 - The 30-sale "hint, not a pattern" threshold is a judgement call, not a statistical test.
+
+---
+
+## 2026-11-08: Visual refinement (branch `phase-6/refinement`)
+
+Streamlit 1.66.1. Browser checks in the Claude desktop app's built-in browser (Chromium) at 1280px and 375px.
+
+### Method
+
+A script run in the browser on every page: for each visible piece of text (including chart text drawn as SVG), it finds the real background colour, allows for transparency, calculates the WCAG contrast ratio, and compares it with 4.5:1 (3:1 for large text). It also lists headings and any text under 12px, and measures placeholder text separately. Tables are drawn on a canvas, so the script can't read them; they use the theme's text colours, which pass.
+
+### Before and after
+
+| Page | Before: contrast failures | After | Lowest ratio after |
+|---|---|---|---|
+| Overview | 15 (chart axis text, 3.15:1) | **0** | 4.82 (gold label on the wine hero) |
+| Books | 0 (placeholders 3.89:1, measured separately) | **0** (placeholders 6.61:1) | 5.99 |
+| Sales | 0 (placeholders 3.89:1) | **0** (6.61:1) | 5.99 |
+| Inventory | 0 (placeholders 3.89:1) | **0** (6.61:1) | 5.99 |
+| Insights | 22 (chart axis text, 3.15:1) | **0** (placeholders 6.61:1) | 5.99 |
+
+Headings: one h1 per page, h2 for each section, no skipped levels. No text under 12px.
+
+### Visual checks
+
+| Check | Before | After |
+|---|---|---|
+| Sales basket at 375px | Headings and values stacked as separate lines; numbers detached from labels | Each line reads "The Monsoon Ledger / 1 copy × ₹399.00 = ₹399.00" with its Remove button |
+| Sales basket at 1280px | Five-column grid | Sentence lines with Remove buttons aligned right; total below |
+| Low-stock table at 375px | Status hidden behind sideways scroll | Title and Status visible without scrolling |
+| Inventory opening at 1280px | Notice pressed against the first heading | 40px gap after the notice, same on every page |
+| Sample-data notice at 375px | "fictional." dropped below the tag | Sentence wraps beside the tag |
+
+`python -m pytest`: 179 passed (no rules changed).
+
+### Still not fixed (documented limits)
+
+- Western digit grouping inside tables and chart axes.
+- Collapsed navigation reachable by Tab on narrow screens (Streamlit behaviour).
+- Not tested: screen-reader software, Firefox, Safari, 200% browser zoom.
