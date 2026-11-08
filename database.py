@@ -9,10 +9,14 @@ environment variable LEKHA_DB_PATH points Lekha at a different file
 instead (the page tests and the demo dataset use this), without
 changing any code.
 
-Run this file directly to rebuild the database with the fictional
-sample data. This DELETES the database file first:
+The fictional sample data in data/sample_data.sql is used only by the
+automated tests (and by `query.py --sample`); it is never put in the
+app's database.
 
-    .\\.venv\\Scripts\\python.exe database.py --reset-sample
+Run this file directly to start again with an EMPTY shop. This DELETES
+the database file, and everything in it, first:
+
+    .\\.venv\\Scripts\\python.exe database.py --reset
 """
 
 import os
@@ -123,12 +127,26 @@ def ensure_database(db_path: Path | str | None = None) -> None:
 
 
 def load_sample_data(connection: sqlite3.Connection) -> None:
-    """Insert the fictional sample dataset from data/sample_data.sql."""
+    """Insert the fictional sample dataset from data/sample_data.sql.
+
+    For the automated tests and query.py --sample only, never the app's own
+    database: Lekha shows only real books and recorded sales."""
     connection.executescript(SAMPLE_DATA_PATH.read_text(encoding="utf-8"))
 
 
+def reset_empty(db_path: Path | None = None) -> None:
+    """Delete the database file and create an empty one: an empty shop."""
+    db_path = Path(db_path or database_path())
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    db_path.unlink(missing_ok=True)
+    with connect(db_path) as conn:
+        create_schema(conn)
+    print(f"Created an empty shop in {db_path}.")
+
+
 def reset_with_sample_data(db_path: Path | None = None) -> None:
-    """Delete the database file and rebuild it with the sample data."""
+    """Delete the database file and rebuild it with the FICTIONAL sample
+    data. Used by the page tests on their own temporary files only."""
     db_path = Path(db_path or database_path())
     db_path.parent.mkdir(parents=True, exist_ok=True)
     db_path.unlink(missing_ok=True)
@@ -148,8 +166,8 @@ def reset_with_sample_data(db_path: Path | None = None) -> None:
 
 
 if __name__ == "__main__":
-    if sys.argv[1:] == ["--reset-sample"]:
-        reset_with_sample_data()
+    if sys.argv[1:] == ["--reset"]:
+        reset_empty()
     else:
-        print("Usage: python database.py --reset-sample")
-        print(f"Deletes {database_path()} and rebuilds it with the fictional sample data.")
+        print("Usage: python database.py --reset")
+        print(f"Deletes {database_path()} and everything in it, and starts an empty shop.")

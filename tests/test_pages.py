@@ -2,16 +2,21 @@
 
 Streamlit's AppTest loads a page script, runs it like a real visit, and
 lets the test read what was drawn and click widgets. Each test points
-Lekha at its own copy of the sample data through LEKHA_DB_PATH, so the
-real data/lekha.db is never touched.
+Lekha at its own temporary database through LEKHA_DB_PATH (an empty shop,
+or a copy of the fictional sample data the tests' expected numbers refer
+to), so the real data/lekha.db is never touched.
 """
 
+import json
+import urllib.parse
 from pathlib import Path
 
 import pytest
+import streamlit as st
 from streamlit.testing.v1 import AppTest
 
-from database import get_connection, reset_with_sample_data
+from database import get_connection, reset_empty, reset_with_sample_data
+from services import openlibrary
 
 PROJECT = Path(__file__).parent.parent
 TIMEOUT = 30  # seconds per run; the first run imports pandas and Altair
@@ -24,6 +29,37 @@ def sample_file(tmp_path, monkeypatch):
     reset_with_sample_data(path)
     monkeypatch.setenv("LEKHA_DB_PATH", str(path))
     return path
+
+
+@pytest.fixture
+def empty_shop(tmp_path, monkeypatch):
+    """A new, empty shop, and Lekha pointed at it."""
+    path = tmp_path / "shop.db"
+    reset_empty(path)
+    monkeypatch.setenv("LEKHA_DB_PATH", str(path))
+    return path
+
+
+@pytest.fixture
+def open_library(monkeypatch):
+    """Answer Open Library requests with the real responses saved in
+    tests/fixtures, and start with an empty cache of lookups."""
+    fixtures = Path(__file__).parent / "fixtures"
+
+    def fake_fetch(url):
+        url = urllib.parse.unquote(url)
+        if "ISBN:9780006550686" in url:
+            name = "openlibrary_isbn_9780006550686.json"
+        elif "search.json" in url:
+            name = "openlibrary_search_god_of_small_things.json"
+        else:
+            return {}
+        return json.loads((fixtures / name).read_text(encoding="utf-8"))
+
+    monkeypatch.setattr(openlibrary, "fetch_json", fake_fetch)
+    st.cache_data.clear()
+    yield
+    st.cache_data.clear()
 
 
 def run_page(name: str) -> AppTest:
@@ -67,7 +103,7 @@ def test_page_opens_without_errors(sample_file, page, expected):
     assert not app.error
     text = all_text(app)
     assert expected.replace("<strong>", "**").replace("</strong>", "**") in text or expected in text
-    assert "Every book and sale shown here is fictional" in text
+    assert "fictional" not in text.lower()          # the app never labels itself as fake data
 
 
 def test_whole_app_opens_on_overview(sample_file):
@@ -144,3 +180,74 @@ def test_broken_database_shows_a_friendly_message(tmp_path, monkeypatch):
     app.run()
     assert not app.exception                                    # no traceback shown
     assert any("couldn't read or write its database" in box.value for box in app.error)
+
+
+# ---------- A real, empty shop ----------
+
+def test_empty_shop_overview_explains_where_to_start(empty_shop):
+    app = AppTest.from_file(str(PROJECT / "app.py"), default_timeout=TIMEOUT)
+    app.run()
+    assert not app.exception and not app.error
+    text = all_text(app)
+    assert "Your shop is empty" in text
+    assert "₹0.00" in text                         # real zero, not a made-up figure
+
+
+def test_empty_shop_books_page_offers_ways_to_add(empty_shop):
+    app = run_page("books")
+    assert "No books yet" in all_text(app)
+
+
+def test_adding_a_real_book_by_isbn(empty_shop, open_library):
+    app = run_page("books")
+    app.session_state["books_tab"] = "Add a book"
+    app.run()
+    app.radio(key="add_method").set_value("isbn").run()
+    app.text_input[0].set_value("978-0-00-655068-6")
+    app.button[0].click().run()                    # "Look up"
+    assert not app.exception
+    text = all_text(app)
+    assert "Details from Open Library" in text
+    assert "This is the exact edition with this ISBN." in text
+
+    # The form is pre-filled from Open Library; price and stock are ours.
+    assert app.text_input(key="add_title_1").value == "The God of Small Things"
+    assert app.text_input(key="add_author_1").value == "Arundhati Roy"
+    assert app.text_input(key="add_publisher_1").value == "Flamingo"
+    assert app.number_input(key="add_year_1").value == 1998
+    assert app.selectbox(key="add_genre_1").value == "Fiction"      # suggested from subjects
+    assert app.number_input(key="add_price_1").value is None       # never guessed
+
+    app.number_input(key="add_price_1").set_value(399.0)
+    app.number_input(key="add_stock_1").set_value(3)
+    app.button(key="FormSubmitter:add_book_form_1-Add book").click().run()
+    assert not app.exception
+    assert any("Added “The God of Small Things”" in box.value for box in app.success)
+
+    conn = get_connection(empty_shop)
+    try:
+        row = conn.execute("SELECT * FROM books").fetchone()
+    finally:
+        conn.close()
+    assert (row["isbn"], row["publisher"], row["published_year"], row["cover_id"], row["openlibrary_key"]) == (
+        "9780006550686", "Flamingo", 1998, 10585942, "/books/OL31903694M")
+    assert (row["selling_price_paise"], row["stock_quantity"]) == (39900, 3)
+
+
+def test_searching_open_library_lists_real_matches(empty_shop, open_library):
+    app = run_page("books")
+    app.session_state["books_tab"] = "Add a book"
+    app.run()
+    app.radio(key="add_method").set_value("search").run()
+    app.text_input[0].set_value("the god of small things")
+    app.button[0].click().run()                    # "Search"
+    assert not app.exception
+    text = all_text(app)
+    assert "5 matches" in text
+    assert "Arundhati Roy · first published 1997" in text
+
+    app.button(key="use_result_0").click().run()   # "Use this book"
+    text = all_text(app)
+    assert "This is the book in general, not a particular edition" in text
+    assert app.text_input(key="add_isbn_1").value == ""          # no ISBN guessed for a work
+    assert app.text_input(key="add_publisher_1").value == ""     # no edition facts guessed

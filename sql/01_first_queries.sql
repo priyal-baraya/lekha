@@ -1,7 +1,7 @@
 -- First queries: from simple SELECT to JOIN.
 -- ---------------------------------------------------------------------
 -- Run them all against the sample database with:
---     .\.venv\Scripts\python.exe query.py sql\01_first_queries.sql
+--     .\.venv\Scripts\python.exe query.py --sample sql\01_first_queries.sql
 -- Each "Expected" note is for the FICTIONAL sample data and was worked
 -- out by hand (see docs/sample-data.md). Money is shown in rupees by
 -- dividing paise by 100.0 (the .0 keeps the decimal part).
