@@ -149,7 +149,7 @@ def render_best_sellers(conn, period, genre) -> None:
     table = pd.DataFrame(rows[:10])
     table["revenue"] = table["revenue_paise"].map(lambda paise: float(paise_to_rupees(paise)))
     st.dataframe(
-        table[["copies_rank", "title", "author", "genre", "copies", "revenue"]],
+        table[["copies_rank", "title", "copies", "revenue", "author", "genre"]],
         hide_index=True,
         column_config={
             "copies_rank": st.column_config.NumberColumn("Rank", format="%d"),
@@ -174,7 +174,7 @@ def render_unsold_and_profit(conn, period, genre) -> None:
         rows = analytics.unsold_books(conn, period, genre)
         if rows:
             st.dataframe(
-                pd.DataFrame(rows)[["title", "genre", "stock_quantity"]], hide_index=True,
+                pd.DataFrame(rows)[["title", "stock_quantity", "genre"]], hide_index=True,
                 column_config={"title": "Title", "genre": "Genre",
                                "stock_quantity": st.column_config.NumberColumn("In stock")},
             )
@@ -224,13 +224,11 @@ def render_observations(conn, period, genre) -> None:
 
 # ------------------------------------------------------------------ page
 
-ui.section_header(
+ui.page_intro(
     eyebrow="Reading between the numbers",
     title="Insights",
     description="What recorded sales show about revenue, genres and best sellers.",
-    page_title=True,
 )
-ui.sample_data_notice()
 
 with connect() as conn:
     period, genre, grain = render_filters(conn)

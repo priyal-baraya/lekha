@@ -35,7 +35,7 @@ def render_alerts(conn) -> None:
         return
     st.markdown(f"**{len(rows)}** {'book needs' if len(rows) == 1 else 'books need'} attention.")
     st.dataframe(
-        pd.DataFrame(rows)[["title", "author", "stock_quantity", "reorder_level", "stock_status"]],
+        pd.DataFrame(rows)[["title", "stock_status", "stock_quantity", "reorder_level", "author"]],
         hide_index=True,
         column_config={
             "title": st.column_config.TextColumn("Title"),
@@ -127,7 +127,7 @@ def render_history(conn) -> None:
     table["change"] = table["change"].map(lambda value: f"{value:+d}")   # -3, +6
     table["note"] = table["note"].fillna("")   # show blank, not "None", when there's no note
     st.dataframe(
-        table[["adjusted_at", "title", "quantity_before", "quantity_after", "change", "reason_label", "note"]],
+        table[["title", "change", "reason_label", "adjusted_at", "quantity_before", "quantity_after", "note"]],
         hide_index=True,
         column_config={
             "adjusted_at": st.column_config.TextColumn("When"),
@@ -143,13 +143,11 @@ def render_history(conn) -> None:
 
 # ------------------------------------------------------------------ page
 
-ui.section_header(
+ui.page_intro(
     eyebrow="Shelf check",
     title="Inventory",
     description="What's running low, and a recorded way to correct stock counts.",
-    page_title=True,
 )
-ui.sample_data_notice()
 ui.show_flash()
 
 with connect() as conn:

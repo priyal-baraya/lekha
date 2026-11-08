@@ -62,7 +62,8 @@ def render_browse(conn) -> None:
     table = pd.DataFrame(rows)
     table["price"] = table["selling_price_paise"].map(price_field)
     st.dataframe(
-        table[["title", "author", "genre", "price", "stock_quantity", "reorder_level", "stock_status"]],
+        # Decision columns first, so they stay visible on a phone; details after.
+        table[["title", "stock_status", "stock_quantity", "price", "author", "genre", "reorder_level"]],
         hide_index=True,
         column_config={
             "title": st.column_config.TextColumn("Title"),
@@ -193,13 +194,11 @@ def render_edit(conn) -> None:
 
 # ------------------------------------------------------------------ page
 
-ui.section_header(
+ui.page_intro(
     eyebrow="The bookshelf",
     title="Books",
     description="Browse, search and maintain the catalogue.",
-    page_title=True,
 )
-ui.sample_data_notice()
 ui.show_flash()
 
 with connect() as conn:
