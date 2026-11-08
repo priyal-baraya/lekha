@@ -121,21 +121,26 @@ def section_header(
     )
 
 
-def metric_placeholders(labels: list[str], note: str) -> None:
-    """A connected row of metric slots that clearly hold no data yet.
+def metric_strip(metrics: list[tuple[str, str | None, str]]) -> None:
+    """A connected row of figures. Each metric is (label, value, note).
 
-    Shows a dash, plus hidden text "No data yet" for screen readers,
-    instead of a number, so nothing looks like a real result.
+    A value of None shows a dash, plus hidden text "No data yet" for
+    screen readers, so a missing figure never looks like a real result.
     """
+    def value_html(value: str | None) -> str:
+        if value is None:
+            return '<span aria-hidden="true">—</span><span class="lekha-sr-only">No data yet</span>'
+        return escape(value)
+
     cells = "".join(
         f"""
         <div class="lekha-metric">
           <p class="lekha-metric__label">{escape(label)}</p>
-          <p class="lekha-metric__value"><span aria-hidden="true">—</span><span class="lekha-sr-only">No data yet</span></p>
+          <p class="lekha-metric__value">{value_html(value)}</p>
           <p class="lekha-metric__note">{escape(note)}</p>
         </div>
         """
-        for label in labels
+        for label, value, note in metrics
     )
     st.html(f'<div class="lekha-metrics">{cells}</div>')
 
