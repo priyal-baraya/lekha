@@ -10,7 +10,7 @@ Source: [`data/sample_data.sql`](../data/sample_data.sql). Build it with:
 
 ## Size
 
-12 books · 15 sales (14 completed, 1 cancelled) · 23 sale lines · 1 to 26 October 2026
+12 books · 15 sales (14 completed, 1 cancelled) · 23 sale lines · 1 cancellation record · 1 to 26 October 2026
 
 Small on purpose: every number below can be checked with a pencil.
 
@@ -19,7 +19,7 @@ Small on purpose: every number below can be checked with a pencil.
 | Situation | Where | Why it's there |
 |---|---|---|
 | Price change | Book 1: sold at ₹349.00 in sales 1 and 4, then at ₹399.00 from sale 8 (12 Oct) | Proves past revenue uses the price at the time of sale |
-| Cancelled sale | Sale 9 (book 10) | Must be excluded from revenue and copies sold |
+| Cancelled sale | Sale 9 (book 10), cancelled on 14 October with the reason "Customer changed their mind before paying" (record added in Phase 4) | Must be excluded from revenue and copies sold |
 | Multi-book sales | Sales 1, 3, 5, 6, 8, 10, 13, 14 | One transaction, several lines |
 | Several copies of one book | Sale 1 (2 × book 1), sale 11 (2 × book 2) and others | Copies sold ≠ transactions |
 | Out of stock | Book 5: 0 copies, reorder level 2 | Low-stock alert |

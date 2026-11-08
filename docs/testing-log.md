@@ -120,3 +120,46 @@ The database was rebuilt from the sample data afterwards, removing the test book
 
 - Automated tests of the pages themselves. The rules are tested; the pages were checked by hand.
 - Two people using the app at the same moment, beyond the stale-count check.
+
+---
+
+## 2026-11-08: Sales (branch `phase-4/sales`)
+
+Streamlit 1.66.1, SQLite 3.49.1, pytest 9.2.0. Browser checks in the Claude desktop app's built-in browser (Chromium).
+
+### Automated tests: **145 passed** (27 new, in `tests/test_sales.py`)
+
+| Area | What is checked |
+|---|---|
+| Recording | Selling 2 copies saves the sale and its line at the shown price, reduces stock by exactly 2, and adds exactly 79,800 paise to completed revenue; multi-book sales; selling the last copies; combining lines for the same book; dating a sale in the past |
+| Refusals change nothing | Not enough stock; out of stock; the **second line failing after the first line's stock update** (rollback); a changed price; a missing book; an empty sale; zero, negative, decimal and true/false quantities; a future date; the same book at two prices. Each compares a snapshot of sales, lines, cancellations and all stock counts before and after |
+| Cancelling | Stock returned exactly; status, time and reason recorded; revenue back to 1,114,400 paise; a second cancel refused with stock unchanged; a reason required; a missing sale; a failure in the last step rolls back the status change and the stock refund; the database refuses a second cancellation record |
+| Listing | Newest first; per-sale copies, totals and line counts match the hand-checked sample data |
+| Consistency | Every cancelled sale has exactly one cancellation record, and every record belongs to a cancelled sale |
+
+**Can the tests fail?** I loaded a copy of `record_sale` in memory with the rollback removed. A two-line sale where the second line is short then left book 1's stock at 6 instead of 8 and an extra sale row behind. The rollback test checks both, so it would fail.
+
+### Manual checks in the browser
+
+| Check | Result |
+|---|---|
+| Add 2 × *The Monsoon Ledger* and 1 × *Small Hours* | Basket shows ₹798.00 + ₹225.00 = ₹1,023.00, 3 copies |
+| Complete sale | "Sale #16 recorded: 3 copies, ₹1,023.00"; basket emptied; in the database: 2 lines at 39900 and 22500, stock 8 → 6 and 4 → 3 |
+| Recent sales | Sale #16 at the top; older totals match the sample data (sales 11–14) |
+| Cancel without ticking the confirmation | Refused; typed reason kept |
+| Cancel with confirmation | "Copies returned to stock: The Monsoon Ledger (2), Small Hours (1)"; stock back to 8 and 4; cancellation time and reason recorded; completed revenue back to 1,114,400 paise |
+| Choose an out-of-stock book | Warning, and no quantity field or Add button |
+| "This sale happened earlier" | Date and time fields appear (today, current time) |
+| Clear sale | Basket emptied; nothing saved |
+
+### Issues found and fixed
+
+1. **A stray horizontal line above the Remove buttons.** The empty heading for that column became `****` in Markdown, which draws a line. **Fix:** no heading for that column.
+2. **Cancel-sale stock refund** was first written as one SQL statement with a nested query. It worked, but was hard to explain, so it was rewritten as a plain loop over the sale's lines. Tests unchanged and passing.
+
+### Known limitations
+
+- Totals in the Recent sales table show as ₹1023.00, without the thousands comma used elsewhere (₹1,023.00). Streamlit's number formats have no rupee option with Indian grouping, and turning totals into text would break sorting by total.
+- No partial returns or discounts.
+- Refreshing the browser loses an unfinished basket.
+- The local database still contains test sale #16 (recorded, then cancelled). It doesn't count as revenue. `python database.py --reset-sample` removes it.
