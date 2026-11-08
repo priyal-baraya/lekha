@@ -290,3 +290,15 @@ button:focus-visible,
     border-top: 1px solid var(--lekha-parchment);
   }
 }
+
+/* ---------- Sample-data notice ---------- */
+.lekha-notice {
+  font-family: var(--lekha-sans);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--lekha-ink-secondary);
+  margin: 0;
+}
+.lekha-notice .lekha-tag {
+  margin-right: 0.5rem;
+}

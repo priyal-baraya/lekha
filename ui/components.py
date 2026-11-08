@@ -160,3 +160,45 @@ def planned_page(title: str, purpose: str, plan: str, phase: str) -> None:
     section_header(eyebrow="Lekha", title=title, description=purpose, page_title=True)
     divider()
     empty_state(f"Not built yet. {plan}", tag=f"Planned · {phase}")
+
+
+# ------------------------------------------------------------ data pages
+
+def sample_data_notice() -> None:
+    """Say plainly that the data on screen is invented.
+
+    Lekha has only ever held the fictional sample dataset, so every page
+    showing data carries this notice. Remove it if real data is loaded.
+    """
+    st.html(
+        '<p class="lekha-notice"><span class="lekha-tag">Sample data</span> '
+        "Every book and sale shown here is fictional.</p>"
+    )
+
+
+def flash(kind: str, message: str, details: list[str] | None = None) -> None:
+    """Save a message to show after the next page reload.
+
+    Saving a form is followed by st.rerun(), which redraws the page from
+    the top and would wipe a message shown before it. st.session_state
+    survives reruns, so the message waits there until show_flash().
+    """
+    st.session_state["lekha_flash"] = (kind, message, details or [])
+
+
+def show_flash() -> None:
+    """Show (once) any message saved with flash()."""
+    saved = st.session_state.pop("lekha_flash", None)
+    if not saved:
+        return
+    kind, message, details = saved
+    show = {"success": st.success, "warning": st.warning, "error": st.error}[kind]
+    show(message)
+    for detail in details:
+        st.warning(detail)
+
+
+def show_errors(errors: list[str]) -> None:
+    """Show every validation problem in one error box."""
+    lines = "\n".join(f"- {error}" for error in errors)
+    st.error(f"Nothing was saved. Please fix the following:\n\n{lines}")

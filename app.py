@@ -9,6 +9,7 @@ Run with:
 
 import streamlit as st
 
+from database import ensure_database
 from ui import components as ui
 
 st.set_page_config(
@@ -18,6 +19,9 @@ st.set_page_config(
 )
 
 ui.load_styles()
+
+# Creates the database file and any missing tables. Existing data is kept.
+ensure_database()
 
 pages = [
     st.Page("views/overview.py", title="Overview", default=True),
