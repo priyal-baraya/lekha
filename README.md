@@ -13,13 +13,15 @@ Lekha is meant to help a small bookstore owner answer everyday questions from th
 | 1. Foundation | Environment, project structure, starter page | Done |
 | Design foundation | Theme, typography, layout shell, ornaments | Done (visual design to be refined separately) |
 | 2. Database and sample data | Schema, constraints, fictional sample data, tests, first queries | Done |
-| 3. Catalogue and inventory | Book list, search, add/edit, low-stock alerts | Not started |
+| 3. Catalogue and inventory | Book list, search, add/edit, low-stock alerts, recorded stock corrections | Done |
 | 4. Sales | Recording sales safely, updating stock | Not started |
 | 5. Analytics | Business questions, SQL queries, charts | Not started |
 | 6. Visual refinement | Accessibility and layout polish | Not started |
 | 7. Quality and portfolio | Tests, documentation, case study | Not started |
 
-The database and its fictional sample data exist and are tested, but the app does not read from them yet. The Overview page still shows **placeholders only**, each labelled with the phase it arrives in. The Books, Sales, Inventory and Insights pages say "Not built yet".
+**Working now:** the Books page (browse, search, filter, sort, add and edit books) and the Inventory page (low-stock alerts, stock corrections with a reason, and their history). The Overview shows live stock figures.
+
+**Not built yet:** recording sales (Phase 4) and sales analysis (Phase 5). Revenue, copies sold and transactions on the Overview are labelled placeholders, and the Sales and Insights pages say "Not built yet".
 
 ## Run it locally (Windows, PowerShell)
 
@@ -60,6 +62,7 @@ lekha/
 ├── app.py                 Entry point: page setup, shared styles, navigation
 ├── database.py            Database connection, schema set-up, sample-data reset
 ├── query.py               Runs SQL and prints the results as tables (learning tool)
+├── services/              Business rules: books, inventory, money (no Streamlit code)
 ├── requirements.txt       Python packages with exact versions
 ├── pyproject.toml         Test settings
 ├── .streamlit/config.toml Theme: colours, fonts, square corners, chart palette
