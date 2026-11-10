@@ -1,3 +1,5 @@
 # Tools for developing Lekha, not needed to run it.
 -r requirements.txt
 playwright==1.64.1   # scripts/capture_screenshots.py drives Microsoft Edge to take screenshots
+pip-audit==2.10.1    # checks installed packages for published vulnerabilities
+bandit==1.9.4        # scans Lekha's code for risky patterns
