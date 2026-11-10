@@ -59,7 +59,13 @@ def test_verify_password():
         ("has space", "A", GOOD_PASSWORD, "A username is 3 to 32 letters, digits, dots, dashes or underscores."),
         ("priya", " ", GOOD_PASSWORD, "Your name is required."),
         ("priya", "Priya", "short", "Use a password of at least 10 characters."),
-        ("priya.baraya", "Priya", "Priya.Baraya", "The password can't be the same as the username."),
+        ("priya.baraya", "Priya", "Priya.Baraya", "The password can't contain the username."),
+        ("priya", "Priya", "my name is priya!", "The password can't contain the username."),
+        ("reader", "Priya Baraya", "PriyaBaraya", "The password can't be your name."),
+        ("priya", "Priya", "password123", "That password is too easy to guess. Try a few unrelated words together."),
+        ("priya", "Priya", "aaaaaaaaaaaa", "That password is too easy to guess. Try a few unrelated words together."),
+        ("priya", "Priya", "x" * 64 + "y" * 65, "Use a password of at most 128 characters."),
+        ("priya", "P" * 61, GOOD_PASSWORD, "A name is at most 60 characters."),
     ],
 )
 def test_bad_sign_up_is_refused(acc, username, name, password, message):

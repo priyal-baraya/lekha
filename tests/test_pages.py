@@ -12,6 +12,8 @@ The real data/ folder is never touched.
 """
 
 import json
+import re
+import time
 import urllib.parse
 from pathlib import Path
 
@@ -20,7 +22,7 @@ import streamlit as st
 from streamlit.testing.v1 import AppTest
 
 from database import connect, connect_accounts, ensure_shop_database, get_connection, reset_empty, reset_with_sample_data
-from services import accounts, openlibrary
+from services import accounts, limits, openlibrary
 from services.books import BookInput, add_book
 from ui import session
 
@@ -97,8 +99,16 @@ def run_app(user_id: int | None = None) -> AppTest:
     if user_id is not None:
         app.session_state[session.USER] = user_id
         app.session_state[session.METHOD] = "password"
+        with connect_accounts() as acc:    # what sign_in() remembers about the password
+            app.session_state[session.STAMP] = accounts.credential_stamp(acc, user_id)
     app.run()
     return app
+
+
+def shown(markdown: str) -> str:
+    """Markdown as a person reads it: without the backslashes that ui.plain()
+    adds so names and titles show exactly as typed."""
+    return re.sub(r"\\(.)", r"\1", markdown).replace("⁠", "")
 
 
 def all_text(app: AppTest) -> str:
@@ -106,7 +116,7 @@ def all_text(app: AppTest) -> str:
     parts = [element.value for element in app.markdown]
     parts += [str(element.proto.body) for element in app.get("html")]
     parts += [box.value for box in [*app.info, *app.error, *app.success]]
-    return "\n".join(parts)
+    return shown("\n".join(parts))
 
 
 def field(app: AppTest, label: str):
@@ -162,7 +172,7 @@ def test_selling_two_copies_through_the_sales_page(sample_file):
 
     app.button(key="sale_complete_0").click().run()
     assert not app.exception
-    assert any("Sale #16 recorded: 2 copies, ₹798.00" in box.value for box in app.success)
+    assert any("Sale #16 recorded: 2 copies, ₹798.00" in shown(box.value) for box in app.success)
     assert stock(sample_file, 1) == 6                           # exactly 2 fewer
     assert "The sale is empty" in all_text(app)                 # basket cleared
     conn = get_connection(sample_file)
@@ -175,7 +185,7 @@ def test_selling_two_copies_through_the_sales_page(sample_file):
 def test_out_of_stock_book_cannot_be_added(sample_file):
     app = run_page("sales")
     app.selectbox(key="sale_book_0").set_value(5).run()        # 0 in stock
-    assert any("out of stock" in box.value for box in app.warning)
+    assert any("out of stock" in shown(box.value) for box in app.warning)
     assert not app.button                                        # no Add button offered
 
 
@@ -196,7 +206,7 @@ def test_stock_correction_through_the_inventory_page(sample_file):
     app.button(key="FormSubmitter:correct_form_1_0-Save correction").click().run()
     assert not app.exception
     assert stock(sample_file, 1) == 5
-    assert any("changed from 8 to 5" in box.value for box in app.success)
+    assert any("changed from 8 to 5" in shown(box.value) for box in app.success)
 
 
 def test_insights_all_time_figures_match_hand_calculations(sample_file):
@@ -231,7 +241,7 @@ def test_staff_do_not_see_profit(sample_file):
 
 def test_staff_cannot_open_the_team_page(sample_file):
     app = run_page("team", role="staff", user_id=1)
-    assert any("Only the shop's owners can invite and manage the team" in box.value for box in app.error)
+    assert any("Only the shop's owners can invite and manage the team" in shown(box.value) for box in app.error)
 
 
 # ---------- Signing in, the whole app ----------
@@ -275,7 +285,7 @@ def test_wrong_password_is_refused_on_the_page(data_dir):
     field(app, "Username").set_value("priya")
     field(app, "Password").set_value("not my password")
     app.button(key="FormSubmitter:sign_in-Sign in").click().run()
-    assert any("The username or password is incorrect." in box.value for box in app.error)
+    assert any("The username or password is incorrect." in shown(box.value) for box in app.error)
     assert session.USER not in app.session_state
 
 
@@ -307,6 +317,53 @@ def test_removed_staff_lose_access_on_their_next_click(data_dir):
     assert "Start a shop" in text and "Kitaab Corner" not in text
 
 
+# ---------- Security ----------
+
+def test_changing_the_password_signs_out_other_tabs(data_dir):
+    priya, _ = person_with_shop("priya", "Kitaab Corner")
+    other_tab = run_app(priya)
+    assert "Kitaab Corner" in all_text(other_tab)
+
+    with connect_accounts() as acc:                             # changed in another tab
+        accounts.change_password(acc, priya, PASSWORD, "a brand new passphrase")
+    other_tab.run()
+    text = all_text(other_tab)
+    assert "Your password was changed, so you were signed out." in text
+    assert "Kitaab Corner" not in text and session.USER not in other_tab.session_state
+
+
+def test_idle_tabs_are_signed_out(data_dir):
+    priya, _ = person_with_shop("priya", "Kitaab Corner")
+    app = run_app(priya)
+    app.session_state[session.LAST_SEEN] = time.monotonic() - (session.IDLE_MINUTES * 60 + 1)
+    app.run()
+    assert f"signed out after {session.IDLE_MINUTES} minutes without any activity" in all_text(app)
+    assert session.USER not in app.session_state
+
+
+def test_many_failed_sign_ins_from_one_device_are_refused(data_dir, monkeypatch):
+    person_with_shop("priya", "Kitaab Corner")
+    monkeypatch.setattr(limits, "SIGN_IN_FAILURES", limits.AttemptLimiter(limit=2, window_seconds=900))
+    app = run_app()
+    for guess in ("guess number one", "guess number two", PASSWORD):    # the last one is right
+        field(app, "Username").set_value("priya")
+        field(app, "Password").set_value(guess)
+        app.button(key="FormSubmitter:sign_in-Sign in").click().run()
+    assert any("Too many attempts from this device" in box.value for box in app.error)
+    assert session.USER not in app.session_state
+
+
+def test_names_are_shown_as_typed_not_as_formatting(data_dir):
+    with connect_accounts() as acc:
+        user = accounts.create_user(acc, "sneaky", "**Owner** ![x](https://example.com/p.png)", PASSWORD)
+        accounts.create_shop(acc, user, "$5 Books")
+    app = run_app(user)
+    bar = [element.value for element in app.markdown if "Signed in as" in element.value][0]
+    assert "![x](" not in bar and r"\*\*Owner\*\*" in bar
+    assert "$5 Books" in shown("\n".join(element.value for element in app.markdown))
+    assert any(r"\$5 Books" in element.value for element in app.markdown)
+
+
 # ---------- Errors ----------
 
 def test_broken_database_shows_a_friendly_message(data_dir):
@@ -316,7 +373,7 @@ def test_broken_database_shows_a_friendly_message(data_dir):
     field(app, "Password").set_value(PASSWORD)
     app.button(key="FormSubmitter:sign_in-Sign in").click().run()   # ...signing in does
     assert not app.exception                                    # no traceback shown
-    assert any("couldn't read or write its database" in box.value for box in app.error)
+    assert any("couldn't read or write its database" in shown(box.value) for box in app.error)
 
 
 # ---------- A real, empty shop ----------
@@ -350,7 +407,7 @@ def test_adding_a_real_book_by_isbn(empty_shop, open_library):
     app.number_input(key="add_stock_1").set_value(3)
     app.button(key="FormSubmitter:add_book_form_1-Add book").click().run()
     assert not app.exception
-    assert any("Added “The God of Small Things”" in box.value for box in app.success)
+    assert any("Added “The God of Small Things”" in shown(box.value) for box in app.success)
 
     conn = get_connection(empty_shop)
     try:

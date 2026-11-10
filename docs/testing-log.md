@@ -343,3 +343,40 @@ Run on a copy of Lekha using a **temporary data folder** (`LEKHA_DATA_DIR`), wit
 ### Not yet checked
 
 - **Google sign-in with real Google credentials.** The account rules behind it are tested, and the button only appears once credentials are set up; the round trip to Google needs those credentials first (see `docs/setup.md`).
+
+---
+
+## 2026-11-10: Security hardening (branch `security/hardening`)
+
+### Automated tests: **307 passed**
+
+| File | Tests | What it covers |
+|---|---|---|
+| `tests/test_security.py` | 26 (new) | `ui.plain()` shows maths, emphasis, picture links, links, Streamlit colours and icons, headings and lists exactly as typed, and stops bare web addresses becoming links; the attempt limiter blocks after its limit and forgets after its window; wrong current passwords lock the account; a new password must differ; the credential stamp changes with the password and is absent for Google accounts; a 1,000,000-character password is cut to 129 characters before hashing; long Google names shortened; a short cookie secret keeps Google sign-in off; overlong book details, reasons and notes refused; only `https://openlibrary.org` is fetched (not `file://`, `http://`, or a look-alike host); oversized answers refused; search results with bad record IDs, non-text titles or odd cover numbers ignored; overlong searches refused; the server settings stay safe; `secrets.toml` stays ignored by git |
+| `tests/test_accounts.py` | 45 (6 new) | New password rules: can't contain the username or be the person's name, common and one-character passwords refused, 128-character maximum, 60-character name maximum |
+| `tests/test_pages.py` | 26 (4 new) | **A password change signs out another tab on its next click**; an idle tab is signed out with a message; failed sign-ins from one device are refused even with the right password once the limit is reached; a display name full of Markdown shows as typed in the account bar |
+
+### Scans
+
+| Check | Result |
+|---|---|
+| `pip-audit -r requirements.txt` | No known vulnerabilities |
+| `bandit` on all of Lekha's code | 8 possible issues before the review (7 SQL f-strings, 1 `urlopen`). All read and found safe; the `urlopen` check was also made stricter. Each line now marked with its reason; the scan passes |
+
+### Browser check (2026-11-10)
+
+On a throwaway copy with a temporary data folder, deleted afterwards. The test account's name was `**Boss** :red[owner] $5`, its shop `Books & $ales #1 ![x](https://example.com/p.png)`, and its book `The $100 *Startup*: :fire: [read](https://example.com)`.
+
+| Check | Result |
+|---|---|
+| Account bar | Name and shop shown exactly as typed: no bold, colour, maths, picture or link |
+| Stock correction message quoting the title | Shown as typed: no italics, emoji or link |
+| Which addresses Lekha listens on | Only `127.0.0.1` |
+
+### Issues found and fixed
+
+1. **Escaped names still became links.** The first version escaped Markdown, but Streamlit still turned a bare `https://…` in a shop name into a clickable link. **Fix:** an invisible word joiner (U+2060) after `https`, `www` and similar; a test covers it.
+2. **The device limit didn't work in the page test.** In Streamlit's test runner, the visitor's address is a placeholder object, different on every run. **Fix:** `network_address()` accepts only real text, otherwise "unknown". It's safer in real use too.
+3. **A `# nosec` marker ended up inside an SQL string** while marking reviewed queries, which would have broken the search. Caught before running; a small experiment showed bandit accepts the marker after the closing `"""`.
+4. **bandit read the explanation after `# nosec` as test names** and printed dozens of warnings. **Fix:** the reason goes on the line above.
+5. **Tests compared raw Markdown.** After escaping, `Sale #16` became `Sale \#16`. **Fix:** a `shown()` helper compares the text as a person reads it.

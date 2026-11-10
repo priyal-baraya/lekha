@@ -49,7 +49,7 @@ def render_add_to_basket(books_by_id: dict[int, dict]) -> None:
     if available <= 0:
         qty_col.empty()
         st.warning(
-            f"No copies of “{book['title']}” left to add"
+            f"No copies of “{ui.plain(book['title'])}” left to add"
             + (f" ({copies(already)} already in this sale)." if already else ": it's out of stock.")
         )
         return
@@ -191,7 +191,7 @@ def render_recent_sales(conn) -> None:
 
     if sale["status"] == "cancelled":
         canceller = people.get(sale["cancelled_by"], "not recorded")
-        st.info(f"Cancelled on {sale['cancelled_at']} by {canceller}. Reason: {sale['cancel_reason']}")
+        st.info(f"Cancelled on {sale['cancelled_at']} by {ui.plain(canceller)}. Reason: {ui.plain(sale['cancel_reason'])}")
         return
 
     with st.form(f"cancel_form_{sale_id}"):

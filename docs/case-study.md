@@ -82,7 +82,7 @@ Answers are cached for a day, errors are shown plainly ("Couldn't reach Open Lib
 
 **Accounts and roles.** People sign in with a username and password or with Google (Streamlit's built-in OpenID Connect sign-in). An owner invites staff with a one-time code. On every page run, `app.py` reads the person's role fresh from `accounts.db`, shows only the pages that role allows, and points every query at their chosen shop's file. The current shop is held in a `ContextVar`, not a global, because Streamlit serves every visitor from one Python process: a test runs two visits at once and checks neither sees the other's shop. Permissions are also enforced in the services, so a hidden button is never the only protection, and removing someone takes effect on their next click.
 
-**Security:** passwords are stored only as salted **scrypt** hashes; five wrong tries lock an account for 15 minutes; a wrong password and an unknown username look identical, in message and in timing; invite codes are stored as SHA-256 hashes, work once and expire after 7 days. User input reaches SQL only through `?` placeholders. Sorting, which can't use placeholders, picks from a fixed list. A test types `'; DROP TABLE books; --` into search.
+**Security** ([full list](security.md)): passwords are stored only as salted **scrypt** hashes, 10 to 128 characters, with very common ones refused; five wrong tries lock an account for 15 minutes, including on the change-password form; a wrong password and an unknown username look identical, in message and in timing; repeated failures from one device are limited; a tab is signed out after 60 idle minutes or when the password changes elsewhere; invite codes are stored as SHA-256 hashes, work once and expire after 7 days. Streamlit reads displayed text as Markdown, so names, titles and reasons go through an escaping helper: otherwise a book title like *The $100 Startup* would turn into maths, and a display name could load a picture from another website. Open Library answers are checked (only its own address is fetched, size capped, record IDs validated). By default only the computer running Lekha can open it, because it has no HTTPS. GitHub runs **pip-audit** and **bandit** on every push and weekly. User input reaches SQL only through `?` placeholders. Sorting, which can't use placeholders, picks from a fixed list. A test types `'; DROP TABLE books; --` into search.
 
 ## 6. Analytics and SQL
 
@@ -147,9 +147,10 @@ An earlier version used a larger *generated* dataset for screenshots. It was rem
 | Test dataset | Queries match hand calculations | 10 |
 | Services | Books, money, inventory, sales, analytics behave as defined, including rollbacks | 135 |
 | Open Library and migration | Lookups and searches against **real saved Open Library responses** (no internet needed); genre suggestions; plain errors; a Phase 7 database upgraded without losing data | 31 |
-| Accounts and shops | Password hashing and lockout, Google accounts, invite codes, every role's limits, a shop never losing its last owner, two shops never seeing each other's books, two simultaneous visitors kept apart, who-did-what recorded | 39 |
-| Pages (`AppTest`) | Every page opens; sign up, create a shop and land on it; staff see no editing, stock correction, profit or Team page; removed staff lose access on their next click; an empty shop shows real zeros; a real book added by ISBN saves exactly what Open Library said plus the owner's price; a 2-copy sale reduces stock by exactly 2; a broken database shows a friendly message | 22 |
-| **Total** | Run on every push and pull request by GitHub Actions | **271** |
+| Accounts and shops | Password hashing, rules and lockout, Google accounts, invite codes, every role's limits, a shop never losing its last owner, two shops never seeing each other's books, two simultaneous visitors kept apart, who-did-what recorded | 45 |
+| Security | Escaping of names and titles, limits on repeated attempts, password changes and lockout, Open Library answers checked, input sizes, safe server settings | 26 |
+| Pages (`AppTest`) | Every page opens; sign up, create a shop and land on it; staff see no editing, stock correction, profit or Team page; removed staff lose access on their next click; an empty shop shows real zeros; a real book added by ISBN saves exactly what Open Library said plus the owner's price; a 2-copy sale reduces stock by exactly 2; a broken database shows a friendly message; a password change signs out other tabs; idle tabs are signed out; repeated failed sign-ins are refused; names show as typed | 26 |
+| **Total** | Run on every push and pull request by GitHub Actions | **307** |
 
 **Testing the tests.** Twice I broke the code on purpose to check a test could fail: once removing the foreign-key PRAGMA (a bad sale line got in), once removing the sale rollback (stock was left at 6 instead of 8). Both times the relevant test caught it.
 
@@ -160,7 +161,7 @@ An earlier version used a larger *generated* dataset for screenshots. It was rem
 ## 10. Limitations and next steps
 
 **Limitations**
-- Runs on one computer or server, not hosted online yet.
+- Runs on one computer or server, not hosted online yet, and without HTTPS of its own (so only that computer can open it by default).
 - A password sign-in lasts until the tab is refreshed; there's no "forgot password" yet.
 - Google sign-in hasn't yet been tried with real Google credentials.
 - No delivery or supplier records, so profit uses each book's current cost and stock can't be rebuilt from history.

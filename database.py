@@ -214,7 +214,7 @@ def reset_with_sample_data(db_path: Path | None = None) -> None:
         create_schema(connection)
         load_sample_data(connection)
         counts = {
-            table: connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+            table: connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]  # nosec B608
             for table in ("books", "sales", "sale_items")
         }
     finally:

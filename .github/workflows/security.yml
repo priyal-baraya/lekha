@@ -1,0 +1,57 @@
+# Security checks on GitHub's computers, on every push to main, every pull
+# request, and once a week (new vulnerabilities are published all the
+# time, even when Lekha's code hasn't changed).
+
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"     # Mondays, 06:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  dependencies:
+    name: Known vulnerabilities in packages (pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Install Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install pip-audit
+        run: python -m pip install pip-audit==2.10.1
+
+      - name: Check every package Lekha installs
+        # Fails if any pinned package (or anything it pulls in) has a
+        # published vulnerability.
+        run: python -m pip_audit -r requirements.txt --progress-spinner off
+
+  code:
+    name: Risky code patterns (bandit)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Install Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install bandit
+        run: python -m pip install bandit==1.9.4
+
+      - name: Scan Lekha's code
+        # Lines marked "# nosec" were reviewed by hand; the reason is in a
+        # comment next to each one.
+        run: python -m bandit -q -r app.py database.py query.py services ui views scripts

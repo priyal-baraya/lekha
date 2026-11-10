@@ -81,14 +81,15 @@ def account_bar(user: dict, memberships: list[accounts.Membership], current: acc
             session.choose_shop(picked)
             st.rerun()
     elif current:
-        shop_col.markdown(f"**{current.shop_name}**")
-    who_col.markdown(f"Signed in as **{user['display_name']}**" + (f" · {current.role}" if current else ""))
+        shop_col.markdown(f"**{ui.plain(current.shop_name)}**")
+    who_col.markdown(f"Signed in as **{ui.plain(user['display_name'])}**" + (f" · {current.role}" if current else ""))
     if out_col.button("Sign out", key="account_bar_sign_out"):
         session.sign_out()
 
 
 try:
     sign_in_from_google()
+    session.check_still_valid()      # idle too long, or password changed elsewhere
     user_id = session.user_id()
     user = None
     if user_id is not None:

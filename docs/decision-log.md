@@ -653,3 +653,26 @@ Each entry: what was decided, why, and what else was considered. Newest at the b
 **Decision:** Corners go from square to a small 6px radius everywhere (4px on tags, 3px on the outer end of chart bars), set once in `config.toml` and once as `--lekha-radius` in `ui/styles.css`.
 
 **Why:** The owner wanted the app to feel a little softer. A small radius does that while keeping the calm, editorial manuscript look; a large one would start to look like a generic app. Bars stay square on the baseline so their lengths are still easy to compare.
+
+---
+
+## 2026-11-10: Security hardening
+
+**Decision:** A pass over every way in: sign-in, sessions, permissions, displayed text, Open Library, inputs, server settings and dependencies. Each check is listed, with its limits, in [docs/security.md](security.md). The main choices:
+
+- **Escape all displayed text from people and Open Library** (`ui.plain()`). Streamlit reads `st.markdown`, `st.info` and similar as Markdown, with extras for maths (`$`), colours and icons. Without escaping, a title like *The $100 Startup* breaks, a display name can fake bold "owner" text, and `![x](https://…)` loads a picture from another website (which tells that website who opened the page).
+- **Count wrong current passwords towards the lockout.** Otherwise someone at an unlocked till could guess the owner's password on the Settings page without limit.
+- **Sign out after 60 idle minutes, and when the password changes elsewhere.** A till is a shared computer. Sixty minutes is long enough not to interrupt a quiet afternoon, short enough to end a session left open overnight. Each tab remembers a fingerprint of the password hash (a hash of a hash), never the password.
+- **Limits per device on failed sign-ins, sign-ups and invite codes**, kept in memory. They complement the per-account lockout (stored in the database), which stops guessing at one account but not a common password tried against many.
+- **Only this computer can open Lekha by default** (`address = "localhost"`). Streamlit's default is every network the computer is on, and Lekha has no HTTPS, so on a shop's Wi-Fi passwords would travel unencrypted.
+- **pip-audit and bandit in GitHub Actions, plus Dependabot.** New vulnerabilities are published even when the code doesn't change, so the security workflow also runs weekly.
+
+**Why not more (HTTPS, two-step sign-in, encrypted database files)?** They depend on how Lekha is hosted, which isn't decided yet. They're listed under "Not covered yet" in docs/security.md rather than half-built.
+
+---
+
+## 2026-11-10: Reviewed SQL marked for the code scanner, not the scanner switched off
+
+**Decision:** bandit flagged 7 SQL strings built with f-strings. Each was read: they only join fixed text from the code (column names, a fixed sort order, a fixed status expression), and every value is a placeholder. Each line is marked `# nosec B608` with the reason beside it, instead of turning that check off for the whole project.
+
+**Why:** A new f-string SQL query added later will still be flagged and need its own review.

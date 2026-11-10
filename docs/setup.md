@@ -42,9 +42,11 @@ The commands below are written for Windows. On macOS and Linux, replace `.\.venv
 
 Your browser opens at http://localhost:8501. To stop Lekha, press `Ctrl+C` in the terminal.
 
+Only this computer can open Lekha. To use it from other devices too, read [Letting other devices in](#letting-other-devices-in) first.
+
 ## 5. Create an account and your shop
 
-1. On the sign-in page, choose **Create an account**: your name, a username (3 to 32 letters, numbers, dots, dashes or underscores) and a password of at least 10 characters.
+1. On the sign-in page, choose **Create an account**: your name, a username (3 to 32 letters, numbers, dots, dashes or underscores) and a password of 10 to 128 characters. A few unrelated words together make a strong password that's easy to remember; very common passwords such as `password123` are refused.
 2. Choose **Start a shop** and give it a name. You're its owner.
 3. To bring in staff, open **Team**, choose **Staff** and **Make an invite code**. Give the code to the person: they create their own account, then choose **Join with a code**. Each code works once, for 7 days, and is shown only once.
 
@@ -91,9 +93,30 @@ Username and password sign-in works without any of this. To add a **Sign in with
 
 7. Restart Lekha. The sign-in page now shows **Sign in with Google**. The first time someone signs in with Google, Lekha creates their account from their Google name and email.
 
-If the button doesn't appear, one of the three settings (`redirect_uri`, `cookie_secret`, `[auth.google]`) is missing. If Google says "redirect_uri_mismatch", the address in step 3 doesn't exactly match the one in `secrets.toml`, including `http` and the port.
+If the button doesn't appear, one of the three settings (`redirect_uri`, `cookie_secret`, `[auth.google]`) is missing, or the cookie secret is shorter than 32 characters (Lekha refuses a short one, because it protects the Google sign-in cookie). If Google says "redirect_uri_mismatch", the address in step 3 doesn't exactly match the one in `secrets.toml`, including `http` and the port.
+
+## Letting other devices in
+
+Lekha only accepts connections from the computer it runs on (`address = "localhost"` in `.streamlit/config.toml`). This is deliberate: Lekha has no HTTPS of its own, so if a phone or a second till opened it over the shop's Wi-Fi, passwords and sales would travel across the network unencrypted, readable by anyone else on it.
+
+If staff need to use another device:
+
+- **Best:** put Lekha behind a web server that adds HTTPS (for example Caddy or nginx), or host it on a service that provides HTTPS, and keep `address = "localhost"` so only that web server can reach it.
+- **On a trusted shop network only:** start Lekha with `--server.address 0.0.0.0` and open the "Network URL" it prints on the other device. Only do this on a network with a strong Wi-Fi password that customers don't have.
+
+See [docs/security.md](security.md) for everything Lekha protects and what it doesn't yet.
 
 ## Optional
+
+**Run the security checks**
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe -m pip_audit -r requirements.txt
+.\.venv\Scripts\python.exe -m bandit -q -r app.py database.py query.py services ui views scripts
+```
+
+`pip_audit` checks every package Lekha installs against published vulnerabilities; `bandit` scans the code for risky patterns. GitHub runs both on every push and every Monday.
 
 **Run the tests**
 
@@ -101,7 +124,7 @@ If the button doesn't appear, one of the three settings (`redirect_uri`, `cookie
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-All 271 should pass. They use their own temporary folders, never your `data/` folder, and don't need the internet: Open Library lookups are replayed from real responses saved in `tests/fixtures/`.
+All 307 should pass. They use their own temporary folders, never your `data/` folder, and don't need the internet: Open Library lookups are replayed from real responses saved in `tests/fixtures/`.
 
 **Start again from nothing**
 
@@ -148,7 +171,12 @@ This needs Microsoft Edge and an internet connection. It signs in as you, so the
 | "Port 8501 is already in use" | Lekha is already running in another terminal. Stop it with `Ctrl+C`, or add `--server.port 8502` |
 | Lekha shows "couldn't read or write its database" | Another program has `data\accounts.db` or a file in `data\shops\` open, or a file is damaged. Close the other program and reload. If a file is damaged, `database.py --reset` starts again from nothing (this deletes every account and shop) |
 | You're signed out after refreshing the page | Expected for username-and-password sign-in: it lasts for the open tab. Sign in again. Google sign-in is remembered |
-| "Too many wrong passwords" | Wait 15 minutes, then try again |
+| "Too many wrong passwords" | Wait 15 minutes, then try again. Wrong current passwords on the Settings page count too |
+| "Too many attempts from this device" | More than 20 failed sign-ins from this computer in 15 minutes. Wait 15 minutes, or restart Lekha |
+| "You were signed out after 60 minutes without any activity" | Expected: it protects a till left open. Sign in again |
+| "Your password was changed, so you were signed out" | The password was changed in another tab or on another computer. Sign in with the new one |
+| Another device can't open Lekha | Expected: only this computer can. See [Letting other devices in](#letting-other-devices-in) |
+| Google sign-in button doesn't appear | Check `secrets.toml` has `redirect_uri`, `[auth.google]`, and a `cookie_secret` of at least 32 characters (step 5 of Google sign-in makes one of 64) |
 | "Couldn't reach Open Library" | Check the internet connection. You can still type the book in yourself |
 | "Open Library is busy right now" | Wait a minute and try again |
 | Changes to `.streamlit/config.toml` don't show | The theme is read at start-up. Stop Lekha and start it again |
