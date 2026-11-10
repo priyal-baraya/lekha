@@ -36,9 +36,11 @@ headingFontWeights = [600, 600, 600, 600, 600, 600]
 # Gap between the top navigation and the first element (default is 8rem)
 paddingTop = "2rem"
 
-# Shape: square corners everywhere the framework allows
-baseRadius = "none"
-buttonRadius = "none"
+# Shape: slightly rounded corners, 6px everywhere (matches --lekha-radius
+# in ui/styles.css). Soft enough to feel friendly, small enough to keep
+# the editorial, manuscript-panel look.
+baseRadius = "6px"
+buttonRadius = "6px"
 
 # Borders. #8C7A68 is the one colour added beyond the brand palette:
 # input outlines must reach 3:1 contrast against the paper (WCAG 1.4.11),
