@@ -1,0 +1,352 @@
+{
+  "ISBN:9780006550686": {
+    "url": "http://openlibrary.org/books/OL31903694M/The_God_of_Small_Things",
+    "key": "/books/OL31903694M",
+    "title": "The God of Small Things",
+    "authors": [
+      {
+        "url": "http://openlibrary.org/authors/OL104867A/Arundhati_Roy",
+        "name": "Arundhati Roy"
+      }
+    ],
+    "number_of_pages": 340,
+    "pagination": "339p.",
+    "identifiers": {
+      "amazon": [
+        "0006550681",
+        ""
+      ],
+      "goodreads": [
+        "56885559"
+      ],
+      "wikidata": [
+        "Q125997290"
+      ],
+      "isbn_10": [
+        "0006550681"
+      ],
+      "isbn_13": [
+        "9780006550686"
+      ],
+      "openlibrary": [
+        "OL31903694M"
+      ]
+    },
+    "publishers": [
+      {
+        "name": "Flamingo"
+      }
+    ],
+    "publish_places": [
+      {
+        "name": "London"
+      }
+    ],
+    "publish_date": "1998",
+    "subjects": [
+      {
+        "name": "Literary Fiction",
+        "url": "https://openlibrary.org/subjects/literary_fiction"
+      },
+      {
+        "name": "Women's Fiction",
+        "url": "https://openlibrary.org/subjects/women's_fiction"
+      },
+      {
+        "name": "dalit",
+        "url": "https://openlibrary.org/subjects/dalit"
+      },
+      {
+        "name": "Catholicism",
+        "url": "https://openlibrary.org/subjects/catholicism"
+      },
+      {
+        "name": "fraternal twins",
+        "url": "https://openlibrary.org/subjects/fraternal_twins"
+      },
+      {
+        "name": "Psychological fiction",
+        "url": "https://openlibrary.org/subjects/psychological_fiction"
+      },
+      {
+        "name": "Domestic fiction",
+        "url": "https://openlibrary.org/subjects/domestic_fiction"
+      },
+      {
+        "name": "award:man_booker_prize=1997",
+        "url": "https://openlibrary.org/subjects/award:man_booker_prize=1997"
+      },
+      {
+        "name": "Fiction",
+        "url": "https://openlibrary.org/subjects/fiction"
+      },
+      {
+        "name": "Romance",
+        "url": "https://openlibrary.org/subjects/romance"
+      },
+      {
+        "name": "Twins",
+        "url": "https://openlibrary.org/subjects/twins"
+      },
+      {
+        "name": "Gemelos",
+        "url": "https://openlibrary.org/subjects/gemelos"
+      },
+      {
+        "name": "Twins in fiction",
+        "url": "https://openlibrary.org/subjects/twins_in_fiction"
+      },
+      {
+        "name": "Literatura de expressão inglesa",
+        "url": "https://openlibrary.org/subjects/literatura_de_expressão_inglesa"
+      },
+      {
+        "name": "Romans",
+        "url": "https://openlibrary.org/subjects/romans"
+      },
+      {
+        "name": "Downing",
+        "url": "https://openlibrary.org/subjects/downing"
+      },
+      {
+        "name": "Cousins",
+        "url": "https://openlibrary.org/subjects/cousins"
+      },
+      {
+        "name": "Romans, nouvelles",
+        "url": "https://openlibrary.org/subjects/romans,_nouvelles"
+      },
+      {
+        "name": "Man Booker Prize Winner",
+        "url": "https://openlibrary.org/subjects/man_booker_prize_winner"
+      },
+      {
+        "name": "Classes sociales",
+        "url": "https://openlibrary.org/subjects/classes_sociales"
+      },
+      {
+        "name": "India in fiction",
+        "url": "https://openlibrary.org/subjects/india_in_fiction"
+      },
+      {
+        "name": "Literatura indiana",
+        "url": "https://openlibrary.org/subjects/literatura_indiana"
+      },
+      {
+        "name": "Social classes",
+        "url": "https://openlibrary.org/subjects/social_classes"
+      },
+      {
+        "name": "Roman indien (de l'Inde) de langue anglaise",
+        "url": "https://openlibrary.org/subjects/roman_indien_(de_l'inde)_de_langue_anglaise"
+      },
+      {
+        "name": "Jumeaux",
+        "url": "https://openlibrary.org/subjects/jumeaux"
+      },
+      {
+        "name": "Family",
+        "url": "https://openlibrary.org/subjects/family"
+      },
+      {
+        "name": "Social classes in fiction",
+        "url": "https://openlibrary.org/subjects/social_classes_in_fiction"
+      },
+      {
+        "name": "Ficción",
+        "url": "https://openlibrary.org/subjects/ficción"
+      },
+      {
+        "name": "Clases sociales",
+        "url": "https://openlibrary.org/subjects/clases_sociales"
+      },
+      {
+        "name": "open_syllabus_project",
+        "url": "https://openlibrary.org/subjects/open_syllabus_project"
+      },
+      {
+        "name": "Literatura de expressäao inglesa",
+        "url": "https://openlibrary.org/subjects/literatura_de_expressäao_inglesa"
+      },
+      {
+        "name": "Medicine in Literature",
+        "url": "https://openlibrary.org/subjects/medicine_in_literature"
+      },
+      {
+        "name": "Large type books",
+        "url": "https://openlibrary.org/subjects/large_type_books"
+      },
+      {
+        "name": "French language",
+        "url": "https://openlibrary.org/subjects/french_language"
+      },
+      {
+        "name": "Littérature de l'Inde (anglaise)",
+        "url": "https://openlibrary.org/subjects/littérature_de_l'inde_(anglaise)"
+      },
+      {
+        "name": "Roman de l'Inde (anglais)",
+        "url": "https://openlibrary.org/subjects/roman_de_l'inde_(anglais)"
+      },
+      {
+        "name": "Literatura india (Inglés)",
+        "url": "https://openlibrary.org/subjects/literatura_india_(inglés)"
+      },
+      {
+        "name": "India, fiction",
+        "url": "https://openlibrary.org/subjects/india,_fiction"
+      },
+      {
+        "name": "Fiction, psychological",
+        "url": "https://openlibrary.org/subjects/fiction,_psychological"
+      },
+      {
+        "name": "Twins, fiction",
+        "url": "https://openlibrary.org/subjects/twins,_fiction"
+      },
+      {
+        "name": "Fiction, family life",
+        "url": "https://openlibrary.org/subjects/fiction,_family_life"
+      },
+      {
+        "name": "Fiction, family life, general",
+        "url": "https://openlibrary.org/subjects/fiction,_family_life,_general"
+      },
+      {
+        "name": "English literature",
+        "url": "https://openlibrary.org/subjects/english_literature"
+      },
+      {
+        "name": "Fiction, general",
+        "url": "https://openlibrary.org/subjects/fiction,_general"
+      }
+    ],
+    "subject_places": [
+      {
+        "name": "India",
+        "url": "https://openlibrary.org/subjects/place:india"
+      },
+      {
+        "name": "Inde",
+        "url": "https://openlibrary.org/subjects/place:inde"
+      },
+      {
+        "name": "Kerala",
+        "url": "https://openlibrary.org/subjects/place:kerala"
+      },
+      {
+        "name": "Ayemenem",
+        "url": "https://openlibrary.org/subjects/place:ayemenem"
+      },
+      {
+        "name": "Calcutta",
+        "url": "https://openlibrary.org/subjects/place:calcutta"
+      },
+      {
+        "name": "England",
+        "url": "https://openlibrary.org/subjects/place:england"
+      },
+      {
+        "name": "America",
+        "url": "https://openlibrary.org/subjects/place:america"
+      }
+    ],
+    "subject_people": [
+      {
+        "name": "Esthappen",
+        "url": "https://openlibrary.org/subjects/person:esthappen"
+      },
+      {
+        "name": "Rahel",
+        "url": "https://openlibrary.org/subjects/person:rahel"
+      },
+      {
+        "name": "Ammu Ipe",
+        "url": "https://openlibrary.org/subjects/person:ammu_ipe"
+      },
+      {
+        "name": "Mammachi",
+        "url": "https://openlibrary.org/subjects/person:mammachi"
+      },
+      {
+        "name": "Handel",
+        "url": "https://openlibrary.org/subjects/person:handel"
+      },
+      {
+        "name": "Chacko",
+        "url": "https://openlibrary.org/subjects/person:chacko"
+      },
+      {
+        "name": "Navomi Ipe",
+        "url": "https://openlibrary.org/subjects/person:navomi_ipe"
+      },
+      {
+        "name": "Pappachi",
+        "url": "https://openlibrary.org/subjects/person:pappachi"
+      },
+      {
+        "name": "Margaret",
+        "url": "https://openlibrary.org/subjects/person:margaret"
+      },
+      {
+        "name": "Father Mulligan",
+        "url": "https://openlibrary.org/subjects/person:father_mulligan"
+      },
+      {
+        "name": "Sophie",
+        "url": "https://openlibrary.org/subjects/person:sophie"
+      },
+      {
+        "name": "Velutha",
+        "url": "https://openlibrary.org/subjects/person:velutha"
+      },
+      {
+        "name": "Estha",
+        "url": "https://openlibrary.org/subjects/person:estha"
+      },
+      {
+        "name": "collectionID:ConroeChallenge",
+        "url": "https://openlibrary.org/subjects/person:collectionid:conroechallenge"
+      }
+    ],
+    "subject_times": [
+      {
+        "name": "20e siècle",
+        "url": "https://openlibrary.org/subjects/time:20e_siècle"
+      },
+      {
+        "name": "1969",
+        "url": "https://openlibrary.org/subjects/time:1969"
+      },
+      {
+        "name": "1993",
+        "url": "https://openlibrary.org/subjects/time:1993"
+      }
+    ],
+    "excerpts": [
+      {
+        "text": "May in Ayemenem is a hot, brooding month.",
+        "comment": "first sentence"
+      }
+    ],
+    "notes": "UK/CAN",
+    "links": [
+      {
+        "title": "Booksdata.org",
+        "url": "https://indianbooks.booksdata.org/book/BD00055048/the-god-of-small-things-winner-of-the-booker-prize-1997-english-fiction-novel-by-award-winning-a-arundhati-roy-9789794614020"
+      }
+    ],
+    "ebooks": [
+      {
+        "preview_url": "https://archive.org/details/godofsmallthings0000roya_t1i9",
+        "availability": "restricted",
+        "formats": {}
+      }
+    ],
+    "cover": {
+      "small": "https://covers.openlibrary.org/b/id/10585942-S.jpg",
+      "medium": "https://covers.openlibrary.org/b/id/10585942-M.jpg",
+      "large": "https://covers.openlibrary.org/b/id/10585942-L.jpg"
+    }
+  }
+}

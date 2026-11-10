@@ -1,9 +1,9 @@
 # Lekha: a case study
 
 *An inventory and sales insights tool for independent bookstores.*
-*Python · SQLite · SQL · pandas · Streamlit · Altair · pytest*
+*Python · SQLite · SQL · pandas · Streamlit · Altair · pytest · Open Library*
 
-> All data in this project is **fictional**. No real bookstore, customer or sale is involved. Results below describe invented datasets and exist to show the calculations are correct, not to make business claims.
+> **The app holds only real data:** books found on Open Library (or typed in), and prices, stock and sales entered by the owner. Nothing is invented or pre-filled. The results in section 7 come from a small **fictional test dataset** that exists only inside the automated tests, to prove the calculations are correct. They are not business findings.
 
 ---
 
@@ -26,12 +26,12 @@ The owner or manager of one small shop: knows their books and readers well, isn'
 
 | Need | Requirement |
 |---|---|
-| Find and maintain books | Search, filter, sort, add and edit, with clear validation |
+| Find and maintain books | Find real books by ISBN or title; search, filter, sort, add and edit, with clear validation |
 | Record sales | Several books per sale; stock reduced exactly once; nothing half-saved |
 | Fix mistakes | Cancel a sale (stock returned exactly once); correct stock with a recorded reason |
 | See what's happening | Revenue, copies, transactions, trends, genres, best sellers, unsold books, for any period |
 | Act on it, carefully | Plain-language observations with evidence and limits |
-| Honesty | Revenue never called profit; partial periods marked; small samples flagged; fictional data labelled |
+| Honesty | Nothing invented: real book details, owner-entered prices and stock, recorded sales only; revenue never called profit; partial periods marked; small samples flagged |
 
 ## 4. Data model
 
@@ -70,6 +70,12 @@ The check and the change happen in one statement, so nothing can slip in between
 
 **Stock corrections** record before/after counts and a reason, and only apply if the stock still matches the number shown on screen (`… AND stock_quantity = <shown>`), so a stale page or a double click can't apply a correction twice.
 
+**Real books from Open Library.** The owner looks a book up by ISBN (one exact edition) or searches by title or author (works across editions). Open Library is free, open and edited by volunteers, so it's usually right but not always: a search for *The God of Small Things* also returns study guides, translations and one record crediting the wrong author. So Lekha only **pre-fills** the add form, and the owner checks it. Two rules keep the data honest:
+- **Edition facts** (publisher, year) are saved only from an ISBN match, because a title search describes the book in general, not the copy in hand.
+- **Prices and stock** are never guessed. No free API knows a particular shop's prices (Google Books' free quota was refused during testing), and only the shop knows its stock.
+
+Answers are cached for a day, errors are shown plainly ("Couldn't reach Open Library…"), and typing a book in always works offline. Adding the new columns to existing databases needed Lekha's first **migration**: numbered SQL files applied once each, tracked with SQLite's `PRAGMA user_version`.
+
 **Security:** user input reaches SQL only through `?` placeholders. Sorting, which can't use placeholders, picks from a fixed list. A test types `'; DROP TABLE books; --` into search.
 
 ## 6. Analytics and SQL
@@ -101,9 +107,9 @@ GROUP BY book_id
 
 **Method: define, calculate by hand, then code.** Every metric was written out and worked by hand on the small sample dataset first (`docs/analytics.md`). The tests assert those numbers.
 
-## 7. Results (fictional data)
+## 7. Results on the test dataset
 
-**Hand-checked sample dataset** (12 books, 15 sales, 1 cancelled), the one the tests use:
+The **fictional test dataset** (12 books, 15 sales, 1 cancelled) exists only inside the tests. Every figure was worked out by hand first:
 
 | Figure | Hand calculation | App |
 |---|---|---|
@@ -113,9 +119,9 @@ GROUP BY book_id
 | Top genre | Fiction ₹4,040.00 (36.3%) | same |
 | Estimated gross profit | ₹3,992.00 on ₹10,247.00 covered (92.0%), margin 39.0% | same |
 
-The app showed exactly those figures in the browser.
+The app showed exactly those figures, and a page test still checks them.
 
-**Generated demo dataset** (`demo_data.py`: 30 invented books, 3 Aug – 7 Nov 2026, fixed random seed), used for screenshots: 434 completed and 13 cancelled sales, ₹2,41,752.00 revenue, Fiction the largest genre at 37.1%. These numbers come from a random generator: they show the app at a realistic size, and **say nothing about real bookstores**.
+An earlier version used a larger *generated* dataset for screenshots. It was removed: screenshots now show the real, empty shop and live Open Library results, so nothing in the project's pictures is invented.
 
 **Observations** are written to match: *"Fiction brought in the most revenue: ₹4,040.00 of ₹11,144.00 (36.3%) across 14 sales. Possible action: consider a Fiction display. Limit: recorded sales can't show that a display would increase sales. Only 14 sales, so treat this as a hint, not a pattern."*
 
@@ -132,11 +138,11 @@ The app showed exactly those figures in the browser.
 | Kind | What it proves | Count |
 |---|---|---|
 | Schema rules | Bad data is refused by the database itself | 34 |
-| Sample data | Queries match hand calculations | 10 |
+| Test dataset | Queries match hand calculations | 10 |
 | Services | Books, money, inventory, sales, analytics behave as defined, including rollbacks | 135 |
-| Pages (`AppTest`) | Every page opens; a 2-copy sale through the Sales page reduces stock by exactly 2; a broken database shows a friendly message | 11 |
-| Demo data | Repeatable and internally consistent | 2 |
-| **Total** | Run on every push and pull request by GitHub Actions | **192** |
+| Open Library and migration | Lookups and searches against **real saved Open Library responses** (no internet needed); genre suggestions; plain errors; a Phase 7 database upgraded without losing data | 31 |
+| Pages (`AppTest`) | Every page opens; an empty shop shows real zeros; a real book added by ISBN saves exactly what Open Library said plus the owner's price; a 2-copy sale reduces stock by exactly 2; a broken database shows a friendly message | 15 |
+| **Total** | Run on every push and pull request by GitHub Actions | **225** |
 
 **Testing the tests.** Twice I broke the code on purpose to check a test could fail: once removing the foreign-key PRAGMA (a bad sale line got in), once removing the sale rollback (stock was left at 6 instead of 8). Both times the relevant test caught it.
 
@@ -150,7 +156,8 @@ The app showed exactly those figures in the browser.
 - One shop, one user, one computer; no logins.
 - No delivery or supplier records, so profit uses each book's current cost and stock can't be rebuilt from history.
 - No partial returns or discounts.
-- The small dataset can't show real patterns; the demo dataset is random by design.
+- Patterns only appear once real sales have been recorded; the tested dataset is far too small for patterns.
+- Book details are only as good as Open Library's records, and looking books up needs the internet.
 - The 30-sale "hint, not a pattern" threshold is a judgement call, not a statistical test.
 
 **Next steps**

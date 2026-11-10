@@ -17,6 +17,9 @@
 
 
 -- One row per title the store stocks.
+-- More columns (publisher, published_year, cover_id, openlibrary_key) are
+-- added by sql/migrations/001_book_details.sql, so old and new databases
+-- get them the same way.
 CREATE TABLE IF NOT EXISTS books (
     book_id             INTEGER PRIMARY KEY,
     isbn                TEXT UNIQUE

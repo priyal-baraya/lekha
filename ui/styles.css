@@ -146,15 +146,12 @@
 
 /* ---------- Page opening ----------
    Every page except Overview starts the same way: label, title,
-   description, sample-data notice, then a section-sized gap. */
+   description, then a section-sized gap. */
 .lekha-page-intro {
   margin: 0 0 var(--lekha-space-5);
 }
 .lekha-page-intro .lekha-section {
   margin: 0;
-}
-.lekha-page-intro .lekha-notice {
-  margin-top: var(--lekha-space-3);
 }
 
 /* ---------- Section header ---------- */
@@ -208,23 +205,6 @@
   border: 1px solid var(--lekha-info-fg);
   color: var(--lekha-info-fg);       /* 7.7:1 */
   background: var(--lekha-info-bg);
-}
-
-/* ---------- Sample-data notice ----------
-   Tag and sentence side by side; on a narrow screen the sentence wraps
-   beside the tag instead of dropping a word underneath it. */
-.lekha-notice {
-  display: flex;
-  align-items: baseline;
-  gap: var(--lekha-space-2);
-  font-family: var(--lekha-sans);
-  font-size: 0.875rem;
-  line-height: 1.5;
-  color: var(--lekha-ink-secondary);
-  margin: 0;
-}
-.lekha-notice .lekha-tag {
-  flex: none;
 }
 
 /* ---------- Summary strip (the daily read) ---------- */

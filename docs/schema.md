@@ -42,6 +42,24 @@ books 1 ───────< sale_items >─────── 1 sales
 | `cost_price_paise` | INTEGER | ≥ 0; optional | Purchase cost per copy. NULL means unknown, so profit can't be calculated for that book |
 | `stock_quantity` | INTEGER | ≥ 0, default 0 | Copies on the shelf now |
 | `reorder_level` | INTEGER | ≥ 0, default 0 | Low-stock alert threshold |
+| `publisher` | TEXT | optional, not blank | Publisher of this edition. Saved from an ISBN lookup (an exact edition) or typed by the owner, never guessed from a title search |
+| `published_year` | INTEGER | optional, 1450–2100 | Year this edition was published (same rule) |
+| `cover_id` | INTEGER | optional, > 0 | Open Library's cover number; the picture is at `https://covers.openlibrary.org/b/id/<cover_id>-M.jpg` |
+| `openlibrary_key` | TEXT | optional; `/books/OL…M` (an edition) or `/works/OL…W` (a work) | Which Open Library record the details came from, so they can be traced and checked |
+
+The last four columns were added in Phase 8 by a migration (see below).
+
+## Migrations: changing the schema safely
+
+`CREATE TABLE IF NOT EXISTS` can create a missing table, but it can't add a column to a table that already holds data. Schema changes after the first release go in numbered files in [`sql/migrations/`](../sql/migrations/):
+
+| File | What it does |
+|---|---|
+| `001_book_details.sql` | Adds `publisher`, `published_year`, `cover_id` and `openlibrary_key` to `books` (Phase 8) |
+
+SQLite keeps a spare whole number in every database file's header, `PRAGMA user_version`. `database.apply_migrations()` runs every migration numbered higher than it, in order. Each file and its new version number run in one transaction, so a failure leaves the database as it was. New databases go through exactly the same files, so old and new databases always end up identical. It runs on every start, and a database already up to date changes nothing.
+
+Tested: a database in the Phase 7 shape with a book in it is upgraded to version 1 with the book kept and its new columns empty; running it again applies nothing; the database refuses a bad cover number or record reference.
 
 ### `sales`
 

@@ -129,7 +129,7 @@ These map directly onto spacing variables in Figma.
 
 ## Page opening
 
-Books, Sales, Inventory and Insights all open with `page_intro()`: section label, page title (the page's only h1), one-line description, the sample-data notice, then a 40px gap before the first section. Overview opens with the hero instead.
+Books, Sales, Inventory and Insights all open with `page_intro()`: section label, page title (the page's only h1), one-line description, then a 40px gap before the first section. Overview opens with the hero instead.
 
 ## Shape and layout
 
@@ -174,7 +174,6 @@ The jaali lattice in the hero is two repeating CSS gradients at 22% gold opacity
 | `divider()` | Ornamental section divider |
 | `section_header(...)` | Section label, Lora title, optional status tag and description |
 | `metric_strip(...)` | Connected row of figures. A missing value shows "—", and screen readers hear "No data yet" |
-| `sample_data_notice()` | "Sample data" tag and sentence on every page that shows data |
 | `flash(...)` / `show_flash()` | A success or warning message that survives the page reload after saving |
 | `show_errors(...)` | One error box listing every validation problem |
 | `empty_state(...)` | Porcelain panel with small arch, message and status tag |

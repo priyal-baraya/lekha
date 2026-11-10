@@ -40,9 +40,13 @@ Practical labels for the main sections: **Overview, Books, Sales, Inventory, Ins
 
 This is a portfolio project. It should demonstrate relational data modelling, SQL, Python, data validation, analysis and visualisation, interactive application development and thoughtful visual design, and every part of it should be explainable in an interview.
 
+## Real data only (since Phase 8)
+
+The app shows nothing invented. Book details come from Open Library (looked up by ISBN or found by title or author) or are typed in by the owner. Prices, stock and sales come only from the owner. No reviews or ratings are shown. A small fictional dataset still exists, but only inside the automated tests, where known numbers are needed to check the calculations.
+
 ## Out of scope for now
 
 - AI or machine learning features
-- Real store data or real personal data
+- Customers' personal data
 - Accounts, logins or multi-store support
 - A separate web frontend (React or similar)

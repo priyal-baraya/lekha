@@ -127,12 +127,10 @@ def _section_header_html(
 
 def page_intro(eyebrow: str, title: str, description: str) -> None:
     """The opening of every page except Overview, always the same shape:
-    label, main title (h1), description, sample-data notice, then a
-    section-sized gap before the content."""
+    label, main title (h1), description, then a section-sized gap."""
     st.html(
         f'<div class="lekha-page-intro">'
-        f"{_section_header_html(eyebrow, title, description, None, page_title=True)}"
-        f"{SAMPLE_DATA_NOTICE}</div>"
+        f"{_section_header_html(eyebrow, title, description, None, page_title=True)}</div>"
     )
 
 
@@ -178,21 +176,6 @@ def empty_state(message: str, tag: str | None = None) -> None:
 
 
 # ------------------------------------------------------------ data pages
-
-def sample_data_notice() -> None:
-    """Say plainly that the data on screen is invented.
-
-    Lekha has only ever held the fictional sample dataset, so every page
-    showing data carries this notice. Remove it if real data is loaded.
-    """
-    st.html(SAMPLE_DATA_NOTICE)
-
-
-SAMPLE_DATA_NOTICE = (
-    '<p class="lekha-notice"><span class="lekha-tag">Sample data</span>'
-    "<span>Every book and sale shown here is fictional.</span></p>"
-)
-
 
 def flash(kind: str, message: str, details: list[str] | None = None) -> None:
     """Save a message to show after the next page reload.

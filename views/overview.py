@@ -41,7 +41,12 @@ ui.section_header(
     description=(f"Four figures worth checking each morning. Sales figures cover the last 30 days "
                  f"({period.start:%d %b} to {period.end:%d %b %Y})."),
 )
-ui.sample_data_notice()
+if total_books == 0:
+    ui.empty_state(
+        "Your shop is empty. Start on the Books page: look a book up by its ISBN or search "
+        "Open Library, then add your own price and stock. Figures here come only from the "
+        "books you add and the sales you record."
+    )
 ui.metric_strip([
     ("Revenue", format_rupees(totals["revenue_paise"]), "Last 30 days, completed sales"),
     ("Copies sold", str(totals["copies"]), "Last 30 days"),

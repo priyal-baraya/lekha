@@ -2,7 +2,11 @@
 
 Usage (from the project folder):
     .\\.venv\\Scripts\\python.exe query.py "SELECT title, genre FROM books"
-    .\\.venv\\Scripts\\python.exe query.py sql\\01_first_queries.sql
+    .\\.venv\\Scripts\\python.exe query.py --sample sql\\01_first_queries.sql
+
+Without --sample it reads your real shop's database. With --sample it
+builds the FICTIONAL sample data in memory for this run only (the data
+the practice queries' expected answers refer to); nothing is saved.
 
 A .sql file can hold several queries. Each one is printed with the
 comment lines written above it. This is a learning tool: it reads the
@@ -15,7 +19,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from database import database_path, get_connection
+from database import create_schema, database_path, get_connection, load_sample_data
 
 
 def split_statements(sql_text: str) -> list[str]:
@@ -34,20 +38,28 @@ def split_statements(sql_text: str) -> list[str]:
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
+    arguments = sys.argv[1:]
+    sample = "--sample" in arguments
+    arguments = [argument for argument in arguments if argument != "--sample"]
+    if len(arguments) != 1:
         print(__doc__)
         return
-    if not database_path().exists():
-        print("No database yet. Create it first with:")
-        print("    .\\.venv\\Scripts\\python.exe database.py --reset-sample")
+    if not sample and not database_path().exists():
+        print("No database yet. Start Lekha once, or create an empty shop with:")
+        print("    .\\.venv\\Scripts\\python.exe database.py --reset")
         return
 
-    argument = sys.argv[1]
+    argument = arguments[0]
     sql_text = Path(argument).read_text(encoding="utf-8") if argument.endswith(".sql") else argument
     statements = split_statements(sql_text) or [sql_text]
 
     pd.set_option("display.width", 120)
-    connection = get_connection()
+    if sample:
+        connection = get_connection(":memory:")   # lives only for this run
+        create_schema(connection)
+        load_sample_data(connection)
+    else:
+        connection = get_connection()
     try:
         for statement in statements:
             # pandas runs the query and lays the rows out as a table.
