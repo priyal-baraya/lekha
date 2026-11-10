@@ -17,6 +17,7 @@ from services.inventory import (
     recent_adjustments,
 )
 from ui import components as ui
+from ui import session
 
 
 def render_alerts(conn) -> None:
@@ -95,7 +96,7 @@ def render_correction(conn) -> None:
 
     if submitted:
         try:
-            correct_stock(conn, book_id, expected, int(counted), reason, note)
+            correct_stock(conn, book_id, expected, int(counted), reason, note, recorded_by=session.user_id())
         except ValidationError as problem:
             ui.show_errors(problem.errors)
         except StockChangedError as problem:
@@ -126,8 +127,10 @@ def render_history(conn) -> None:
     table = pd.DataFrame(rows)
     table["change"] = table["change"].map(lambda value: f"{value:+d}")   # -3, +6
     table["note"] = table["note"].fillna("")   # show blank, not "None", when there's no note
+    people = session.names(table["recorded_by"].dropna())
+    table["by"] = table["recorded_by"].map(lambda uid: people.get(uid, "") if pd.notna(uid) else "")
     st.dataframe(
-        table[["title", "change", "reason_label", "adjusted_at", "quantity_before", "quantity_after", "note"]],
+        table[["title", "change", "reason_label", "adjusted_at", "by", "quantity_before", "quantity_after", "note"]],
         hide_index=True,
         column_config={
             "adjusted_at": st.column_config.TextColumn("When"),
@@ -137,6 +140,7 @@ def render_history(conn) -> None:
             "change": st.column_config.TextColumn("Change"),
             "reason_label": st.column_config.TextColumn("Reason"),
             "note": st.column_config.TextColumn("Note"),
+            "by": st.column_config.TextColumn("By"),
         },
     )
 
@@ -152,7 +156,8 @@ ui.show_flash()
 
 with connect() as conn:
     render_alerts(conn)
-    ui.divider()
-    render_correction(conn)
-    ui.divider()
-    render_history(conn)
+    if session.can_do("correct_stock"):      # owners only
+        ui.divider()
+        render_correction(conn)
+        ui.divider()
+        render_history(conn)

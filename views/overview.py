@@ -17,9 +17,10 @@ from services.inventory import count_low_stock, low_stock_books
 from services.money import format_rupees
 from ui import charts
 from ui import components as ui
+from ui import session
 
 ui.hero(
-    eyebrow="Independent bookstore insights",
+    eyebrow=session.shop_name() or "Independent bookstore insights",
     title="Lekha",
     tagline="Reading between the numbers.",
     description="An inventory and sales insights tool for independent bookstores.",

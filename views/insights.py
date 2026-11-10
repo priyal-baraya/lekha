@@ -16,6 +16,7 @@ from services.inventory import low_stock_books
 from services.money import format_rupees, paise_to_rupees
 from ui import charts
 from ui import components as ui
+from ui import session
 
 ALL_GENRES = "All genres"
 GRAIN_LABELS = {"day": "Day", "week": "Week", "month": "Month"}
@@ -181,6 +182,8 @@ def render_unsold_and_profit(conn, period, genre) -> None:
         else:
             ui.empty_state(f"Every {genre + ' ' if genre else ''}book had at least one sale in this period.")
     with profit_col:
+        if not session.can_do("view_profit"):     # owners only
+            return
         ui.section_header(
             eyebrow="Estimate",
             title="Estimated gross profit",

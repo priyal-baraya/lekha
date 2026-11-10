@@ -16,6 +16,7 @@ from services.books import search_books
 from services.money import format_rupees, paise_to_rupees
 from services.sales import SaleLine, cancel_sale, get_sale, list_sales, record_sale
 from ui import components as ui
+from ui import session
 
 # basket = {book_id: {"quantity": int, "unit_price_paise": int}}
 basket: dict[int, dict] = st.session_state.setdefault("basket", {})
@@ -119,7 +120,7 @@ def render_new_sale(conn) -> None:
     if complete_col.button("Complete sale", type="primary", key=f"sale_complete_{sale_version}"):
         lines = [SaleLine(book_id, line["quantity"], line["unit_price_paise"]) for book_id, line in basket.items()]
         try:
-            sale_id = record_sale(conn, lines, sale_datetime=sale_datetime)
+            sale_id = record_sale(conn, lines, sale_datetime=sale_datetime, recorded_by=session.user_id())
         except ValidationError as problem:
             ui.show_errors(problem.errors)
             return
@@ -141,9 +142,12 @@ def render_recent_sales(conn) -> None:
     table = pd.DataFrame(rows)
     table["total"] = table["total_paise"].map(lambda paise: float(paise_to_rupees(paise)))
     table["status"] = table["status"].str.capitalize()
+    people = session.names(table["recorded_by"].dropna())
+    table["recorded_by"] = table["recorded_by"].map(
+        lambda uid: people.get(uid, "Not recorded") if pd.notna(uid) else "Not recorded")
     st.markdown(f"The latest {len(rows)} sales, newest first. Cancelled sales stay listed but don't count as revenue.")
     st.dataframe(
-        table[["sale_id", "sale_datetime", "total", "status", "copies"]],
+        table[["sale_id", "sale_datetime", "total", "status", "copies", "recorded_by"]],
         hide_index=True,
         column_config={
             "sale_id": st.column_config.NumberColumn("Sale #", format="%d"),
@@ -151,6 +155,7 @@ def render_recent_sales(conn) -> None:
             "copies": st.column_config.NumberColumn("Copies"),
             "total": st.column_config.NumberColumn("Total", format="₹%.2f"),
             "status": st.column_config.TextColumn("Status"),
+            "recorded_by": st.column_config.TextColumn("Recorded by"),
         },
     )
 
@@ -179,10 +184,14 @@ def render_recent_sales(conn) -> None:
             "line_total": st.column_config.NumberColumn("Line total", format="₹%.2f"),
         },
     )
-    st.markdown(f"**Total: {format_rupees(sale['total_paise'])}** · {copies(sale['copies'])} · recorded for {sale['sale_datetime']}")
+    people = session.names([sale["recorded_by"], sale["cancelled_by"]])
+    recorder = people.get(sale["recorded_by"], "not recorded")
+    st.markdown(f"**Total: {format_rupees(sale['total_paise'])}** · {copies(sale['copies'])} · "
+                f"recorded for {sale['sale_datetime']} by {recorder}")
 
     if sale["status"] == "cancelled":
-        st.info(f"Cancelled on {sale['cancelled_at']}. Reason: {sale['cancel_reason']}")
+        canceller = people.get(sale["cancelled_by"], "not recorded")
+        st.info(f"Cancelled on {sale['cancelled_at']} by {canceller}. Reason: {sale['cancel_reason']}")
         return
 
     with st.form(f"cancel_form_{sale_id}"):
@@ -202,7 +211,7 @@ def render_recent_sales(conn) -> None:
         ui.show_errors(["Tick the box to confirm the cancellation."])
         return
     try:
-        cancel_sale(conn, sale_id, reason)
+        cancel_sale(conn, sale_id, reason, cancelled_by=session.user_id())
     except ValidationError as problem:
         ui.show_errors(problem.errors)
         return
