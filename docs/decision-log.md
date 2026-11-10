@@ -571,3 +571,77 @@ Each entry: what was decided, why, and what else was considered. Newest at the b
 **Decision:** `st.cache_data(ttl=1 day)` on the lookup and search functions in the Books page. Errors aren't cached.
 
 **Why:** Faster repeat lookups, and fewer requests to a free service. Book details rarely change within a day.
+
+---
+
+## 2026-11-10: Sign in with a username and password, or with Google
+
+**Decision:** Both. Lekha stores its own accounts (username and password), and Google sign-in uses Streamlit's built-in `st.login` (OpenID Connect, through Authlib). Google is switched on only when its credentials are in `.streamlit/secrets.toml`, which is never committed.
+
+**Why:** The owner asked for both. A Lekha password works with no setup at all; Google suits people who don't want another password. Using Streamlit's own sign-in, rather than writing the Google exchange myself, leaves the security-sensitive part to tested code.
+
+---
+
+## 2026-11-10: Shared shops with owners and staff
+
+**Decision:** A shop has members, each an **owner** or **staff**. Owners can do everything. Staff can look up and add books, record and cancel sales, see stock and alerts, and see Insights without profit. One person can belong to several shops and switch between them.
+
+**Why:** A real bookshop has a few people at the till. Staff need to sell; they don't need to change prices, correct stock counts, see the shop's margins or manage the team. Owners can invite a second owner when they want one.
+
+---
+
+## 2026-11-10: One database file per shop, plus an accounts file
+
+**Decision:** `data/accounts.db` holds people, shops, roles and invite codes. Each shop's books and sales live in their own file, `data/shops/shop_<id>.db`, with exactly the schema they had before. On each page run, `app.py` points every query at the chosen shop's file.
+
+**Why:** The alternative, a `shop_id` column on every table, means every query in the app, including the analytics SQL, must remember `WHERE shop_id = ?`. One forgotten filter would show one shop another shop's sales. With separate files there is nothing to forget, the existing tested SQL didn't change, and a shop can be backed up by copying one file.
+
+**Trade-off:** "Who did it" columns can't be foreign keys into another file, so they hold a plain user number; the pages look up names in `accounts.db`.
+
+---
+
+## 2026-11-10: The current shop is held per page run, not in a global
+
+**Decision:** `database.use_database()` stores the chosen shop's file in a `ContextVar`.
+
+**Why:** Streamlit serves every visitor from one Python process, at the same time. A normal global variable would be shared, so one visitor's choice of shop could briefly send another visitor's query to the wrong shop. A `ContextVar` belongs to one page run. A test runs two visits at once on two threads and checks each sees only its own shop.
+
+---
+
+## 2026-11-10: Passwords: scrypt, lockout, and one message for every failure
+
+**Decision:** Passwords are stored as salted **scrypt** hashes from Python's standard library (`hashlib.scrypt`, n=2¹⁴, r=8, p=1, 16-byte random salt), and checked with `hmac.compare_digest`. At least 10 characters. Five wrong passwords lock the account for 15 minutes. A wrong password and an unknown username give the same message, and an unknown username still runs a hash, so the time taken gives nothing away.
+
+**Why:** scrypt is deliberately slow and memory-hungry, which makes guessing stolen hashes expensive, and it needs no extra package. Separate "no such user" and "wrong password" messages would let anyone find out who has an account.
+
+---
+
+## 2026-11-10: Invite codes, shown once and stored hashed
+
+**Decision:** Owners make a 10-character code (`XXXXX-XXXXX`, without look-alike characters such as 0/O and 1/I) for a chosen role. Only its SHA-256 hash is stored. It works once, for 7 days, and can be cancelled. Typing it in lowercase or without the dash works.
+
+**Why:** No email server is needed, and a code is easy to read out loud at the shop. Hashing means a copy of the database doesn't reveal working codes. A fast hash (SHA-256) is fine here, unlike for passwords, because the codes are random and long rather than chosen by people.
+
+---
+
+## 2026-11-10: Permissions checked in the services, not only in the menu
+
+**Decision:** Pages hide what a role can't use, and the service functions also refuse it (`PermissionError`). Roles are read fresh from `accounts.db` on every page run.
+
+**Why:** Hiding a button is a convenience, not security. Reading the role fresh means removing someone, or changing their role, takes effect on their next click, not when they next sign in. A page test checks exactly that.
+
+---
+
+## 2026-11-10: Record who made each sale, cancellation and correction
+
+**Decision:** Migration `002_recorded_by.sql` adds `recorded_by` / `cancelled_by` columns. Older rows stay empty and show "Not recorded".
+
+**Why:** With several people at the till, "who cancelled this sale?" becomes a real question. Leaving older rows empty, rather than guessing a person, keeps the history true.
+
+---
+
+## 2026-11-10: `database.py --reset` deletes accounts and shops, after asking
+
+**Decision:** `--reset` now deletes `accounts.db` and the shop files, and only after the person types `DELETE`.
+
+**Why:** It used to empty the old single-shop file, `data/lekha.db`, which the app no longer reads: it would have looked like it worked while changing nothing. Deleting every account is serious, so it asks first.
