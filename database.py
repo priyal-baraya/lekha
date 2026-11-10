@@ -4,17 +4,19 @@ Everything else in the app talks to SQLite through get_connection(), so
 the important settings (foreign keys on, rows readable by column name)
 are applied in exactly one place.
 
-Where the database lives: data/lekha.db by default. Setting the
-environment variable LEKHA_DB_PATH points Lekha at a different file
-instead (the page tests and the demo dataset use this), without
-changing any code.
+Where the data lives (in data/, or the folder named by LEKHA_DATA_DIR):
+  - accounts.db: people, shops, roles and invite codes;
+  - shops/shop_<id>.db: one file per shop, holding its books and sales.
+app.py picks the signed-in person's shop file on every page run.
+LEKHA_DB_PATH points a single-shop tool (the page tests, query.py) at
+one particular shop file.
 
 The fictional sample data in data/sample_data.sql is used only by the
 automated tests (and by `query.py --sample`); it is never put in the
 app's database.
 
-Run this file directly to start again with an EMPTY shop. This DELETES
-the database file, and everything in it, first:
+Run this file directly to start again from nothing. This DELETES every
+account and every shop's books and sales:
 
     .\\.venv\\Scripts\\python.exe database.py --reset
 """
@@ -24,21 +26,56 @@ import sqlite3
 import sys
 from collections.abc import Iterator
 from contextlib import contextmanager
+from contextvars import ContextVar
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).parent
 DEFAULT_DB_PATH = PROJECT_DIR / "data" / "lekha.db"
 SCHEMA_PATH = PROJECT_DIR / "sql" / "schema.sql"
+ACCOUNTS_SCHEMA_PATH = PROJECT_DIR / "sql" / "accounts_schema.sql"
 MIGRATIONS_DIR = PROJECT_DIR / "sql" / "migrations"
 SAMPLE_DATA_PATH = PROJECT_DIR / "data" / "sample_data.sql"
 
+# The shop database for the page run happening right now. Streamlit serves
+# every visitor from one Python process, so an ordinary global variable
+# would be shared by everyone using the app at once. A ContextVar belongs
+# to the current run only: app.py sets it to the signed-in person's shop
+# before each page runs, and other visitors' runs never see it.
+_current_shop_db: ContextVar[Path | None] = ContextVar("lekha_current_shop_db", default=None)
+
+
+def data_dir() -> Path:
+    """Where accounts and shop files live: LEKHA_DATA_DIR, else data/."""
+    configured = os.environ.get("LEKHA_DATA_DIR")
+    return Path(configured) if configured else PROJECT_DIR / "data"
+
+
+def accounts_path() -> Path:
+    return data_dir() / "accounts.db"
+
+
+def shop_path(shop_id: int) -> Path:
+    """Each shop's books and sales live in their own file."""
+    return data_dir() / "shops" / f"shop_{int(shop_id)}.db"
+
+
+def use_database(path: Path | None) -> None:
+    """Point this page run at one shop's database (None clears it)."""
+    _current_shop_db.set(Path(path) if path else None)
+
 
 def database_path() -> Path:
-    """The database file to use: LEKHA_DB_PATH if it is set, else data/lekha.db.
+    """The shop database to use, in this order:
 
-    Read on every call (not once at start-up), so a test can point Lekha
-    at a temporary file just by setting the variable.
+    1. the signed-in person's shop, set by app.py with use_database();
+    2. LEKHA_DB_PATH, if set (the page tests use this);
+    3. data/lekha.db (command-line tools such as query.py).
+
+    Read on every call (not once at start-up).
     """
+    current = _current_shop_db.get()
+    if current is not None:
+        return current
     configured = os.environ.get("LEKHA_DB_PATH")
     return Path(configured) if configured else DEFAULT_DB_PATH
 
@@ -75,6 +112,28 @@ def connect(db_path: Path | str | None = None) -> Iterator[sqlite3.Connection]:
         yield conn
     finally:
         conn.close()
+
+
+@contextmanager
+def connect_accounts(path: Path | str | None = None) -> Iterator[sqlite3.Connection]:
+    """Open the accounts database (creating its tables if needed) and close it afterwards."""
+    path = Path(path) if path else accounts_path()
+    if str(path) != ":memory:":
+        path.parent.mkdir(parents=True, exist_ok=True)
+    conn = get_connection(path)
+    try:
+        conn.executescript(ACCOUNTS_SCHEMA_PATH.read_text(encoding="utf-8"))
+        yield conn
+    finally:
+        conn.close()
+
+
+def ensure_shop_database(shop_id: int) -> Path:
+    """Create a shop's database file and tables if they don't exist yet."""
+    path = shop_path(shop_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    ensure_database(path)
+    return path
 
 
 def create_schema(connection: sqlite3.Connection) -> None:
@@ -165,9 +224,28 @@ def reset_with_sample_data(db_path: Path | None = None) -> None:
         print(f"  {table}: {count} rows")
 
 
+def reset_everything(folder: Path | None = None) -> None:
+    """Delete every account and every shop: Lekha starts again from nothing.
+    Only accounts.db and the shops/ folder are touched."""
+    folder = Path(folder or data_dir())
+    (folder / "accounts.db").unlink(missing_ok=True)
+    shops = folder / "shops"
+    if shops.exists():
+        for shop_file in shops.glob("shop_*.db"):
+            shop_file.unlink()
+        if not any(shops.iterdir()):
+            shops.rmdir()
+
+
 if __name__ == "__main__":
     if sys.argv[1:] == ["--reset"]:
-        reset_empty()
+        folder = data_dir()
+        print(f"This deletes every account, shop, book and sale in {folder}.")
+        if input("Type DELETE to continue: ").strip() == "DELETE":
+            reset_everything(folder)
+            print("Done. Start Lekha and create an account to begin again.")
+        else:
+            print("Nothing was deleted.")
     else:
         print("Usage: python database.py --reset")
-        print(f"Deletes {database_path()} and everything in it, and starts an empty shop.")
+        print(f"Deletes every account and shop in {data_dir()}, after asking you to confirm.")

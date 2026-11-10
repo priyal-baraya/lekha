@@ -1,8 +1,15 @@
 # Database schema
 
-The schema lives in [`sql/schema.sql`](../sql/schema.sql). This page explains it.
+Lekha keeps two kinds of SQLite file:
 
-## Overview
+| File | Schema | Holds |
+|---|---|---|
+| `data/accounts.db` | [`sql/accounts_schema.sql`](../sql/accounts_schema.sql) | People, shops, who belongs to which shop with which role, invite codes |
+| `data/shops/shop_<id>.db` | [`sql/schema.sql`](../sql/schema.sql) | One shop's books, sales and stock corrections. Every shop gets its own file |
+
+On each page run, `app.py` reads the signed-in person's role from `accounts.db`, then points every query at their chosen shop's file. One shop's query can't reach another shop's rows, because they aren't in the file. (Phase 9; see [the accounts database](#the-accounts-database-phase-9) below.)
+
+## A shop's database: overview
 
 ```
 books 1 ───────< sale_items >─────── 1 sales
@@ -56,10 +63,11 @@ The last four columns were added in Phase 8 by a migration (see below).
 | File | What it does |
 |---|---|
 | `001_book_details.sql` | Adds `publisher`, `published_year`, `cover_id` and `openlibrary_key` to `books` (Phase 8) |
+| `002_recorded_by.sql` | Adds who did it: `sales.recorded_by`, `sale_cancellations.cancelled_by`, `stock_adjustments.recorded_by` (Phase 9) |
 
 SQLite keeps a spare whole number in every database file's header, `PRAGMA user_version`. `database.apply_migrations()` runs every migration numbered higher than it, in order. Each file and its new version number run in one transaction, so a failure leaves the database as it was. New databases go through exactly the same files, so old and new databases always end up identical. It runs on every start, and a database already up to date changes nothing.
 
-Tested: a database in the Phase 7 shape with a book in it is upgraded to version 1 with the book kept and its new columns empty; running it again applies nothing; the database refuses a bad cover number or record reference.
+Tested: a database in the Phase 7 shape with a book in it is upgraded to the latest version (2) with the book kept and its new columns empty; running it again applies nothing; the database refuses a bad cover number or record reference.
 
 ### `sales`
 
@@ -68,6 +76,7 @@ Tested: a database in the Phase 7 shape with a book in it is upgraded to version
 | `sale_id` | INTEGER | primary key | |
 | `sale_datetime` | TEXT | must be a real date and time in the form `YYYY-MM-DD HH:MM:SS` | When it happened, in store local time (IST) |
 | `status` | TEXT | `completed` or `cancelled`, default `completed` | Cancel without deleting history |
+| `recorded_by` | INTEGER | optional, > 0 | The `user_id` (in `accounts.db`) of whoever recorded the sale. Empty for sales recorded before Phase 9 |
 
 ### `sale_items`
 
@@ -87,6 +96,7 @@ Tested: a database in the Phase 7 shape with a book in it is upgraded to version
 | `sale_id` | INTEGER | **primary key** and foreign key → `sales` | Which sale. Being the primary key, it can appear only once: the database itself refuses a second cancellation |
 | `cancelled_at` | TEXT | real date and time | When |
 | `reason` | TEXT | required, not blank | Why |
+| `cancelled_by` | INTEGER | optional, > 0 | Who cancelled it (Phase 9) |
 
 `sales.status` is set to `cancelled` in the same transaction that inserts this row, and a test checks that the two always agree.
 
@@ -103,8 +113,54 @@ Tested: a database in the Phase 7 shape with a book in it is upgraded to version
 | `quantity_after` | INTEGER | ≥ 0; must differ from `quantity_before` | Stock after the correction |
 | `reason` | TEXT | `shelf_count`, `damaged_or_lost`, `delivery_received` or `other` | Why it changed |
 | `note` | TEXT | required when the reason is `other` | Explanation |
+| `recorded_by` | INTEGER | optional, > 0 | Who made the correction (Phase 9) |
 
 The change itself (`quantity_after − quantity_before`) is calculated, not stored.
+
+**Why "who" is a plain number, not a foreign key.** The people live in `accounts.db`, a different file, and SQLite foreign keys can't point into another file. So these columns hold the `user_id`, and the pages look up the names in `accounts.db`. If a person is later removed from the shop, their past sales still say who recorded them.
+
+## The accounts database (Phase 9)
+
+### `users`
+
+| Column | Type | Rule | Purpose |
+|---|---|---|---|
+| `user_id` | INTEGER | primary key | |
+| `username` | TEXT | unique ignoring case; 3–32 letters, numbers, `.`, `_` or `-`; optional | For password sign-in |
+| `display_name` | TEXT | required, not blank | The name the team sees |
+| `password_hash` | TEXT | optional; must start `scrypt$` | Never the password itself: a salted scrypt hash, stored as `scrypt$n$r$p$salt$hash` |
+| `google_subject` | TEXT | unique; optional | Google's permanent ID for the person, for Google sign-in |
+| `email` | TEXT | optional | From Google, shown in Settings |
+| `failed_logins`, `locked_until` | INTEGER, TEXT | ≥ 0; optional date and time | 5 wrong passwords in a row lock the account for 15 minutes |
+| (whole row) | | either a username **and** a password hash, or a Google ID | Every account has a way to sign in |
+
+### `shops`
+
+| Column | Type | Rule | Purpose |
+|---|---|---|---|
+| `shop_id` | INTEGER | primary key | Also names the shop's file, `shop_<id>.db` |
+| `name` | TEXT | 1–80 characters | |
+| `default_reorder_level` | INTEGER | ≥ 0, default 2 | Starting reorder level for new books |
+
+### `memberships`
+
+| Column | Type | Rule | Purpose |
+|---|---|---|---|
+| `shop_id`, `user_id` | INTEGER | foreign keys; together the **primary key** | One role per person per shop |
+| `role` | TEXT | `owner` or `staff` | What they may do (see [`services/permissions.py`](../services/permissions.py)) |
+
+The rule "a shop always keeps at least one owner" spans several rows, so it's enforced in `services/accounts.py`, and tested.
+
+### `invitations`
+
+| Column | Type | Rule | Purpose |
+|---|---|---|---|
+| `invitation_id` | INTEGER | primary key | |
+| `shop_id` | INTEGER | foreign key → `shops` | The shop the code joins |
+| `code_hash` | TEXT | unique; 64 characters | SHA-256 of the invite code. The code itself is shown once and never stored |
+| `role` | TEXT | `owner` or `staff` | The role the person will join with |
+| `created_by`, `created_at`, `expires_at` | | | Who made it; valid for 7 days |
+| `used_by`, `used_at`, `revoked_at` | | optional | Each code works once and can be cancelled |
 
 ## Design decisions
 

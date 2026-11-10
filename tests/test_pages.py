@@ -1,10 +1,14 @@
 """Tests that run the pages themselves, without a browser.
 
 Streamlit's AppTest loads a page script, runs it like a real visit, and
-lets the test read what was drawn and click widgets. Each test points
-Lekha at its own temporary database through LEKHA_DB_PATH (an empty shop,
-or a copy of the fictional sample data the tests' expected numbers refer
-to), so the real data/lekha.db is never touched.
+lets the test read what was drawn and click widgets.
+
+Two kinds of test:
+  * single pages (views/*.py) run on one temporary shop database through
+    LEKHA_DB_PATH, with the visitor's role set directly;
+  * the whole app (app.py), with sign-in, shops and roles, runs on a
+    temporary data folder through LEKHA_DATA_DIR.
+The real data/ folder is never touched.
 """
 
 import json
@@ -15,16 +19,21 @@ import pytest
 import streamlit as st
 from streamlit.testing.v1 import AppTest
 
-from database import get_connection, reset_empty, reset_with_sample_data
-from services import openlibrary
+from database import connect, connect_accounts, ensure_shop_database, get_connection, reset_empty, reset_with_sample_data
+from services import accounts, openlibrary
+from services.books import BookInput, add_book
+from ui import session
 
 PROJECT = Path(__file__).parent.parent
 TIMEOUT = 30  # seconds per run; the first run imports pandas and Altair
+PASSWORD = "correct horse battery"
 
+
+# ---------------------------------------------------------------- fixtures
 
 @pytest.fixture
 def sample_file(tmp_path, monkeypatch):
-    """A fresh sample database file, and Lekha pointed at it."""
+    """A fresh copy of the fictional test dataset, and Lekha pointed at it."""
     path = tmp_path / "lekha.db"
     reset_with_sample_data(path)
     monkeypatch.setenv("LEKHA_DB_PATH", str(path))
@@ -38,6 +47,14 @@ def empty_shop(tmp_path, monkeypatch):
     reset_empty(path)
     monkeypatch.setenv("LEKHA_DB_PATH", str(path))
     return path
+
+
+@pytest.fixture
+def data_dir(tmp_path, monkeypatch):
+    """An empty data folder for whole-app tests (accounts and shop files)."""
+    monkeypatch.setenv("LEKHA_DATA_DIR", str(tmp_path))
+    monkeypatch.delenv("LEKHA_DB_PATH", raising=False)
+    return tmp_path
 
 
 @pytest.fixture
@@ -62,18 +79,38 @@ def open_library(monkeypatch):
     st.cache_data.clear()
 
 
-def run_page(name: str) -> AppTest:
+# ----------------------------------------------------------------- helpers
+
+def run_page(name: str, role: str = "owner", user_id: int | None = None) -> AppTest:
+    """Run one page as someone with this role in the shop."""
     app = AppTest.from_file(str(PROJECT / "views" / f"{name}.py"), default_timeout=TIMEOUT)
+    app.session_state[session.ROLE] = role
+    if user_id is not None:
+        app.session_state[session.USER] = user_id
+    app.run()
+    return app
+
+
+def run_app(user_id: int | None = None) -> AppTest:
+    """Run the whole app, optionally as an already signed-in person."""
+    app = AppTest.from_file(str(PROJECT / "app.py"), default_timeout=TIMEOUT)
+    if user_id is not None:
+        app.session_state[session.USER] = user_id
+        app.session_state[session.METHOD] = "password"
     app.run()
     return app
 
 
 def all_text(app: AppTest) -> str:
-    """Everything the page wrote with markdown, html, info or error boxes."""
+    """Everything the page wrote with markdown, html, info, success or error boxes."""
     parts = [element.value for element in app.markdown]
     parts += [str(element.proto.body) for element in app.get("html")]
-    parts += [element.value for element in app.info] + [element.value for element in app.error]
+    parts += [box.value for box in [*app.info, *app.error, *app.success]]
     return "\n".join(parts)
+
+
+def field(app: AppTest, label: str):
+    return next(widget for widget in app.text_input if widget.label == label)
 
 
 def stock(path: Path, book_id: int) -> int:
@@ -84,13 +121,19 @@ def stock(path: Path, book_id: int) -> int:
         conn.close()
 
 
-# ---------- Every page opens ----------
+def person_with_shop(username: str, shop_name: str) -> tuple[int, int]:
+    with connect_accounts() as acc:
+        user_id = accounts.create_user(acc, username, username.title(), PASSWORD)
+        shop_id = accounts.create_shop(acc, user_id, shop_name)
+    ensure_shop_database(shop_id)
+    return user_id, shop_id
+
+
+# ---------- Every page opens (as an owner) ----------
 
 @pytest.mark.parametrize(
     "page, expected",
     [
-        # Overview links to other pages, which only works inside app.py's
-        # navigation, so it is tested through app.py below.
         ("books", "Showing <strong>12</strong> of 12 books"),
         ("sales", "The sale is empty"),
         ("inventory", "books need attention"),
@@ -106,22 +149,11 @@ def test_page_opens_without_errors(sample_file, page, expected):
     assert "fictional" not in text.lower()          # the app never labels itself as fake data
 
 
-def test_whole_app_opens_on_overview(sample_file):
-    app = AppTest.from_file(str(PROJECT / "app.py"), default_timeout=TIMEOUT)
-    app.run()
-    assert not app.exception
-    assert not app.error
-    text = all_text(app)
-    assert "Reading between the numbers." in text
-    assert "The daily read" in text
-    assert "Book data and analytics will come next" not in text   # old message removed
-
-
 # ---------- The example from the brief, through the real page ----------
 
 def test_selling_two_copies_through_the_sales_page(sample_file):
     assert stock(sample_file, 1) == 8
-    app = run_page("sales")
+    app = run_page("sales", role="staff", user_id=5)            # staff may sell
 
     app.selectbox(key="sale_book_0").set_value(1).run()        # The Monsoon Ledger
     app.number_input(key="sale_qty_0").set_value(2).run()
@@ -133,6 +165,11 @@ def test_selling_two_copies_through_the_sales_page(sample_file):
     assert any("Sale #16 recorded: 2 copies, ₹798.00" in box.value for box in app.success)
     assert stock(sample_file, 1) == 6                           # exactly 2 fewer
     assert "The sale is empty" in all_text(app)                 # basket cleared
+    conn = get_connection(sample_file)
+    try:
+        assert conn.execute("SELECT recorded_by FROM sales WHERE sale_id = 16").fetchone()[0] == 5
+    finally:
+        conn.close()
 
 
 def test_out_of_stock_book_cannot_be_added(sample_file):
@@ -151,7 +188,7 @@ def test_search_filters_the_catalogue(sample_file):
 
 
 def test_stock_correction_through_the_inventory_page(sample_file):
-    app = run_page("inventory")
+    app = run_page("inventory", user_id=3)
     app.selectbox(key="correct_choice").set_value(1).run()
     # Inside a form, typed values only count when the form is submitted, so
     # type and press Save in the same run, as a person would.
@@ -170,28 +207,119 @@ def test_insights_all_time_figures_match_hand_calculations(sample_file):
         assert figure in text, figure
 
 
+# ---------- What staff can and can't see ----------
+
+def test_staff_cannot_edit_books(sample_file):
+    app = run_page("books", role="staff")
+    assert [tab.label for tab in app.tabs] == ["Browse", "Add a book"]
+
+
+def test_staff_cannot_correct_stock(sample_file):
+    app = run_page("inventory", role="staff")
+    text = all_text(app)
+    assert "books need attention" in text                      # can see alerts
+    assert "Correct stock" not in text
+
+
+def test_staff_do_not_see_profit(sample_file):
+    app = run_page("insights", role="staff")
+    app.selectbox(key="insights_period").set_value("all_time").run()
+    text = all_text(app)
+    assert "₹11,144.00" in text                                # revenue yes
+    assert "Estimated gross profit" not in text and "₹3,992.00" not in text
+
+
+def test_staff_cannot_open_the_team_page(sample_file):
+    app = run_page("team", role="staff", user_id=1)
+    assert any("Only the shop's owners can invite and manage the team" in box.value for box in app.error)
+
+
+# ---------- Signing in, the whole app ----------
+
+def test_signed_out_visitors_only_see_sign_in(data_dir):
+    app = run_app()
+    assert not app.exception and not app.error
+    text = all_text(app)
+    assert "Reading between the numbers." in text
+    assert [tab.label for tab in app.tabs] == ["Sign in", "Create an account"]
+    assert "The daily read" not in text                        # no shop data without signing in
+
+
+def test_sign_up_create_a_shop_and_land_on_its_overview(data_dir):
+    app = run_app()
+    field(app, "Your name").set_value("Priya")
+    field(app, "Choose a username").set_value("priya")
+    field(app, "Choose a password").set_value(PASSWORD)
+    field(app, "Type the password again").set_value(PASSWORD)
+    app.button(key="FormSubmitter:sign_up-Create account").click().run()
+    assert not app.exception
+    assert "Start a shop" in all_text(app)                      # signed in, no shop yet
+
+    field(app, "Shop name").set_value("Kitaab Corner")
+    app.button(key="FormSubmitter:create_shop-Create shop").click().run()
+    assert not app.exception
+    text = all_text(app)
+    assert "Kitaab Corner" in text and "Your shop is empty" in text
+    assert "Your shop is ready" in text                         # shown here, not on the next page
+
+    with connect_accounts() as acc:
+        stored = acc.execute("SELECT password_hash FROM users WHERE username = 'priya'").fetchone()[0]
+        assert PASSWORD not in stored
+        assert [(m.shop_name, m.role) for m in accounts.memberships(acc, 1)] == [("Kitaab Corner", "owner")]
+    assert (data_dir / "shops" / "shop_1.db").exists()
+
+
+def test_wrong_password_is_refused_on_the_page(data_dir):
+    person_with_shop("priya", "Kitaab Corner")
+    app = run_app()
+    field(app, "Username").set_value("priya")
+    field(app, "Password").set_value("not my password")
+    app.button(key="FormSubmitter:sign_in-Sign in").click().run()
+    assert any("The username or password is incorrect." in box.value for box in app.error)
+    assert session.USER not in app.session_state
+
+
+def test_people_only_see_their_own_shop(data_dir):
+    asha, asha_shop = person_with_shop("asha", "Asha's Books")
+    ben, _ = person_with_shop("ben", "Ben's Books")
+    with connect(ensure_shop_database(asha_shop)) as conn:
+        add_book(conn, BookInput(title="Only at Asha's", author="A", genre="Fiction", selling_price=100))
+
+    text = all_text(run_app(asha))
+    assert "Asha's Books" in text and "Your shop is empty" not in text
+    text = all_text(run_app(ben))
+    assert "Ben's Books" in text and "Your shop is empty" in text
+    assert "Only at Asha's" not in text
+
+
+def test_removed_staff_lose_access_on_their_next_click(data_dir):
+    owner, shop = person_with_shop("owner", "Kitaab Corner")
+    with connect_accounts() as acc:
+        staff = accounts.create_user(acc, "assistant", "Assistant", PASSWORD)
+        accounts.redeem_invitation(acc, staff, accounts.create_invitation(acc, owner, shop))
+    app = run_app(staff)
+    assert "Kitaab Corner" in all_text(app)
+
+    with connect_accounts() as acc:
+        accounts.remove_member(acc, owner, shop, staff)
+    app.run()                                                   # their next click
+    text = all_text(app)
+    assert "Start a shop" in text and "Kitaab Corner" not in text
+
+
 # ---------- Errors ----------
 
-def test_broken_database_shows_a_friendly_message(tmp_path, monkeypatch):
-    broken = tmp_path / "broken.db"
-    broken.write_text("this is not a database", encoding="utf-8")
-    monkeypatch.setenv("LEKHA_DB_PATH", str(broken))
-    app = AppTest.from_file(str(PROJECT / "app.py"), default_timeout=TIMEOUT)
-    app.run()
+def test_broken_database_shows_a_friendly_message(data_dir):
+    (data_dir / "accounts.db").write_text("this is not a database", encoding="utf-8")
+    app = run_app()                     # the sign-in page itself doesn't read the file...
+    field(app, "Username").set_value("priya")
+    field(app, "Password").set_value(PASSWORD)
+    app.button(key="FormSubmitter:sign_in-Sign in").click().run()   # ...signing in does
     assert not app.exception                                    # no traceback shown
     assert any("couldn't read or write its database" in box.value for box in app.error)
 
 
 # ---------- A real, empty shop ----------
-
-def test_empty_shop_overview_explains_where_to_start(empty_shop):
-    app = AppTest.from_file(str(PROJECT / "app.py"), default_timeout=TIMEOUT)
-    app.run()
-    assert not app.exception and not app.error
-    text = all_text(app)
-    assert "Your shop is empty" in text
-    assert "₹0.00" in text                         # real zero, not a made-up figure
-
 
 def test_empty_shop_books_page_offers_ways_to_add(empty_shop):
     app = run_page("books")
@@ -199,7 +327,7 @@ def test_empty_shop_books_page_offers_ways_to_add(empty_shop):
 
 
 def test_adding_a_real_book_by_isbn(empty_shop, open_library):
-    app = run_page("books")
+    app = run_page("books", role="staff")                      # staff may add books
     app.session_state["books_tab"] = "Add a book"
     app.run()
     app.radio(key="add_method").set_value("isbn").run()

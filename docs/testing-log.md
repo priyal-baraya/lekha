@@ -302,3 +302,44 @@ Done on the real, empty shop. Books were looked up and **never saved**, so no pr
 ### Screenshots
 
 Four screenshots in `docs/screenshots/`, captured from the real, empty shop and live Open Library: the Overview (real zeros), an ISBN lookup, and a title search (desktop and phone). Each checked by eye. No fictional data appears in any of them.
+
+---
+
+## 2026-11-10: Accounts, shared shops and roles (branch `phase-9/accounts`)
+
+### Automated tests: **271 passed**
+
+| File | Tests | What it covers |
+|---|---|---|
+| `tests/test_accounts.py` | 39 (new) | Passwords stored only as scrypt hashes, different each time for the same password; bad usernames, names and short passwords refused; usernames unique ignoring case; a wrong password and an unknown username give the same message; 5 wrong passwords lock the account and a correct one resets the count; one Lekha account per Google ID; Google-only accounts can't sign in with a password; changing a password; creating a shop makes you its owner; every role's permissions; invite codes shown once, stored hashed, single-use, expiring, revocable; staff refused owner actions; outsiders refused everything; a shop always keeps an owner; one person in several shops; **two shops never see each other's books**; **two visitors at the same moment each see only their own shop** (two threads); sales, cancellations and corrections record who; older records have no recorder; `--reset` deletes accounts and shop files and nothing else |
+| `tests/test_pages.py` | 22 (7 new) | Signed-out visitors see only the sign-in page; **sign up, create a shop and land on its Overview** with the "shop is ready" message; a wrong password refused on the page; each person sees only their own shop; **removed staff lose access on their next click**; staff see no Edit tab, no stock correction, no profit and no Team page; a broken accounts database shows a friendly message |
+| `tests/test_openlibrary.py` | 31 | Migration tests now expect version 2 |
+
+### Browser check (2026-11-10)
+
+Run on a copy of Lekha using a **temporary data folder** (`LEKHA_DATA_DIR`), with test accounts, deleted afterwards. Nothing touched the real `data/` folder.
+
+| Check | Result |
+|---|---|
+| Open the app signed out | Only the sign-in page; no menu |
+| Create an account (owner) | Lands on "Your shops" with the account bar |
+| Start a shop | Overview of the new, empty shop; the bar shows the shop and "owner"; all seven pages in the menu |
+| Team → staff invite code | Code shown once (`XXXXX-XXXXX`) with its expiry; listed under "Codes not yet used" |
+| Second tab: create a staff account, join with the code typed **in lowercase without the dash** | Joined; Overview shows "You've joined the shop"; bar shows "staff" |
+| Staff menu | Overview, Books, Sales, Inventory, Insights, Settings: no Team |
+| Staff on Books | Tabs "Browse" and "Add a book" only |
+| Staff on Inventory and Insights | Low-stock alerts only, no correction or history; no profit section |
+
+### Issues found and fixed
+
+1. **"Your shop is ready" appeared on the wrong page.** The Overview never showed waiting messages, so it popped up on whichever page was opened next (Team, in the browser check). **Fix:** the Overview shows it; the sign-up page test now checks for it.
+2. **Staff were told about things they can't do.** The Inventory intro offered "a recorded way to correct stock counts", and the Overview said "edit the catalogue". **Fix:** both now depend on the role.
+3. **`database.py --reset` reset a file the app no longer reads.** **Fix:** it now deletes the accounts and shop files, after asking; a test checks it leaves other files alone.
+4. **The screenshot script broke with sign-in.** It opened pages by address, which now shows the sign-in page, and reloading a tab ends a password sign-in. **Fix:** it signs in (username and password from environment variables, never a file) and follows menu links. Tried on a throwaway shop: all four pictures were drawn signed in; the first ISBN picture was taken before the form appeared, so the script now waits for it. The throwaway pictures were discarded.
+5. **Jumping to the Overview after creating a shop couldn't work.** `st.switch_page` only goes to pages in the current menu, and for someone with no shop yet, the menu holds only Get started. **Fix:** the page sets a flag and reruns; `app.py`, which knows the full menu, opens the Overview.
+6. **A migration test hard-coded version 1.** **Fix:** a single `LATEST_VERSION` constant.
+7. **A test's `match=""` accepted any error message.** **Fix:** the exact message is checked.
+
+### Not yet checked
+
+- **Google sign-in with real Google credentials.** The account rules behind it are tested, and the button only appears once credentials are set up; the round trip to Google needs those credentials first (see `docs/setup.md`).

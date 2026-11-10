@@ -57,6 +57,7 @@ def correct_stock(
     reason: str,
     note: str = "",
     now: datetime | None = None,
+    recorded_by: int | None = None,
 ) -> int:
     """Set a book's stock to a counted number and record why, in one step.
 
@@ -102,10 +103,10 @@ def correct_stock(
         cursor = conn.execute(
             """
             INSERT INTO stock_adjustments
-                (book_id, adjusted_at, quantity_before, quantity_after, reason, note)
-            VALUES (?, ?, ?, ?, ?, ?)
+                (book_id, adjusted_at, quantity_before, quantity_after, reason, note, recorded_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (book_id, adjusted_at, expected_quantity, counted_quantity, reason, note or None),
+            (book_id, adjusted_at, expected_quantity, counted_quantity, reason, note or None, recorded_by),
         )
     return cursor.lastrowid
 
@@ -114,7 +115,7 @@ def recent_adjustments(conn: sqlite3.Connection, limit: int = 20) -> list[dict]:
     """The latest stock corrections, newest first, with book titles."""
     rows = conn.execute(
         """
-        SELECT a.adjustment_id, a.adjusted_at, b.title,
+        SELECT a.adjustment_id, a.adjusted_at, a.recorded_by, b.title,
                a.quantity_before, a.quantity_after,
                a.quantity_after - a.quantity_before AS change,
                a.reason, a.note

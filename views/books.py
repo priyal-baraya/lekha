@@ -24,6 +24,7 @@ from services.books import (
 )
 from services.money import paise_to_rupees
 from ui import components as ui
+from ui import session
 
 ALL_GENRES = "All genres"
 SORT_LABELS = {
@@ -258,7 +259,8 @@ def render_add_form(conn, found: dict | None) -> None:
         stock_col, reorder_col = st.columns(2)
         stock = stock_col.number_input("Copies in stock", min_value=0, step=1, value=0, key=f"add_stock_{version}")
         reorder = reorder_col.number_input(
-            "Reorder level", min_value=0, step=1, value=2, key=f"add_reorder_{version}",
+            "Reorder level", min_value=0, step=1, value=session.default_reorder_level(),
+            key=f"add_reorder_{version}",
             help="Lekha flags the book as low on stock at or below this number.",
         )
         submitted = st.form_submit_button("Add book", type="primary")
@@ -397,15 +399,15 @@ ui.show_flash()
 with connect() as conn:
     # on_change="rerun" makes the tabs remember which one is open, so the
     # page stays on "Add a book" after saving, and only the open tab runs.
-    browse_tab, add_tab, edit_tab = st.tabs(
-        ["Browse", "Add a book", "Edit a book"], key="books_tab", on_change="rerun",
-    )
-    if browse_tab.open:
-        with browse_tab:
+    # Editing prices and details is for owners; staff can browse and add.
+    names = ["Browse", "Add a book"] + (["Edit a book"] if session.can_do("edit_books") else [])
+    tabs = st.tabs(names, key="books_tab", on_change="rerun")
+    if tabs[0].open:
+        with tabs[0]:
             render_browse(conn)
-    if add_tab.open:
-        with add_tab:
+    if tabs[1].open:
+        with tabs[1]:
             render_add(conn)
-    if edit_tab.open:
-        with edit_tab:
+    if len(tabs) > 2 and tabs[2].open:
+        with tabs[2]:
             render_edit(conn)

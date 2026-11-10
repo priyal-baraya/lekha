@@ -22,6 +22,8 @@ The data exists, but it isn't trustworthy enough, or summarised enough, to suppo
 
 The owner or manager of one small shop: knows their books and readers well, isn't a data specialist, has little time, and needs to trust a number before acting on it. That shaped two principles: **every figure must be checkable**, and **every suggestion must state its limits**.
 
+A second user arrived later: **staff** at the till, who need to sell and add books quickly, but not to change prices, correct stock or see the shop's margins.
+
 ## 3. Requirements
 
 | Need | Requirement |
@@ -31,11 +33,12 @@ The owner or manager of one small shop: knows their books and readers well, isn'
 | Fix mistakes | Cancel a sale (stock returned exactly once); correct stock with a recorded reason |
 | See what's happening | Revenue, copies, transactions, trends, genres, best sellers, unsold books, for any period |
 | Act on it, carefully | Plain-language observations with evidence and limits |
+| Several people, several shops | Sign in with a password or Google; owners invite staff; each person sees only their own shops; staff limited to day-to-day work; who did what is recorded |
 | Honesty | Nothing invented: real book details, owner-entered prices and stock, recorded sales only; revenue never called profit; partial periods marked; small samples flagged |
 
 ## 4. Data model
 
-Five SQLite tables (`sql/schema.sql`):
+Each shop has its own SQLite file with five tables (`sql/schema.sql`); a separate `accounts.db` holds people, shops, roles and invite codes (`sql/accounts_schema.sql`):
 
 ```
 books 1 ───< sale_items >─── 1 sales ─── 0..1 sale_cancellations
@@ -52,6 +55,7 @@ books 1 ───< sale_items >─── 1 sales ─── 0..1 sale_cancellatio
 | Sales cancelled, never deleted | Deleting erases evidence; analytics count only `completed` sales |
 | `sale_cancellations.sale_id` is the **primary key** | The database itself refuses a second cancellation |
 | `STRICT` tables, `CHECK`, `UNIQUE`, foreign keys, `PRAGMA foreign_keys = ON` | The database refuses bad data even if application code has a bug. A test showed that without the PRAGMA, a sale line for a non-existent book was accepted |
+| **One file per shop** instead of a `shop_id` column | With a column, every query, forever, must remember `WHERE shop_id = ?`, and one slip shows a shop another shop's sales. Separate files leave nothing to forget, and the tested analytics SQL didn't change |
 
 ## 5. Features and technical design
 
@@ -76,7 +80,9 @@ The check and the change happen in one statement, so nothing can slip in between
 
 Answers are cached for a day, errors are shown plainly ("Couldn't reach Open Library…"), and typing a book in always works offline. Adding the new columns to existing databases needed Lekha's first **migration**: numbered SQL files applied once each, tracked with SQLite's `PRAGMA user_version`.
 
-**Security:** user input reaches SQL only through `?` placeholders. Sorting, which can't use placeholders, picks from a fixed list. A test types `'; DROP TABLE books; --` into search.
+**Accounts and roles.** People sign in with a username and password or with Google (Streamlit's built-in OpenID Connect sign-in). An owner invites staff with a one-time code. On every page run, `app.py` reads the person's role fresh from `accounts.db`, shows only the pages that role allows, and points every query at their chosen shop's file. The current shop is held in a `ContextVar`, not a global, because Streamlit serves every visitor from one Python process: a test runs two visits at once and checks neither sees the other's shop. Permissions are also enforced in the services, so a hidden button is never the only protection, and removing someone takes effect on their next click.
+
+**Security:** passwords are stored only as salted **scrypt** hashes; five wrong tries lock an account for 15 minutes; a wrong password and an unknown username look identical, in message and in timing; invite codes are stored as SHA-256 hashes, work once and expire after 7 days. User input reaches SQL only through `?` placeholders. Sorting, which can't use placeholders, picks from a fixed list. A test types `'; DROP TABLE books; --` into search.
 
 ## 6. Analytics and SQL
 
@@ -128,7 +134,7 @@ An earlier version used a larger *generated* dataset for screenshots. It was rem
 ## 8. Interface and design decisions
 
 - **Identity:** antique Indian manuscript art translated into a calm product: Manuscript Crimson and Persian Teal on parchment, Lora headings, Lato body, square corners, two original SVG ornaments (an arch and a rosette divider), used sparingly.
-- **Practical navigation:** Overview, Books, Sales, Inventory, Insights. Literary names ("The daily read", "Shelf check") appear only in section introductions.
+- **Practical navigation:** Overview, Books, Sales, Inventory, Insights, plus Team and Settings; each role sees only the pages it can use, and a slim bar above every page shows the shop, who's signed in and their role. Literary names ("The daily read", "Shelf check") appear only in section introductions.
 - **Honest charts:** one series, one colour; partial periods drawn as outlines (shape, not colour); empty weeks shown as zero; bars instead of pies.
 - **Phones:** a five-column basket grid fell apart when Streamlit stacked it, so basket lines became sentences ("1 copy × ₹399.00 = ₹399.00"); tables put decision columns straight after the title.
 - **Tokens:** colours and a six-step spacing scale live in `.streamlit/config.toml` and `ui/styles.css`, ready to map onto Figma variables.
@@ -141,8 +147,9 @@ An earlier version used a larger *generated* dataset for screenshots. It was rem
 | Test dataset | Queries match hand calculations | 10 |
 | Services | Books, money, inventory, sales, analytics behave as defined, including rollbacks | 135 |
 | Open Library and migration | Lookups and searches against **real saved Open Library responses** (no internet needed); genre suggestions; plain errors; a Phase 7 database upgraded without losing data | 31 |
-| Pages (`AppTest`) | Every page opens; an empty shop shows real zeros; a real book added by ISBN saves exactly what Open Library said plus the owner's price; a 2-copy sale reduces stock by exactly 2; a broken database shows a friendly message | 15 |
-| **Total** | Run on every push and pull request by GitHub Actions | **225** |
+| Accounts and shops | Password hashing and lockout, Google accounts, invite codes, every role's limits, a shop never losing its last owner, two shops never seeing each other's books, two simultaneous visitors kept apart, who-did-what recorded | 39 |
+| Pages (`AppTest`) | Every page opens; sign up, create a shop and land on it; staff see no editing, stock correction, profit or Team page; removed staff lose access on their next click; an empty shop shows real zeros; a real book added by ISBN saves exactly what Open Library said plus the owner's price; a 2-copy sale reduces stock by exactly 2; a broken database shows a friendly message | 22 |
+| **Total** | Run on every push and pull request by GitHub Actions | **271** |
 
 **Testing the tests.** Twice I broke the code on purpose to check a test could fail: once removing the foreign-key PRAGMA (a bad sale line got in), once removing the sale rollback (stock was left at 6 instead of 8). Both times the relevant test caught it.
 
@@ -153,7 +160,9 @@ An earlier version used a larger *generated* dataset for screenshots. It was rem
 ## 10. Limitations and next steps
 
 **Limitations**
-- One shop, one user, one computer; no logins.
+- Runs on one computer or server, not hosted online yet.
+- A password sign-in lasts until the tab is refreshed; there's no "forgot password" yet.
+- Google sign-in hasn't yet been tried with real Google credentials.
 - No delivery or supplier records, so profit uses each book's current cost and stock can't be rebuilt from history.
 - No partial returns or discounts.
 - Patterns only appear once real sales have been recorded; the tested dataset is far too small for patterns.

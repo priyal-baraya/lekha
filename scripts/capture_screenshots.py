@@ -5,17 +5,25 @@ A development tool, not part of Lekha itself. It needs Playwright
 Open Library, and Lekha running on port 8501:
 
     .\\.venv\\Scripts\\python.exe -m streamlit run app.py
-    # in a second terminal:
+    # in a second terminal, with your own Lekha username and password:
+    $env:LEKHA_SCREENSHOT_USERNAME = "your username"
+    $env:LEKHA_SCREENSHOT_PASSWORD = "your password"
     .\\.venv\\Scripts\\python.exe scripts\\capture_screenshots.py
 
-Only real data appears: whatever is in the shop's database, and real
-Open Library records. The script looks books up but never adds them,
-so it never types a price or a stock count.
+It signs in as you, so the pictures show your own shop. The username and
+password come from those two environment variables, never from a file,
+so they are never saved in the project.
+
+Only real data appears: whatever is in your shop, and real Open Library
+records. The script looks books up but never adds them, so it never
+types a price or a stock count.
 
 Streamlit draws pages after they load, over a live connection, so each
 shot waits until Streamlit reports it has finished running the page.
 """
 
+import os
+import sys
 from pathlib import Path
 
 from playwright.sync_api import Page, sync_playwright
@@ -38,6 +46,21 @@ def settle(page: Page) -> None:
     page.wait_for_timeout(500)
 
 
+def sign_in(page: Page, username: str, password: str) -> None:
+    page.get_by_label("Username", exact=True).fill(username)
+    page.get_by_label("Password", exact=True).fill(password)
+    page.get_by_role("button", name="Sign in", exact=True).click()
+    settle(page)
+
+
+def open_page(page: Page, path: str) -> None:
+    """Follow the menu link. Typing the address instead would reload the
+    tab, and a password sign-in lasts only as long as the open tab."""
+    if path != "/":
+        page.locator(f'a[href="{BASE}{path}"]').first.dispatch_event("click")
+        settle(page)
+
+
 def open_add_tab(page: Page) -> None:
     page.get_by_role("tab", name="Add a book").click()
     settle(page)
@@ -47,6 +70,8 @@ def isbn_lookup(page: Page) -> None:
     open_add_tab(page)
     page.get_by_label("ISBN", exact=True).fill(EXAMPLE_ISBN)
     page.get_by_role("button", name="Look up").click()
+    # The lookup reruns the page more than once; wait for the pre-filled form.
+    page.get_by_label("Selling price (₹)", exact=True).wait_for(timeout=30_000)
     settle(page)
 
 
@@ -69,13 +94,19 @@ SHOTS = [
 
 
 def main() -> None:
+    username = os.environ.get("LEKHA_SCREENSHOT_USERNAME")
+    password = os.environ.get("LEKHA_SCREENSHOT_PASSWORD")
+    if not username or not password:
+        sys.exit("Set LEKHA_SCREENSHOT_USERNAME and LEKHA_SCREENSHOT_PASSWORD first (see the top of this file).")
     OUT.mkdir(parents=True, exist_ok=True)
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(channel="msedge")
         for name, path, width, height, density, action in SHOTS:
             page = browser.new_page(viewport={"width": width, "height": height}, device_scale_factor=density)
-            page.goto(BASE + path)
+            page.goto(BASE)
             settle(page)
+            sign_in(page, username, password)
+            open_page(page, path)
             if action:
                 action(page)
             page.screenshot(path=OUT / f"{name}.png")
