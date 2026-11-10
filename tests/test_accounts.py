@@ -12,6 +12,8 @@ from services import ValidationError
 from services import accounts
 from services.accounts import SignInError
 from services.books import BookInput, add_book, count_books
+from services.inventory import correct_stock, recent_adjustments
+from services.sales import SaleLine, cancel_sale, get_sale, list_sales, record_sale
 from services.permissions import can
 
 NOW = datetime(2026, 11, 10, 10, 0, 0)
@@ -298,3 +300,26 @@ def test_shop_choice_doesnt_leak_between_visitors(tmp_path, monkeypatch):
         thread.join()
     assert seen == {"a": tmp_path / "a.db", "b": tmp_path / "b.db"}
     assert database.database_path() == database.DEFAULT_DB_PATH   # this test's own run was never changed
+
+
+# ---------- Who did what ----------
+
+def test_sales_cancellations_and_corrections_record_who(sample_db):
+    sale_id = record_sale(sample_db, [SaleLine(1, 1, 39900)], now=NOW, recorded_by=7)
+    assert get_sale(sample_db, sale_id)["recorded_by"] == 7
+    assert list_sales(sample_db)[0]["recorded_by"] == 7
+    cancel_sale(sample_db, sale_id, "Entered by mistake", now=NOW, cancelled_by=8)
+    assert get_sale(sample_db, sale_id)["cancelled_by"] == 8
+    correct_stock(sample_db, 3, 6, 5, "damaged_or_lost", now=NOW, recorded_by=9)
+    assert recent_adjustments(sample_db)[0]["recorded_by"] == 9
+
+
+def test_older_records_have_no_recorder(sample_db):
+    assert get_sale(sample_db, 1)["recorded_by"] is None     # made before accounts existed
+
+
+def test_display_names_for_recorded_by(acc):
+    first = new_user(acc, "first", "Asha")
+    second = new_user(acc, "second", "Ben")
+    assert accounts.display_names(acc, [first, second, None, first]) == {first: "Asha", second: "Ben"}
+    assert accounts.display_names(acc, []) == {}

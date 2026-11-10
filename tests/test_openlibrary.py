@@ -203,8 +203,11 @@ def test_database_refuses_bad_details_too(empty_db):
 
 # ---------- Migration ----------
 
+LATEST_VERSION = 2   # sql/migrations/001 and 002
+
+
 def test_new_database_is_at_the_latest_version(empty_db):
-    assert schema_version(empty_db) == 1
+    assert schema_version(empty_db) == LATEST_VERSION
     columns = [row["name"] for row in empty_db.execute("PRAGMA table_info(books)")]
     assert columns[-4:] == ["publisher", "published_year", "cover_id", "openlibrary_key"]
 
@@ -216,8 +219,8 @@ def test_old_database_is_upgraded_without_losing_books():
     conn.execute("INSERT INTO books (title, author, genre, selling_price_paise) VALUES ('Old', 'Book', 'Fiction', 100)")
     conn.commit()
     assert schema_version(conn) == 0
-    assert apply_migrations(conn) == [1]
-    assert schema_version(conn) == 1
+    assert apply_migrations(conn) == [1, 2]
+    assert schema_version(conn) == LATEST_VERSION
     row = conn.execute("SELECT title, cover_id FROM books").fetchone()
     assert (row["title"], row["cover_id"]) == ("Old", None)
     assert apply_migrations(conn) == []          # running again changes nothing
@@ -226,4 +229,4 @@ def test_old_database_is_upgraded_without_losing_books():
 
 def test_create_schema_is_safe_to_run_again(empty_db):
     create_schema(empty_db)
-    assert schema_version(empty_db) == 1
+    assert schema_version(empty_db) == LATEST_VERSION

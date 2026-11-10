@@ -57,11 +57,13 @@ def record_sale(
     lines: list[SaleLine],
     sale_datetime: datetime | None = None,
     now: datetime | None = None,
+    recorded_by: int | None = None,
 ) -> int:
     """Save a completed sale and reduce stock, all or nothing.
 
     sale_datetime is when the sale happened (default: now). It may be in
     the past, for entering receipts later, but not in the future.
+    recorded_by is the user_id of the person recording it.
     Returns the new sale_id. Raises ValidationError, with every problem
     found, if anything is wrong; in that case nothing is saved.
     """
@@ -84,8 +86,8 @@ def record_sale(
     # rolls back everything done so far, including earlier stock updates.
     with conn:
         sale_id = conn.execute(
-            "INSERT INTO sales (sale_datetime, status) VALUES (?, 'completed')",
-            (when.strftime(TIMESTAMP_FORMAT),),
+            "INSERT INTO sales (sale_datetime, status, recorded_by) VALUES (?, 'completed', ?)",
+            (when.strftime(TIMESTAMP_FORMAT), recorded_by),
         ).lastrowid
         problems = []
         for line in lines:
@@ -128,7 +130,8 @@ def record_sale(
 
 
 def cancel_sale(
-    conn: sqlite3.Connection, sale_id: int, reason: str, now: datetime | None = None
+    conn: sqlite3.Connection, sale_id: int, reason: str, now: datetime | None = None,
+    cancelled_by: int | None = None,
 ) -> None:
     """Cancel a completed sale and return its copies to stock, exactly once."""
     reason = " ".join((reason or "").split())
@@ -158,8 +161,8 @@ def cancel_sale(
                 (line["quantity"], line["book_id"]),
             )
         conn.execute(
-            "INSERT INTO sale_cancellations (sale_id, cancelled_at, reason) VALUES (?, ?, ?)",
-            (sale_id, cancelled_at, reason),
+            "INSERT INTO sale_cancellations (sale_id, cancelled_at, reason, cancelled_by) VALUES (?, ?, ?, ?)",
+            (sale_id, cancelled_at, reason, cancelled_by),
         )
 
 
@@ -167,7 +170,7 @@ def list_sales(conn: sqlite3.Connection, limit: int = 50) -> list[dict]:
     """Recent sales, newest first, with their copies and totals."""
     rows = conn.execute(
         """
-        SELECT s.sale_id, s.sale_datetime, s.status,
+        SELECT s.sale_id, s.sale_datetime, s.status, s.recorded_by,
                COUNT(si.sale_item_id)                  AS line_count,
                SUM(si.quantity)                        AS copies,
                SUM(si.quantity * si.unit_price_paise)  AS total_paise
@@ -186,7 +189,8 @@ def get_sale(conn: sqlite3.Connection, sale_id: int) -> dict | None:
     """One sale with its lines and, if cancelled, when and why."""
     sale = conn.execute(
         """
-        SELECT s.sale_id, s.sale_datetime, s.status, c.cancelled_at, c.reason AS cancel_reason
+        SELECT s.sale_id, s.sale_datetime, s.status, s.recorded_by,
+               c.cancelled_at, c.reason AS cancel_reason, c.cancelled_by
         FROM sales AS s
         LEFT JOIN sale_cancellations AS c ON c.sale_id = s.sale_id
         WHERE s.sale_id = ?
