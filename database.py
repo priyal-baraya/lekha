@@ -4,17 +4,19 @@ Everything else in the app talks to SQLite through get_connection(), so
 the important settings (foreign keys on, rows readable by column name)
 are applied in exactly one place.
 
-Where the database lives: data/lekha.db by default. Setting the
-environment variable LEKHA_DB_PATH points Lekha at a different file
-instead (the page tests and the demo dataset use this), without
-changing any code.
+Where the data lives (in data/, or the folder named by LEKHA_DATA_DIR):
+  - accounts.db: people, shops, roles and invite codes;
+  - shops/shop_<id>.db: one file per shop, holding its books and sales.
+app.py picks the signed-in person's shop file on every page run.
+LEKHA_DB_PATH points a single-shop tool (the page tests, query.py) at
+one particular shop file.
 
 The fictional sample data in data/sample_data.sql is used only by the
 automated tests (and by `query.py --sample`); it is never put in the
 app's database.
 
-Run this file directly to start again with an EMPTY shop. This DELETES
-the database file, and everything in it, first:
+Run this file directly to start again from nothing. This DELETES every
+account and every shop's books and sales:
 
     .\\.venv\\Scripts\\python.exe database.py --reset
 """
@@ -222,9 +224,28 @@ def reset_with_sample_data(db_path: Path | None = None) -> None:
         print(f"  {table}: {count} rows")
 
 
+def reset_everything(folder: Path | None = None) -> None:
+    """Delete every account and every shop: Lekha starts again from nothing.
+    Only accounts.db and the shops/ folder are touched."""
+    folder = Path(folder or data_dir())
+    (folder / "accounts.db").unlink(missing_ok=True)
+    shops = folder / "shops"
+    if shops.exists():
+        for shop_file in shops.glob("shop_*.db"):
+            shop_file.unlink()
+        if not any(shops.iterdir()):
+            shops.rmdir()
+
+
 if __name__ == "__main__":
     if sys.argv[1:] == ["--reset"]:
-        reset_empty()
+        folder = data_dir()
+        print(f"This deletes every account, shop, book and sale in {folder}.")
+        if input("Type DELETE to continue: ").strip() == "DELETE":
+            reset_everything(folder)
+            print("Done. Start Lekha and create an account to begin again.")
+        else:
+            print("Nothing was deleted.")
     else:
         print("Usage: python database.py --reset")
-        print(f"Deletes {database_path()} and everything in it, and starts an empty shop.")
+        print(f"Deletes every account and shop in {data_dir()}, after asking you to confirm.")

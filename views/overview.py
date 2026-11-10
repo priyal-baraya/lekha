@@ -25,6 +25,7 @@ ui.hero(
     tagline="Reading between the numbers.",
     description="An inventory and sales insights tool for independent bookstores.",
 )
+ui.show_flash()     # e.g. "Your shop is ready" after creating or joining a shop
 
 with connect() as conn:
     total_books = count_books(conn)
@@ -77,7 +78,8 @@ with books_column:
     ui.section_header(
         eyebrow="Books",
         title="The bookshelf",
-        description="Browse, search and edit the catalogue.",
+        description=("Browse, search and edit the catalogue." if session.can_do("edit_books")
+                     else "Browse, search and add to the catalogue."),
     )
     genre_word = "genre" if genre_count == 1 else "genres"
     st.markdown(f"**{total_books}** {'book' if total_books == 1 else 'books'} across {genre_count} {genre_word}.")

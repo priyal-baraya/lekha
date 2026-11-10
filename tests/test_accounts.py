@@ -302,6 +302,16 @@ def test_shop_choice_doesnt_leak_between_visitors(tmp_path, monkeypatch):
     assert database.database_path() == database.DEFAULT_DB_PATH   # this test's own run was never changed
 
 
+def test_reset_deletes_accounts_and_shops_only(tmp_path):
+    with connect_accounts(tmp_path / "accounts.db") as conn:
+        new_user(conn)
+    (tmp_path / "shops").mkdir()
+    (tmp_path / "shops" / "shop_1.db").write_bytes(b"")
+    (tmp_path / "keep_me.txt").write_text("not Lekha's")
+    database.reset_everything(tmp_path)
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["keep_me.txt"]
+
+
 # ---------- Who did what ----------
 
 def test_sales_cancellations_and_corrections_record_who(sample_db):

@@ -150,7 +150,9 @@ def render_history(conn) -> None:
 ui.page_intro(
     eyebrow="Shelf check",
     title="Inventory",
-    description="What's running low, and a recorded way to correct stock counts.",
+    description=("What's running low, and a recorded way to correct stock counts."
+                 if session.can_do("correct_stock")
+                 else "What's running low. Only the shop's owners can correct stock counts."),
 )
 ui.show_flash()
 

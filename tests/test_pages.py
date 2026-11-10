@@ -260,6 +260,7 @@ def test_sign_up_create_a_shop_and_land_on_its_overview(data_dir):
     assert not app.exception
     text = all_text(app)
     assert "Kitaab Corner" in text and "Your shop is empty" in text
+    assert "Your shop is ready" in text                         # shown here, not on the next page
 
     with connect_accounts() as acc:
         stored = acc.execute("SELECT password_hash FROM users WHERE username = 'priya'").fetchone()[0]
