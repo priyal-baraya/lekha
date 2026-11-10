@@ -645,3 +645,11 @@ Each entry: what was decided, why, and what else was considered. Newest at the b
 **Decision:** `--reset` now deletes `accounts.db` and the shop files, and only after the person types `DELETE`.
 
 **Why:** It used to empty the old single-shop file, `data/lekha.db`, which the app no longer reads: it would have looked like it worked while changing nothing. Deleting every account is serious, so it asks first.
+
+---
+
+## 2026-11-10: Slightly rounded corners
+
+**Decision:** Corners go from square to a small 6px radius everywhere (4px on tags, 3px on the outer end of chart bars), set once in `config.toml` and once as `--lekha-radius` in `ui/styles.css`.
+
+**Why:** The owner wanted the app to feel a little softer. A small radius does that while keeping the calm, editorial manuscript look; a large one would start to look like a generic app. Bars stay square on the baseline so their lengths are still easy to compare.

@@ -44,7 +44,9 @@ def revenue_over_time(table: pd.DataFrame, grain: str) -> alt.Chart:
 
     return (
         alt.Chart(data)
-        .mark_bar(stroke=CRIMSON, strokeWidth=1.5)
+        # Slightly rounded top corners, matching the rest of the app;
+        # the end on the baseline stays square.
+        .mark_bar(stroke=CRIMSON, strokeWidth=1.5, cornerRadiusEnd=3)
         .encode(
             x=alt.X("label:N", sort=order, title=BUCKET_NAMES[grain],
                     axis=alt.Axis(labelAngle=0 if len(order) <= 12 else -45, **AXIS_TEXT)),
@@ -86,6 +88,6 @@ def revenue_by_genre(rows: list[dict]) -> alt.Chart:
             alt.Tooltip("copies:Q", title="Copies"),
         ],
     )
-    bars = base.mark_bar(color=CRIMSON, height=18)
+    bars = base.mark_bar(color=CRIMSON, height=18, cornerRadiusEnd=3)
     labels = base.mark_text(align="left", dx=6, color=INK_SECONDARY, fontSize=13).encode(text="value_label:N")
     return (bars + labels).properties(height=max(120, 34 * len(data)))

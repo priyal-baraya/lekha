@@ -133,7 +133,7 @@ Books, Sales, Inventory and Insights all open with `page_intro()`: section label
 
 ## Shape and layout
 
-- **Corners:** square everywhere. `baseRadius = "none"` and `buttonRadius = "none"` in `config.toml`. A scan of every visible element on the Overview page found no rounded corners.
+- **Corners:** slightly rounded, one size everywhere: **6px** (`baseRadius` and `buttonRadius` in `config.toml`, `--lekha-radius` in `ui/styles.css` for the hero, summary strip and empty-shop panel). Tags use 4px (`--lekha-radius-small`) because they are small. Chart bars round only their outer end, by 3px, so the end on the baseline stays square and lengths still read accurately. *Changed on 2026-11-10 from square corners, at the owner's request: softer, without losing the editorial look.*
 - **Borders:** thin 1px lines. Border Taupe for outer edges, Aged Parchment for inner dividers, Antique Gold for ornamental rules.
 - **Composition:** full-width bands stacked vertically and separated by the ornamental divider, not a grid of floating cards.
 - **Responsive:** the metric strip goes from 4 columns to 2 (below 900px) to 1 (below 640px). Below 640px the hero hides its decorative strip so the text gets the full width.
@@ -159,7 +159,7 @@ The jaali lattice in the hero is two repeating CSS gradients at 22% gold opacity
 ## Charts (`ui/charts.py`, Altair)
 
 - **One series, one colour.** Revenue charts use Manuscript Crimson only and need no colour legend: the title and axis say what is shown.
-- **Bars, square.** Revenue over time uses vertical bars (discrete periods); revenue by genre uses horizontal bars sorted largest first, labelled `₹4,040.00 · 36.3%`. No pie charts: lengths are easier to compare than angles.
+- **Bars, lightly rounded at the outer end.** Revenue over time uses vertical bars (discrete periods); revenue by genre uses horizontal bars sorted largest first, labelled `₹4,040.00 · 36.3%`. No pie charts: lengths are easier to compare than angles.
 - **Shape, not colour, for partial periods:** filled bar = complete, outlined bar = partial or in progress.
 - **Every chart has** a hover tooltip, alt text for screen readers (`st.altair_chart(alt=...)`), a written summary under it, and a "Show as a table" view.
 - **Value labels** use Secondary Text, never the bar colour.

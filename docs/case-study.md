@@ -133,7 +133,7 @@ An earlier version used a larger *generated* dataset for screenshots. It was rem
 
 ## 8. Interface and design decisions
 
-- **Identity:** antique Indian manuscript art translated into a calm product: Manuscript Crimson and Persian Teal on parchment, Lora headings, Lato body, square corners, two original SVG ornaments (an arch and a rosette divider), used sparingly.
+- **Identity:** antique Indian manuscript art translated into a calm product: Manuscript Crimson and Persian Teal on parchment, Lora headings, Lato body, slightly rounded corners (6px), two original SVG ornaments (an arch and a rosette divider), used sparingly.
 - **Practical navigation:** Overview, Books, Sales, Inventory, Insights, plus Team and Settings; each role sees only the pages it can use, and a slim bar above every page shows the shop, who's signed in and their role. Literary names ("The daily read", "Shelf check") appear only in section introductions.
 - **Honest charts:** one series, one colour; partial periods drawn as outlines (shape, not colour); empty weeks shown as zero; bars instead of pies.
 - **Phones:** a five-column basket grid fell apart when Streamlit stacked it, so basket lines became sentences ("1 copy × ₹399.00 = ₹399.00"); tables put decision columns straight after the title.
