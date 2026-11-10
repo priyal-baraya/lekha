@@ -1,11 +1,13 @@
-# Sample data
+# Test dataset
 
-**Everything in this dataset is fictional.** Titles, authors, ISBNs, prices and sales were invented for testing and demonstration. Nothing describes a real bookstore. ISBNs start with `000`, which no real 13-digit ISBN does.
+> **Used only by the automated tests** (and by `query.py --sample`, in memory). It is never loaded into the app's database: the app holds only real books found on Open Library or typed in, and sales actually recorded.
 
-Source: [`data/sample_data.sql`](../data/sample_data.sql). Build it with:
+**Everything in this dataset is fictional.** Titles, authors, ISBNs, prices and sales were invented so the analytics could be checked against hand calculations. Nothing describes a real bookstore. Its ISBNs are 13 digits starting with `000`, which no real ISBN does (real ones start with 978 or 979). Note that ISBN-shaped numbers can still be real: while testing Phase 8, `9780000000002`, which looks invented, turned out to be a real 1985 book on Open Library.
+
+Source: [`data/sample_data.sql`](../data/sample_data.sql). The tests load it into temporary databases. To run SQL against it:
 
 ```powershell
-.\.venv\Scripts\python.exe database.py --reset-sample
+.\.venv\Scripts\python.exe query.py --sample sql\01_first_queries.sql
 ```
 
 ## Size

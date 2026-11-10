@@ -34,21 +34,25 @@ python3 -m venv .venv
 
 The commands below are written for Windows. On macOS and Linux, replace `.\.venv\Scripts\python.exe` with `.venv/bin/python`.
 
-## 4. Create the database with the sample data
-
-```powershell
-.\.venv\Scripts\python.exe database.py --reset-sample
-```
-
-This creates `data/lekha.db` with 12 fictional books and 15 fictional sales. Run it again at any time to start fresh. **It deletes the database first**, including anything you added.
-
-## 5. Start Lekha
+## 4. Start Lekha
 
 ```powershell
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-Your browser opens at http://localhost:8501. To stop Lekha, press `Ctrl+C` in the terminal.
+Your browser opens at http://localhost:8501. The first time, Lekha creates an empty shop in `data/lekha.db`. To stop Lekha, press `Ctrl+C` in the terminal.
+
+## 5. Add your first book
+
+Go to **Books → Add a book** and choose how:
+
+- **Look up by ISBN**: type the 10 or 13 digits printed by the barcode. Open Library fills in that exact edition: title, author, publisher, year and cover.
+- **Search by title or author**: pick the right book from the results (check the author and year: results can include study guides and translations).
+- **Type it in myself**: for books Open Library doesn't have, or when you're offline.
+
+Check the details against the book, correct anything that's wrong, then enter **your** selling price, copies in stock and reorder level. These come only from you: Lekha never guesses them.
+
+Looking books up needs an internet connection. Lekha remembers each answer for a day, so repeated lookups are instant.
 
 ## Optional
 
@@ -58,27 +62,40 @@ Your browser opens at http://localhost:8501. To stop Lekha, press `Ctrl+C` in th
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-All 192 should pass. They never touch `data/lekha.db`.
+All 225 should pass. They never touch `data/lekha.db` and don't need the internet: Open Library lookups are replayed from real responses saved in `tests/fixtures/`.
 
-**Use the larger demo dataset** (30 books, about 14 weeks of sales, all fictional)
+**Start again with an empty shop**
 
 ```powershell
-.\.venv\Scripts\python.exe demo_data.py
-$env:LEKHA_DB_PATH = "data\demo.db"          # macOS/Linux: export LEKHA_DB_PATH=data/demo.db
+.\.venv\Scripts\python.exe database.py --reset
+```
+
+**This deletes every book, sale and correction.**
+
+**Use a different database file**
+
+```powershell
+$env:LEKHA_DB_PATH = "D:\shop\lekha.db"     # macOS/Linux: export LEKHA_DB_PATH=/path/to/lekha.db
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-`LEKHA_DB_PATH` tells Lekha which database file to use. Close the terminal (or run `Remove-Item Env:LEKHA_DB_PATH`) to go back to `data/lekha.db`.
+Close the terminal (or run `Remove-Item Env:LEKHA_DB_PATH`) to go back to `data/lekha.db`.
+
+**Practise SQL** on the small fictional dataset the tests use. It's built in memory for that run only; nothing is saved:
+
+```powershell
+.\.venv\Scripts\python.exe query.py --sample sql\01_first_queries.sql
+```
 
 **Retake the screenshots**
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
-# with the demo app running on port 8502:
+# with Lekha running on port 8501:
 .\.venv\Scripts\python.exe scripts\capture_screenshots.py
 ```
 
-This needs Microsoft Edge installed.
+This needs Microsoft Edge and an internet connection. It looks books up but never adds them.
 
 ## Common problems
 
@@ -88,6 +105,8 @@ This needs Microsoft Edge installed.
 | "running scripts is disabled on this system" | You tried `Activate.ps1`. You don't need it: these instructions call `.venv\Scripts\python.exe` directly |
 | `ModuleNotFoundError: No module named 'streamlit'` | You're using the system Python. Run the commands with `.\.venv\Scripts\python.exe`, not plain `python` |
 | "Port 8501 is already in use" | Lekha is already running in another terminal. Stop it with `Ctrl+C`, or add `--server.port 8502` |
-| Lekha shows "couldn't read or write its database" | Another program has `data\lekha.db` open, or the file is damaged. Close the other program, or rebuild it with `database.py --reset-sample` (this deletes its data) |
+| Lekha shows "couldn't read or write its database" | Another program has `data\lekha.db` open, or the file is damaged. Close the other program and reload. If the file is damaged, `database.py --reset` starts an empty shop (this deletes its data) |
+| "Couldn't reach Open Library" | Check the internet connection. You can still type the book in yourself |
+| "Open Library is busy right now" | Wait a minute and try again |
 | Changes to `.streamlit/config.toml` don't show | The theme is read at start-up. Stop Lekha and start it again |
 | You want Streamlit's Rerun button and full error details while developing | In `.streamlit/config.toml`, set `toolbarMode = "auto"` and `showErrorDetails = "full"` |

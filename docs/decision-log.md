@@ -503,3 +503,71 @@ Each entry: what was decided, why, and what else was considered. Newest at the b
 ## 2026-11-08: Resume bullets stay out of the repository
 
 **Why:** A resume is personal and changes per application. The case study holds the verified facts the bullets are drawn from.
+
+---
+
+## 2026-11-10: Real data only in the app
+
+**Decision:** The app no longer contains or shows any fictional data. It starts as an empty shop (`database.py --reset`). The fictional sample dataset is used only inside the tests and by `query.py --sample` (in memory). The generated demo dataset and its screenshots were deleted.
+
+**Why:** The owner asked that nothing on the site be fake. Book details can be real (from Open Library); prices, stock and sales can only be real if the owner enters or records them, so Lekha never pre-fills them.
+
+**Supersedes:** the "Sample data" notice (Phase 3) and the generated demo dataset (Phase 7).
+
+---
+
+## 2026-11-10: Open Library for book details
+
+**Decision:** Look books up on Open Library: `/api/books?jscmd=data` for an exact edition by ISBN, `/search.json` for titles and authors. Python's built-in `urllib`, with a short timeout and a User-Agent naming the app.
+
+**Why:** Free, open, no key or account, and it worked from this machine. Google Books refused requests without a registered key ("Too Many Requests"). No new package was needed.
+
+**Considered:** Google Books (better search, sometimes prices, but needs a key and has a shared quota).
+
+---
+
+## 2026-11-10: Pre-fill, never save straight from the API
+
+**Decision:** A found book fills in the add form, under a "check these details" note, with a link to the Open Library record. The owner corrects anything and adds their own price and stock before saving.
+
+**Why:** Open Library is edited by volunteers. A real search returned study guides, translations and one record crediting the wrong author.
+
+---
+
+## 2026-11-10: Edition facts only from an exact ISBN match
+
+**Decision:** Publisher and year are saved only from an ISBN lookup (or typed by the owner). A title search fills in title, author, cover and suggested genre, and leaves the ISBN for the owner to type.
+
+**Why:** A search result is a *work* (the book in general, across editions). Its publisher and year would describe some other copy, and saving them would quietly put wrong facts in the catalogue.
+
+---
+
+## 2026-11-10: Suggested genre, confirmed by the owner
+
+**Decision:** Simple keyword rules map Open Library's subject tags to shop genres, in a fixed order (Children, Poetry, Mystery, Cookery, History, Fiction). The suggestion is pre-selected; the owner can change it.
+
+**Why:** Subject tags are messy ("fraternal twins", "award:man_booker_prize=1997"). A shop needs a few broad sections.
+
+---
+
+## 2026-11-10: Numbered migrations with PRAGMA user_version
+
+**Decision:** Schema changes after release go in `sql/migrations/NNN_*.sql`. `apply_migrations()` runs those newer than the database's `user_version`, each with its version number in one transaction, on every start. New databases go through the same files.
+
+**Why:** `CREATE TABLE IF NOT EXISTS` can't add columns to an existing table. Phase 4 avoided this by adding a new table; adding book details to `books` needed a real migration.
+
+---
+
+## 2026-11-10: Tests replay real saved Open Library responses
+
+**Decision:** Real responses were recorded once into `tests/fixtures/`; the tests replace the network call with one that returns them.
+
+**Why:** Tests that call the internet are slow, can fail for reasons unrelated to the code, and would call Open Library on every GitHub push. Recording *real* responses keeps the tests honest about Open Library's actual format.
+
+---
+
+## 2026-11-10: Cache Open Library answers for a day
+
+**Decision:** `st.cache_data(ttl=1 day)` on the lookup and search functions in the Books page. Errors aren't cached.
+
+**Why:** Faster repeat lookups, and fewer requests to a free service. Book details rarely change within a day.

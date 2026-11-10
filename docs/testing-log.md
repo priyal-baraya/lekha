@@ -266,3 +266,39 @@ Headings: one h1 per page, h2 for each section, no skipped levels. No text under
 ### Screenshots
 
 Seven screenshots in `docs/screenshots/` (desktop at 1280px, phone at 390px), captured by `scripts/capture_screenshots.py` from the demo dataset. Each was opened and checked by eye: the right page, fully drawn, the sample-data notice visible, no developer controls.
+
+*Superseded on 2026-11-10: the demo dataset and these screenshots were removed; see below.*
+
+---
+
+## 2026-11-10: Real books from Open Library, real data only (branch `phase-8/real-books`)
+
+### Automated tests: **225 passed**
+
+| File | Tests | What it covers |
+|---|---|---|
+| `tests/test_openlibrary.py` | 31 | Replaying **real Open Library responses** saved on 2026-11-08: ISBN lookup of *The God of Small Things* (Flamingo, 1998, cover 10585942, edition `/books/OL31903694M`); hyphens accepted; unknown ISBN returns nothing; malformed ISBNs refused **before** any request; title search returns works with author and first-published year; no ISBN or edition facts invented for a work; plain messages for "unreachable" and "busy"; genre suggestions (including "Historical fiction" staying Fiction); saving and editing keep the book details; bad details refused by both Python and the database; migrating a Phase 7 database keeps its book and runs only once |
+| `tests/test_pages.py` | 15 (4 new) | An empty shop's Overview shows real zeros and where to start; the empty Books page; **adding a real book by ISBN through the page** (form pre-filled, price left empty, saved row has exactly Open Library's details plus the entered price and stock); searching Open Library lists real matches and leaves ISBN and publisher empty for a work |
+| `tests/test_demo_data.py` | removed | Demo dataset deleted |
+
+### Live checks against the real Open Library (browser, 2026-11-10)
+
+Done on the real, empty shop. Books were looked up and **never saved**, so no price or stock was invented.
+
+| Check | Result |
+|---|---|
+| ISBN 978-0-14-303965-5 (not in the saved test files) | *Malgudi days*, Rasipuram Krishnaswamy Narayan, Penguin Books, 2006, genre suggested Fiction; Open Library has no cover for it, so none shown; price and cost empty |
+| Search "Shyam Selvadurai Funny Boy" | 7 matches with real covers; the first is the French translation *Drôle de garçon*, a reminder to check before choosing |
+| "Start again" | Discarded the lookup; the shop still has 0 books |
+
+### Issues found and fixed
+
+1. **A "made-up" ISBN was real.** `9780000000002`, chosen for a "not found" test, is a real 1985 book on Open Library. **Fix:** confirmed `9790000000001` returns nothing, and used that.
+2. **The test helper missed encoded addresses.** `ISBN:` is sent as `ISBN%3A`. **Fix:** decode before matching.
+3. **Docs edits mangled backslashes** in two Windows paths in `docs/setup.md` (`\01` became a control character). **Fix:** corrected by hand, and both files checked for stray control characters.
+4. **Screenshots missed the covers.** Open Library's image server is slower than the page. **Fix:** the script waits until every image has loaded.
+5. **A screenshot step matched two elements** ("Title or author" also appears in "Search by title or author"). **Fix:** exact label match.
+
+### Screenshots
+
+Four screenshots in `docs/screenshots/`, captured from the real, empty shop and live Open Library: the Overview (real zeros), an ISBN lookup, and a title search (desktop and phone). Each checked by eye. No fictional data appears in any of them.
