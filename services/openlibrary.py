@@ -30,6 +30,14 @@ COVERS = "https://covers.openlibrary.org/b/id/{cover_id}-{size}.jpg"
 # if something goes wrong.
 USER_AGENT = "Lekha/1.0 (independent bookstore inventory; https://github.com/priyal-baraya/lekha)"
 TIMEOUT_SECONDS = 10
+# A book's answer is a few kilobytes; anything far bigger is refused
+# rather than read into memory.
+MAX_RESPONSE_BYTES = 2_000_000
+MAX_SEARCH_LENGTH = 200
+# What Open Library's record references look like. Anything else is
+# ignored, so a strange answer can never become a strange link.
+EDITION_KEY = re.compile(r"/books/OL\d+M")
+WORK_KEY = re.compile(r"/works/OL\d+W")
 
 # Shop genres suggested from Open Library's subject tags, checked in this
 # order, so "Juvenile fiction" suggests Children rather than Fiction, and
@@ -78,11 +86,23 @@ def cover_url(cover_id: int | None, size: str = "M") -> str | None:
 
 def fetch_json(url: str) -> dict:
     """GET a URL and decode its JSON. The tests replace this function with
-    one that returns saved real responses, so they never need the internet."""
+    one that returns saved real responses, so they never need the internet.
+
+    Only Open Library's own address is ever fetched: the URLs are built in
+    this file, and the check below makes sure of it."""
+    if not url.startswith(API + "/"):
+        raise ValueError(f"Lekha only fetches from {API}")
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
-            return json.load(response)
+        # Reviewed for bandit: the scheme and host are fixed to https://openlibrary.org above.
+        with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:  # nosec B310
+            body = response.read(MAX_RESPONSE_BYTES + 1)
+        if len(body) > MAX_RESPONSE_BYTES:
+            raise OpenLibraryError("Open Library sent something Lekha couldn't read. Try again later.")
+        data = json.loads(body)
+        if not isinstance(data, dict):
+            raise OpenLibraryError("Open Library sent something Lekha couldn't read. Try again later.")
+        return data
     except urllib.error.HTTPError as problem:
         if problem.code == 429:
             raise OpenLibraryError("Open Library is busy right now. Wait a minute and try again.") from None
@@ -91,8 +111,19 @@ def fetch_json(url: str) -> dict:
         raise OpenLibraryError(
             "Couldn't reach Open Library. Check the internet connection, or type the book in by hand."
         ) from None
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, UnicodeDecodeError):
         raise OpenLibraryError("Open Library sent something Lekha couldn't read. Try again later.") from None
+
+
+def _text(value, limit: int) -> str:
+    """A tidy piece of text from Open Library: text only, one line, not too long."""
+    if not isinstance(value, str):
+        return ""
+    return " ".join(value.split())[:limit]
+
+
+def _positive_int(value) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else None
 
 
 def _year(text: str | None) -> int | None:
@@ -118,25 +149,31 @@ def lookup_isbn(raw_isbn: str) -> FoundBook | None:
 
     query = urllib.parse.urlencode({"bibkeys": f"ISBN:{isbn}", "format": "json", "jscmd": "data"})
     data = fetch_json(f"{API}/api/books?{query}").get(f"ISBN:{isbn}")
-    if not data or not data.get("title"):
+    if not isinstance(data, dict) or not _text(data.get("title"), 300):
         return None
 
-    identifiers = data.get("identifiers", {})
+    identifiers = data.get("identifiers") or {}
     edition_ids = identifiers.get("openlibrary") or []
     key = data.get("key") or (f"/books/{edition_ids[0]}" if edition_ids else None)
-    if not key:
+    if not isinstance(key, str) or not EDITION_KEY.fullmatch(key):
         return None
-    isbn_13 = (identifiers.get("isbn_13") or [None])[0]
-    title = data["title"] + (f": {data['subtitle']}" if data.get("subtitle") else "")
+    isbn_13 = clean_isbn(_text((identifiers.get("isbn_13") or [None])[0], 20)) or None
+    if isbn_13 is not None and not (len(isbn_13) == 13 and isbn_13.isdigit()):
+        isbn_13 = None
+    subtitle = _text(data.get("subtitle"), 200)
+    title = _text(data["title"], 300) + (f": {subtitle}" if subtitle else "")
+    names = [_text(author.get("name"), 100) for author in data.get("authors", []) if isinstance(author, dict)]
+    publishers = [_text(p.get("name"), 200) for p in data.get("publishers", []) if isinstance(p, dict)]
     return FoundBook(
         title=title,
-        author=", ".join(author["name"] for author in data.get("authors", []) if author.get("name")),
+        author=", ".join(name for name in names if name)[:200],
         openlibrary_key=key,
         isbn=isbn_13 or isbn,
-        publisher=next((p["name"] for p in data.get("publishers", []) if p.get("name")), None),
-        published_year=_year(data.get("publish_date")),
-        cover_id=_cover_id_from_url((data.get("cover") or {}).get("medium")),
-        subjects=tuple(subject["name"] for subject in data.get("subjects", []) if subject.get("name")),
+        publisher=next((p for p in publishers if p), None),
+        published_year=_year(_text(data.get("publish_date"), 50)),
+        cover_id=_cover_id_from_url(_text((data.get("cover") or {}).get("medium"), 200)),
+        subjects=tuple(name for subject in data.get("subjects", [])[:40] if isinstance(subject, dict)
+                       for name in [_text(subject.get("name"), 100)] if name),
     )
 
 
@@ -145,21 +182,30 @@ def search(text: str, limit: int = 10) -> list[FoundBook]:
     text = " ".join((text or "").split())
     if len(text) < 2:
         raise ValidationError(["Type at least two letters of a title or author."])
+    if len(text) > MAX_SEARCH_LENGTH:
+        raise ValidationError([f"Search for at most {MAX_SEARCH_LENGTH} characters."])
     query = urllib.parse.urlencode({
         "q": text, "limit": limit,
         "fields": "key,title,author_name,first_publish_year,cover_i,subject",
     })
     results = []
-    for doc in fetch_json(f"{API}/search.json?{query}").get("docs", []):
-        if not doc.get("title") or not doc.get("key"):
+    docs = fetch_json(f"{API}/search.json?{query}").get("docs")
+    for doc in docs if isinstance(docs, list) else []:
+        if not isinstance(doc, dict):
             continue
+        title, key = _text(doc.get("title"), 300), doc.get("key")
+        if not title or not isinstance(key, str) or not WORK_KEY.fullmatch(key):
+            continue
+        year = _positive_int(doc.get("first_publish_year"))
+        authors = doc.get("author_name") if isinstance(doc.get("author_name"), list) else []
+        subjects = doc.get("subject") if isinstance(doc.get("subject"), list) else []
         results.append(FoundBook(
-            title=doc["title"],
-            author=", ".join(doc.get("author_name", [])),
-            openlibrary_key=doc["key"],
-            first_published=doc.get("first_publish_year"),
-            cover_id=doc.get("cover_i"),
-            subjects=tuple(doc.get("subject", [])[:40]),
+            title=title,
+            author=", ".join(name for name in (_text(a, 100) for a in authors) if name)[:200],
+            openlibrary_key=key,
+            first_published=year if year and 1000 <= year <= 2100 else None,
+            cover_id=_positive_int(doc.get("cover_i")),
+            subjects=tuple(name for name in (_text(s, 100) for s in subjects[:40]) if name),
         ))
     return results
 

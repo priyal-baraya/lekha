@@ -95,6 +95,7 @@ def render_correction(conn) -> None:
         submitted = st.form_submit_button("Save correction", type="primary")
 
     if submitted:
+        session.require("correct_stock")     # checked again at the moment of saving
         try:
             correct_stock(conn, book_id, expected, int(counted), reason, note, recorded_by=session.user_id())
         except ValidationError as problem:

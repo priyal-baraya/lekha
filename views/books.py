@@ -146,7 +146,7 @@ def render_isbn_lookup() -> None:
         return
     if found is None:
         st.info(
-            f"Open Library has no record for ISBN {isbn.strip()}. Check the number, "
+            f"Open Library has no record for ISBN {ui.plain(isbn.strip())}. Check the number, "
             "search by title instead, or type the book in yourself."
         )
         return
@@ -183,7 +183,7 @@ def render_search() -> None:
             cover_col.markdown("No cover")
         year = found["first_published"]
         text_col.markdown(
-            f"**{found['title']}**  \n{found['author'] or 'Author not listed'} · "
+            f"**{ui.plain(found['title'])}**  \n{ui.plain(found['author'] or 'Author not listed')} · "
             f"{'first published ' + str(year) if year else 'year not listed'}"
         )
         if button_col.button("Use this book", key=f"use_result_{index}"):
@@ -339,7 +339,7 @@ def render_edit(conn) -> None:
         cover_col, text_col = st.columns([1, 5])
         if book["cover_id"]:
             cover_col.image(openlibrary.cover_url(book["cover_id"], "M"), width=90)
-        lines = [" · ".join(details)] if details else []
+        lines = [ui.plain(" · ".join(details))] if details else []
         if book["openlibrary_key"]:
             lines.append(f"[Open Library record]({openlibrary.API + book['openlibrary_key']})")
         text_col.markdown("  \n".join(lines))
@@ -376,6 +376,7 @@ def render_edit(conn) -> None:
 
     if not submitted:
         return
+    session.require("edit_books")     # checked again at the moment of saving
     data = BookInput(title=title, author=author, genre=genre or "", isbn=isbn,
                      selling_price=price, cost_price=cost, reorder_level=int(reorder))
     try:

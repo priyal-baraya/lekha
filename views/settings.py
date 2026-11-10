@@ -23,7 +23,7 @@ with connect_accounts() as acc:
 ui.section_header(eyebrow="Shop", title=shop["name"])
 if session.can_do("manage_settings"):
     with st.form("shop_settings"):
-        name = st.text_input("Shop name", value=shop["name"])
+        name = st.text_input("Shop name", value=shop["name"], max_chars=80)
         reorder = st.number_input(
             "Default reorder level for new books", min_value=0, step=1, value=shop["default_reorder_level"],
             help="Lekha flags a book as low on stock at or below its reorder level. "
@@ -52,7 +52,8 @@ ui.section_header(eyebrow="You", title="Your account",
                                if user["uses_google"] and not user["has_password"]
                                else f"You sign in with the username {user['username']}."))
 with st.form("display_name"):
-    display_name = st.text_input("Your name, as the team sees it", value=user["display_name"])
+    display_name = st.text_input("Your name, as the team sees it", value=user["display_name"],
+                                 max_chars=accounts.MAX_NAME_LENGTH)
     renamed = st.form_submit_button("Save name")
 if renamed:
     try:
@@ -66,9 +67,10 @@ if renamed:
 
 if user["has_password"]:
     with st.form("change_password", clear_on_submit=True):
-        current = st.text_input("Current password", type="password", autocomplete="current-password")
-        new = st.text_input("New password", type="password", autocomplete="new-password")
-        repeat = st.text_input("New password again", type="password", autocomplete="new-password")
+        limit = accounts.MAX_PASSWORD_LENGTH
+        current = st.text_input("Current password", type="password", autocomplete="current-password", max_chars=limit)
+        new = st.text_input("New password", type="password", autocomplete="new-password", max_chars=limit)
+        repeat = st.text_input("New password again", type="password", autocomplete="new-password", max_chars=limit)
         changed = st.form_submit_button("Change password")
     if changed:
         if new != repeat:
@@ -80,7 +82,8 @@ if user["has_password"]:
             except ValidationError as problem:
                 ui.show_errors(problem.errors)
             else:
-                st.success("Password changed.")
+                session.remember_new_password()     # this tab stays signed in; others are signed out
+                st.success("Password changed. Any other tabs signed in to your account have been signed out.")
 
 ui.divider()
 ui.section_header(eyebrow="More shops", title="Start or join another shop",

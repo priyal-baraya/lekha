@@ -14,6 +14,7 @@ from services import ValidationError
 from services.money import format_rupees
 
 TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
+MAX_REASON_LENGTH = 300   # a sentence or two; stops a whole page being pasted in
 
 
 @dataclass
@@ -137,6 +138,8 @@ def cancel_sale(
     reason = " ".join((reason or "").split())
     if not reason:
         raise ValidationError(["Give a reason for cancelling the sale."])
+    if len(reason) > MAX_REASON_LENGTH:
+        raise ValidationError([f"Keep the reason to {MAX_REASON_LENGTH} characters or fewer."])
     cancelled_at = (now or datetime.now()).strftime(TIMESTAMP_FORMAT)
 
     with conn:

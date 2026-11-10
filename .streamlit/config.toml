@@ -5,6 +5,22 @@
 [browser]
 gatherUsageStats = false
 
+[server]
+# Only this computer can open Lekha. Streamlit's default is every network
+# the computer is on, which would let anyone on the shop's Wi-Fi reach the
+# sign-in page, and Lekha has no HTTPS, so passwords would cross the
+# network unencrypted. To let other devices in, see docs/setup.md.
+address = "localhost"
+# Streamlit's defaults, written out so they can't be switched off by
+# accident: refuse requests from other websites (CORS), and require a
+# token on every form submission (protection against cross-site request
+# forgery, XSRF).
+enableCORS = true
+enableXsrfProtection = true
+# Lekha has no file uploads and serves no extra files.
+enableStaticServing = false
+maxUploadSize = 1
+
 [client]
 # Show a plain message instead of Python tracebacks in the browser. Full
 # details still print in the terminal. For debugging, change to "full".

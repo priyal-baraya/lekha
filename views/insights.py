@@ -215,14 +215,15 @@ def render_observations(conn, period, genre) -> None:
     )
     for item in analytics.observations(conn, period, genre, low_stock=low_stock_books(conn)):
         with st.container(border=True):
-            st.markdown(f"**{item.title}**")
-            st.markdown(item.evidence)
+            # Observations quote titles and genres, so they are escaped.
+            st.markdown(f"**{ui.plain(item.title)}**")
+            st.markdown(ui.plain(item.evidence))
             if item.action:
-                st.markdown(f"*{item.action}*")
+                st.markdown(f"*{ui.plain(item.action)}*")
             for limit in item.limits:
                 # Normal text, not st.caption: caption text is faded and
                 # these limits matter as much as the finding.
-                st.markdown(f"Limit: {limit}")
+                st.markdown(f"Limit: {ui.plain(limit)}")
 
 
 # ------------------------------------------------------------------ page
@@ -235,7 +236,7 @@ ui.page_intro(
 
 with connect() as conn:
     period, genre, grain = render_filters(conn)
-    st.markdown(f"Completed sales · **{period.describe()}** · {genre or 'all genres'}")
+    st.markdown(f"Completed sales · **{period.describe()}** · {ui.plain(genre) if genre else 'all genres'}")
     render_headline(conn, period, genre)
     ui.divider()
     render_trend(conn, period, genre, grain)

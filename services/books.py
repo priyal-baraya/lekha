@@ -16,6 +16,11 @@ from services.money import rupees_to_paise
 # The only ORDER BY clauses allowed. Placeholders can't be used for
 # column names or sort directions, so instead of inserting user input
 # into the SQL, the page picks one of these fixed keys.
+# Longest text accepted for each field. Real titles fit easily; the limits
+# stop someone pasting a whole book into a form and filling the database.
+MAX_LENGTHS = {"title": 300, "author": 200, "genre": 60, "publisher": 200}
+MAX_SEARCH_LENGTH = 200
+
 SORT_OPTIONS = {
     "title": "title COLLATE NOCASE ASC",
     "price_low": "selling_price_paise ASC, title COLLATE NOCASE ASC",
@@ -91,7 +96,7 @@ def search_books(
     """
     if sort not in SORT_OPTIONS:
         raise ValueError(f"Unknown sort option: {sort}")
-    pattern = f"%{_escape_like(text.strip())}%"
+    pattern = f"%{_escape_like(text.strip()[:MAX_SEARCH_LENGTH])}%"
     rows = conn.execute(
         f"""
         SELECT book_id, isbn, title, author, genre,
@@ -103,7 +108,7 @@ def search_books(
         WHERE (title LIKE :pattern ESCAPE '\\' OR author LIKE :pattern ESCAPE '\\')
           AND (:genre IS NULL OR genre = :genre)
         ORDER BY {SORT_OPTIONS[sort]}
-        """,
+        """,  # nosec B608
         {"pattern": pattern, "genre": genre},
     )
     return [dict(row) for row in rows]
@@ -111,7 +116,7 @@ def search_books(
 
 def get_book(conn: sqlite3.Connection, book_id: int) -> dict | None:
     row = conn.execute(
-        f"SELECT *, {STOCK_STATUS_SQL} AS stock_status FROM books WHERE book_id = ?",
+        f"SELECT *, {STOCK_STATUS_SQL} AS stock_status FROM books WHERE book_id = ?",  # nosec B608
         (book_id,),
     ).fetchone()
     return dict(row) if row else None
@@ -172,6 +177,8 @@ def _price(value, label: str, errors: list[str], required: bool) -> int | None:
 def _book_details(data: BookInput, errors: list[str]) -> dict:
     """Check the optional Open Library details: publisher, year, cover, record."""
     publisher = " ".join((data.publisher or "").split()) or None
+    if publisher and len(publisher) > MAX_LENGTHS["publisher"]:
+        errors.append(f"Publisher is at most {MAX_LENGTHS['publisher']} characters.")
     year = data.published_year
     if year is not None and (isinstance(year, bool) or not isinstance(year, int) or not 1450 <= year <= 2100):
         errors.append("Published year must be a year between 1450 and 2100.")
@@ -205,6 +212,8 @@ def validate_book(
         value = " ".join(value.split())
         if not value:
             errors.append(f"{label} is required.")
+        elif len(value) > MAX_LENGTHS[field]:
+            errors.append(f"{label} is at most {MAX_LENGTHS[field]} characters.")
         clean[field] = value
 
     # Reuse an existing genre's spelling, so "fiction" joins "Fiction"
@@ -255,7 +264,8 @@ def add_book(conn: sqlite3.Connection, data: BookInput) -> int:
         # `with conn:` is a transaction: commit if the block succeeds,
         # roll back if anything inside it raises an error.
         with conn:
-            cursor = conn.execute(f"INSERT INTO books ({columns}) VALUES ({placeholders})", clean)
+            # Column names come from validate_book(), never from a person.
+            cursor = conn.execute(f"INSERT INTO books ({columns}) VALUES ({placeholders})", clean)  # nosec B608
     except sqlite3.IntegrityError as problem:
         # The database's own rules are the last line of defence, for
         # anything the checks above missed.
@@ -270,7 +280,7 @@ def update_book(conn: sqlite3.Connection, book_id: int, data: BookInput) -> None
     try:
         with conn:
             cursor = conn.execute(
-                f"UPDATE books SET {assignments} WHERE book_id = :book_id",
+                f"UPDATE books SET {assignments} WHERE book_id = :book_id",  # nosec B608
                 {**clean, "book_id": book_id},
             )
     except sqlite3.IntegrityError as problem:

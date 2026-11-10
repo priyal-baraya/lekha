@@ -11,6 +11,8 @@ from datetime import datetime
 from services import ValidationError
 from services.books import STOCK_STATUS_SQL
 
+MAX_NOTE_LENGTH = 300     # a sentence or two; stops a whole page being pasted in
+
 # Stored value -> label shown on screen
 REASONS = {
     "shelf_count": "Shelf count",
@@ -38,7 +40,7 @@ def low_stock_books(conn: sqlite3.Connection) -> list[dict]:
         FROM books
         WHERE stock_quantity <= reorder_level
         ORDER BY stock_quantity ASC, title COLLATE NOCASE ASC
-        """
+        """  # nosec B608
     )
     return [dict(row) for row in rows]
 
@@ -79,6 +81,8 @@ def correct_stock(
     note = " ".join((note or "").split())
     if reason == "other" and not note:
         errors.append("Add a note explaining the correction when the reason is \"Other\".")
+    if len(note) > MAX_NOTE_LENGTH:
+        errors.append(f"Keep the note to {MAX_NOTE_LENGTH} characters or fewer.")
     if errors:
         raise ValidationError(errors)
 

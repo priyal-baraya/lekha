@@ -6,9 +6,14 @@ drawings live in ui/assets/.
 
 Text passed into these functions is escaped with html.escape, so a book
 title containing "<" or "&" later on cannot break the page.
+
+Text shown with st.markdown, st.info, st.success and similar is read as
+Markdown, so anything a person typed or Open Library sent goes through
+plain() first (see below).
 """
 
 import base64
+import re
 from html import escape
 from pathlib import Path
 
@@ -16,6 +21,30 @@ import streamlit as st
 
 UI_DIR = Path(__file__).parent
 ASSETS_DIR = UI_DIR / "assets"
+
+
+# Characters Markdown (and Streamlit's extras: $ for maths, :red[...] for
+# colours, :emoji:) can treat as instructions rather than text.
+_MARKDOWN_SPECIAL = re.compile(r"([\\`*_{}\[\]()#+\-.!|~<>$:&=])")
+_BARE_LINK = re.compile(r"(?i)(https?|ftp|mailto|www)(?=\\[:.])")
+
+
+def plain(text) -> str:
+    """Make text safe to put inside Markdown, so it shows exactly as typed.
+
+    Use it for anything a person typed (names, shop names, reasons, notes)
+    or Open Library sent (titles, authors). Without it, a title such as
+    "$5 *Deals*" would turn into maths and italics, a name could pretend
+    to be bold "owner" text, and "![x](https://…)" would load a picture
+    from someone else's website. Line breaks become spaces, so text can't
+    start a heading or a list either.
+    """
+    text = " ".join(str(text).split())
+    escaped = _MARKDOWN_SPECIAL.sub(r"\\\1", text)
+    # Streamlit also turns bare web addresses ("https://…", "www.…") into
+    # links. An invisible word joiner (U+2060) breaks the pattern, so an
+    # address in a name or title stays plain text.
+    return _BARE_LINK.sub("\\1\u2060", escaped)
 
 
 def _read(path: Path) -> str:
@@ -194,12 +223,12 @@ def show_flash() -> None:
         return
     kind, message, details = saved
     show = {"success": st.success, "warning": st.warning, "error": st.error}[kind]
-    show(message)
+    show(plain(message))           # messages often quote a title or a name
     for detail in details:
-        st.warning(detail)
+        st.warning(plain(detail))
 
 
 def show_errors(errors: list[str]) -> None:
     """Show every validation problem in one error box."""
-    lines = "\n".join(f"- {error}" for error in errors)
+    lines = "\n".join(f"- {plain(error)}" for error in errors)
     st.error(f"Nothing was saved. Please fix the following:\n\n{lines}")
