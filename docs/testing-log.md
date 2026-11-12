@@ -433,3 +433,37 @@ Written before the pages changed, and failing first:
 ### Not yet checked
 
 - Google sign-in end to end (it still needs `.streamlit/secrets.toml`). Its button's place and style are covered by a test.
+
+---
+
+## 2026-11-12: Overview (branch `redesign/overview`)
+
+### Automated tests: **401 passed**
+
+Written before the code, and failing first:
+
+| File | Tests | What it covers |
+|---|---|---|
+| `tests/test_overview_data.py` | 15 (new) | The reorder list carries each book's cover; the latest sales are newest first, with their books in words ("Malgudi Days ×2, Train to Pakistan"), cancelled sales marked, older ones left out; this week's best sellers count only Monday to now and know which sold out; sale times read "16:45", "Yesterday 18:05" or "5 Nov 10:00"; the shelf's note names sold-out books |
+| `tests/test_components.py` | 20 (5 new) | Tables escape plain text and keep built HTML; numbers are right-aligned; a cover image has an empty alt (the title is beside it), a missing one shows its letter; "Sold out" is said in words; the phone list says "0 left · reorder at 3" |
+| `tests/test_pages.py` | 34 (3 new, 3 changed) | Overview for a new shop (steps, "None yet", no empty cards) and a trading one at a fixed Thursday 16:45 (the sentence, "₹250 by this time last Thursday", all three cards); a book called `<b>Bold</b> & Co` shows as typed. Three older tests now look for the new welcome sentence |
+
+One test was wrong, not the code: two books tied on copies, and Insights' rule puts the one that brought in more money first.
+
+### Browser check (throwaway data folder, port 8502)
+
+Filled a throwaway shop with seven books and 50 days of sales, then signed in.
+- **Desktop:** matches the canvas. Today compared with the same time last Thursday; the last 30 days showed "48% more than ₹12,789, compared with 14 Sep to 13 Oct"; the reorder table, latest sales (a cancelled sale marked) and the shelf with a real Open Library cover.
+- **Phone (375px):** today, the last 30 days and the reorder list as a list; nothing left behind where the hidden cards were.
+- **Keyboard only:** Tab reaches See all in Inventory, All recent sales and See trends in Insights in reading order, each with a visible focus ring.
+- The data folder was deleted afterwards.
+
+### Issues found and fixed
+
+1. **The shelf sat indented inside its card.** Streamlit gives every list 32px of left padding. **Fix:** the shelf's own rule is more specific.
+2. **"All 2 shown."** appeared under a two-book reorder list. **Fix:** the line appears only when the list is cut short.
+3. **A wrong cover in my check data.** I'd typed a cover number for Malgudi Days that belongs to another book. The app was right; the check data was wrong. The tests now use an obviously made-up number that is never fetched.
+
+### Not yet checked
+
+- Overview for staff (they can see everything on it today; the links check permissions anyway).

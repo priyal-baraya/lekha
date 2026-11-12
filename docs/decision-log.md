@@ -707,3 +707,22 @@ The main choices, agreed on the canvas and signed off by the owner:
 **Why:** The old Sign in page had a label above its heading and put Google first, as the main button, even though most people sign in with a password. Get started had labels ("New shop", "Existing shop") above every heading, which the redesign removes everywhere.
 
 **What it costs:** Streamlit's own top bar still shows above the sign-in page (the canvas has a plain bar with the logo). That bar belongs to every page, so it's handled with the navigation, not here.
+
+## 2026-11-12: Overview, as designed
+
+**Decision:** Overview now follows the canvas (Main, OverviewEmpty and OverviewPhone artboards):
+- A date line, then one sentence about today as the page's heading ("₹1,850 in sales so far today, and 2 books need reordering.").
+- Three figures, each compared fairly: today so far against the same time last week, this week so far (Monday to today), and the last 30 days against the 30 days before, with the dates of that earlier period written out.
+- "Reorder these" (with covers, stock, reorder level and a worded status), "Latest sales" for today and yesterday (with the books written out, cancelled sales marked), and "Selling well this week" as a shelf of covers with "Sold out" said in words.
+- A shop with no sales sees the steps to get started instead of the figures it doesn't have yet. Once it has books, the first step drops off.
+- On a phone (under 640px), Overview shows today, the last 30 days and the reorder list, as on the phone artboard. This week so far, Latest sales and the shelf stay on bigger screens; the till and Insights have them in full.
+
+**Why:** The old Overview was a hero banner, four 30-day figures with no comparison, a weekly chart that repeated Insights, and labels above every heading. The design review asked for a front page that answers "how's today going, and what needs doing?" in one look.
+
+**Details worth knowing:**
+- Pages now ask `services/clock.py` for the time, so tests can fix it to a Thursday at 16:45 and check "today so far" exactly.
+- The weekly chart moved off Overview: Insights is the place for trends, and the shelf links there.
+- Ties in "Selling well" go to the book that brought in more money, the same rule as Insights' best sellers.
+- The "Showing N of M" line appears only when the reorder list is actually cut short.
+
+**What it costs:** Streamlit stacks the two cards on a phone in its own way, and its phone menu opens by itself after signing in; both are Streamlit's, not Lekha's.

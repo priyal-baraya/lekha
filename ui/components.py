@@ -367,3 +367,82 @@ def showing_note(shown: int, total: int) -> None:
     text = showing(shown, total)
     if text:
         st.html(f'<p class="lekha-showing">{escape(text)}</p>')
+
+
+# ---------- Overview: tables, book cells and the shelf ----------
+
+class Html(str):
+    """A table cell that is already safe HTML, built by one of the *_html
+    functions here. Any other cell value is escaped."""
+
+
+def _cell(value) -> str:
+    return value if isinstance(value, Html) else escape(str(value))
+
+
+def data_table_html(columns: list[tuple[str, str]], rows: list[list], css_class: str = "") -> str:
+    """A plain, readable table. columns are (heading, "left" or "right");
+    numbers go right so their digits line up."""
+    def cls(align: str) -> str:
+        return ' class="lekha-table__num"' if align == "right" else ""
+
+    head = "".join(f'<th scope="col"{cls(align)}>{escape(label)}</th>' for label, align in columns)
+    body = "".join(
+        "<tr>" + "".join(f"<td{cls(align)}>{_cell(value)}</td>" for value, (_, align) in zip(row, columns)) + "</tr>"
+        for row in rows
+    )
+    wrap = f"lekha-table-wrap {css_class}".strip()
+    return f'<div class="{escape(wrap)}"><table class="lekha-table"><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>'
+
+
+def book_cell_html(title: str, author: str | None, cover_url: str | None) -> Html:
+    """A small cover (or its letter) beside the title and author."""
+    if cover_url:
+        cover = f'<img class="lekha-book__cover" src="{escape(cover_url)}" alt="" loading="lazy" width="22" height="33">'
+    else:
+        cover = cover_letter_html(title)
+    author_html = f'<span class="lekha-book__author">{escape(author)}</span>' if author else ""
+    return Html(f'<span class="lekha-book">{cover}<span class="lekha-book__text">'
+                f'<span class="lekha-book__title">{escape(title)}</span>{author_html}</span></span>')
+
+
+@dataclass(frozen=True)
+class ShelfBook:
+    title: str
+    copies: int
+    cover_url: str | None
+    sold_out: bool = False
+
+
+def shelf_html(books: list[ShelfBook]) -> str:
+    """Covers in a row with copies sold under each. "Sold out" is said in words."""
+    items = []
+    for book in books:
+        if book.cover_url:
+            cover = f'<img class="lekha-shelf__cover" src="{escape(book.cover_url)}" alt="" loading="lazy">'
+        else:
+            letter = next((ch.upper() for ch in book.title if ch.isalnum()), "·")
+            cover = f'<span class="lekha-shelf__cover lekha-shelf__cover--letter" aria-hidden="true">{escape(letter)}</span>'
+        sold_out = status_html("error", "Sold out") if book.sold_out else ""
+        items.append(f'<li class="lekha-shelf__item"><span class="lekha-shelf__frame">{cover}{sold_out}</span>'
+                     f'<span class="lekha-shelf__title">{escape(book.title)}</span>'
+                     f'<span class="lekha-shelf__copies">{book.copies} sold</span></li>')
+    return f'<ul class="lekha-shelf">{"".join(items)}</ul>'
+
+
+def _stock_status_html(in_stock: int) -> str:
+    return status_html("error", "Out of stock") if in_stock == 0 else status_html("warning", "Low")
+
+
+def book_list_html(books: list[tuple[str, str | None, int, int]]) -> str:
+    """Books to reorder as a list, for phones, where a four-column table is
+    too tight. Each item is (title, cover_url, in_stock, reorder_at)."""
+    items = []
+    for title, url, in_stock, reorder_at in books:
+        cover = (f'<img class="lekha-book__cover" src="{escape(url)}" alt="" loading="lazy" width="22" height="33">'
+                 if url else cover_letter_html(title))
+        items.append(f'<li class="lekha-booklist__item">{cover}<span class="lekha-book__text">'
+                     f'<span class="lekha-book__title">{escape(title)}</span>'
+                     f'<span class="lekha-book__author">{in_stock} left · reorder at {reorder_at}</span></span>'
+                     f'{_stock_status_html(in_stock)}</li>')
+    return f'<ul class="lekha-booklist">{"".join(items)}</ul>'

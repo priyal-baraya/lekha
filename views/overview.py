@@ -1,107 +1,170 @@
-"""Overview: Lekha's front page.
+"""Overview: Lekha's front page, laid out as on the design canvas
+(Main and OverviewEmpty artboards).
 
-Every figure here comes from the database. Sales figures cover the last
-30 days and come from services/analytics.py, the same code the Insights
-page uses, so the two pages always agree.
+At the top, a date line and one sentence about today. Then three figures,
+each compared fairly with an earlier one: today so far against the same
+time last week, this week so far, and the last 30 days against the 30
+days before. Below them: the books to reorder, the latest sales, and
+what's selling this week.
+
+A shop with no sales yet sees the steps to get started instead.
+Every number comes from the database, through services/analytics.py, the
+same code the Insights page uses.
 """
 
-from datetime import date
+from datetime import datetime, time, timedelta
 
-import pandas as pd
 import streamlit as st
 
 from database import connect
-from services import analytics
-from services.books import count_books, list_genres
-from services.inventory import count_low_stock, low_stock_books
-from services.money import format_rupees
-from ui import charts
+from services import analytics, clock
+from services.books import count_books
+from services.comparisons import compare_money, same_time_last_week
+from services.inventory import low_stock_books
+from services.money import format_rupees, format_rupees_whole
+from services.openlibrary import cover_url
+from services.sales import latest_sales
+from services.sentences import overview_sentence, sale_time_label, selling_well_note
 from ui import components as ui
 from ui import session
 
-ui.hero(
-    eyebrow=session.shop_name() or "Independent bookstore insights",
-    title="Lekha",
-    tagline="Reading between the numbers.",
-    description="An inventory and sales insights tool for independent bookstores.",
-)
-ui.show_flash()     # e.g. "Your shop is ready" after creating or joining a shop
+REORDER_ROWS = 5        # rows in "Reorder these"; the rest are in Inventory
+LATEST_SALES = 5
+SHELF_BOOKS = 5
+
+now = clock.now()
+today = now.date()
 
 with connect() as conn:
     total_books = count_books(conn)
-    genre_count = len(list_genres(conn))
-    low_stock_count = count_low_stock(conn)
+    has_sales = analytics.earliest_sale_date(conn) is not None
     low_stock = low_stock_books(conn)
-    period = analytics.period_for(conn, "last_30", date.today())
-    totals = analytics.summary(conn, period)
-    weekly = analytics.revenue_over_time(conn, period, "week")
+    today_totals = analytics.today_so_far(conn, now)
+    last_week_totals = analytics.same_time_last_week(conn, now)
+    week_totals = analytics.week_so_far(conn, now)
+    period = analytics.period_for(conn, "last_30", today)
+    period_totals = analytics.summary(conn, period)
+    before = analytics.previous_period(period)
+    before_totals = analytics.summary(conn, before)
+    recent = latest_sales(conn, since=datetime.combine(today - timedelta(days=1), time()), limit=LATEST_SALES)
+    selling = analytics.selling_this_week(conn, now, limit=SHELF_BOOKS)
 
-ui.divider()
-ui.section_header(
-    eyebrow="Summary",
-    title="The daily read",
-    description=(f"Four figures worth checking each morning. Sales figures cover the last 30 days "
-                 f"({period.start:%d %b} to {period.end:%d %b %Y})."),
-)
-if total_books == 0:
-    ui.empty_state(
-        "Your shop is empty. Start on the Books page: look a book up by its ISBN or search "
-        "Open Library, then add your own price and stock. Figures here come only from the "
-        "books you add and the sales you record."
-    )
-ui.metric_strip([
-    ("Revenue", format_rupees(totals["revenue_paise"]), "Last 30 days, completed sales"),
-    ("Copies sold", str(totals["copies"]), "Last 30 days"),
-    ("Transactions", str(totals["transactions"]), "Last 30 days"),
-    ("Books low on stock", str(low_stock_count), "At or below their reorder level, today"),
-])
+# ---------- The date line and today's sentence ----------
+date_line = f"{now:%A} {now.day} {now:%B} · {session.shop_name() or 'Your shop'}"
+ui.summary_header(date_line, overview_sentence(total_books, has_sales, today_totals["revenue_paise"], len(low_stock)))
+ui.show_flash()     # e.g. "Your shop is ready" after creating or joining a shop
 
-ui.divider()
-ui.section_header(
-    eyebrow="Sales",
-    title="Sales and trends",
-    description="Revenue per week over the last 30 days. Outlined bars are partial weeks.",
-)
-if weekly["revenue_paise"].sum() == 0:
-    ui.empty_state("No completed sales in the last 30 days.")
+
+def copies_note(totals: dict) -> str:
+    sales = totals["transactions"]
+    copies = totals["copies"]
+    return f"{sales} {'sale' if sales == 1 else 'sales'} · {copies} {'copy' if copies == 1 else 'copies'}"
+
+
+def page_link(path: str, label: str, action: str | None) -> None:
+    """A link to another page, only if this person's role can open it."""
+    if action is None or session.can_do(action):
+        st.page_link(path, label=label)
+
+
+# ---------- A shop that hasn't sold anything yet: the steps ----------
+if not has_sales:
+    steps = []
+    if total_books == 0:
+        steps.append(("Add your first book",
+                      "Look it up by ISBN or title on Open Library, check the details, then add your own "
+                      "price and copies in stock.", ("views/books.py", "Add a book", "add_books")))
+    steps.append(("Record your first sale",
+                  "Once a book is in, sell it from the Sales page. It takes a few seconds at the till.",
+                  ("views/sales.py", "Go to Sales", "sell") if total_books else None))
+    steps.append(("See your trends",
+                  "Weekly sales, best sellers and genres appear after two weeks of sales. Until then, "
+                  "Lekha shows only what you've recorded.", None))
+    count_word = {2: "Two", 3: "Three"}[len(steps)]
+    with st.container(key="lekha_card_steps"):
+        st.html(f'<h2 class="lekha-steps-title">{count_word} steps to get started</h2>')
+        for number, (title, text, link) in enumerate(steps, start=1):
+            step_col, action_col = st.columns([5, 1], vertical_alignment="center")
+            with step_col:
+                st.html(ui.step_html(number, title, text, waiting=link is None))
+            with action_col:
+                if link:
+                    page_link(*link)
+                else:
+                    st.html('<p class="lekha-note">After 2 weeks</p>' if title == "See your trends"
+                            else '<p class="lekha-note">After your first book</p>')
+
+    ui.figure_strip([
+        ui.Figure("Today", "No sales yet", words=True),
+        ui.Figure("Books in the shop", str(total_books) if total_books else "None yet", words=not total_books),
+        ui.Figure("Low on stock", str(len(low_stock)) if low_stock else "Nothing to reorder",
+                  words=not low_stock),
+    ])
+
+# ---------- A trading shop: three fair figures ----------
 else:
-    best = weekly.loc[weekly["revenue_paise"].idxmax()]
-    trend_summary = (f"Highest week: week of {best['bucket_start']:%d %b %Y}, "
-                     f"{format_rupees(int(best['revenue_paise']))}.")
-    st.altair_chart(charts.revenue_over_time(weekly, "week"), width="stretch", alt=trend_summary)
-    st.markdown(trend_summary)
-st.page_link("views/insights.py", label="Open Insights for genres, best sellers and more →")
+    with st.container(key="lekha_overview_figures"):     # the phone layout hides "This week so far"
+        ui.figure_strip([
+            ui.Figure("Today", format_rupees_whole(today_totals["revenue_paise"]),
+                      same_time_last_week(last_week_totals["revenue_paise"], f"{now:%A}"),
+                      note=copies_note(today_totals)),
+            ui.Figure("This week so far", format_rupees_whole(week_totals["revenue_paise"]),
+                      note="Monday to today"),
+            ui.Figure("Last 30 days", format_rupees_whole(period_totals["revenue_paise"]),
+                      compare_money(period_totals["revenue_paise"], before_totals["revenue_paise"]),
+                      note=f"Compared with {before.start.day} {before.start:%b} to {before.end.day} {before.end:%b}"),
+        ])
 
-ui.divider()
-books_column, inventory_column = st.columns(2, gap="large")
-with books_column:
-    ui.section_header(
-        eyebrow="Books",
-        title="The bookshelf",
-        description=("Browse, search and edit the catalogue." if session.can_do("edit_books")
-                     else "Browse, search and add to the catalogue."),
-    )
-    genre_word = "genre" if genre_count == 1 else "genres"
-    st.markdown(f"**{total_books}** {'book' if total_books == 1 else 'books'} across {genre_count} {genre_word}.")
-    st.page_link("views/books.py", label="Open Books →")
-with inventory_column:
-    ui.section_header(
-        eyebrow="Inventory",
-        title="Shelf check",
-        description="Books at or below their reorder level.",
-    )
-    if low_stock:
-        st.dataframe(
-            pd.DataFrame(low_stock[:5])[["title", "stock_quantity", "stock_status"]],
-            hide_index=True,
-            column_config={
-                "title": st.column_config.TextColumn("Title"),
-                "stock_quantity": st.column_config.NumberColumn("In stock"),
-                "stock_status": st.column_config.TextColumn("Status"),
-            },
-        )
-        if len(low_stock) > 5:
-            st.markdown(f"Showing the 5 emptiest of {len(low_stock)}.")
-    else:
-        ui.empty_state("No books are at or below their reorder level.")
-    st.page_link("views/inventory.py", label="Open Inventory →")
+# ---------- Books to reorder, and the latest sales ----------
+show_reorder = bool(low_stock) and session.can_do("view_stock")
+show_recent = has_sales
+if show_reorder or show_recent:
+    columns = st.columns(2, gap="small") if (show_reorder and show_recent) else [st.container()]
+    cards = iter(columns)
+
+    if show_reorder:
+        with next(cards), st.container(key="lekha_card_reorder"):
+            ui.card_heading("Reorder these", "At or below their reorder level, emptiest first.")
+            st.html(ui.data_table_html(
+                [("Book", "left"), ("In stock", "right"), ("Reorder at", "right"), ("Status", "left")],
+                [[ui.book_cell_html(book["title"], book["author"], cover_url(book["cover_id"], "S")),
+                  book["stock_quantity"], book["reorder_level"],
+                  ui.Html(ui.status_html("error", "Out of stock") if book["stock_quantity"] == 0
+                          else ui.status_html("warning", "Low"))]
+                 for book in low_stock[:REORDER_ROWS]],
+                css_class="lekha-wide-only",
+            ))
+            st.html('<div class="lekha-narrow-only">' + ui.book_list_html(
+                [(book["title"], cover_url(book["cover_id"], "S"), book["stock_quantity"], book["reorder_level"])
+                 for book in low_stock[:REORDER_ROWS]]) + "</div>")
+            if len(low_stock) > REORDER_ROWS:          # only when the list is cut short
+                ui.showing_note(REORDER_ROWS, len(low_stock))
+            page_link("views/inventory.py", "See all in Inventory", "view_stock")
+
+    if show_recent:
+        with next(cards), st.container(key="lekha_card_latest_sales"):
+            ui.card_heading("Latest sales", "Today and yesterday.")
+            if recent:
+                names = session.names({sale["recorded_by"] for sale in recent if sale["recorded_by"]})
+                st.html(ui.data_table_html(
+                    [("When", "left"), ("Books", "left"), ("Total", "right"), ("By", "left")],
+                    [[sale_time_label(datetime.fromisoformat(sale["sale_datetime"]), today),
+                      sale["books"] + (" · cancelled" if sale["status"] == "cancelled" else ""),
+                      format_rupees(sale["total_paise"]),
+                      names.get(sale["recorded_by"], "")]
+                     for sale in recent],
+                ))
+            else:
+                st.html('<p class="lekha-note">No sales today or yesterday.</p>')
+            page_link("views/sales.py", "All recent sales", "sell")
+
+# ---------- Selling well this week ----------
+if selling:
+    with st.container(key="lekha_card_selling"):
+        ui.card_heading("Selling well this week", selling_well_note(selling))
+        st.html(ui.shelf_html([
+            ui.ShelfBook(row["title"], row["copies"], cover_url(row["cover_id"], "M"),
+                         sold_out=row["stock_quantity"] == 0)
+            for row in selling
+        ]))
+        page_link("views/insights.py", "See trends in Insights", "view_insights")

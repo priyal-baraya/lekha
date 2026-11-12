@@ -188,6 +188,46 @@ def list_sales(conn: sqlite3.Connection, limit: int = 50) -> list[dict]:
     return [dict(row) for row in rows]
 
 
+def latest_sales(conn: sqlite3.Connection, since: datetime, limit: int = 5) -> list[dict]:
+    """Sales from `since` onwards, newest first, each with its books in
+    words ("Malgudi Days ×2, Train to Pakistan"). Cancelled sales are
+    included, with status 'cancelled', so the list matches the till."""
+    sales = [dict(row) for row in conn.execute(
+        """
+        SELECT s.sale_id, s.sale_datetime, s.status, s.recorded_by,
+               SUM(si.quantity * si.unit_price_paise) AS total_paise
+        FROM sales AS s
+        JOIN sale_items AS si ON si.sale_id = s.sale_id
+        WHERE s.sale_datetime >= ?
+        GROUP BY s.sale_id
+        ORDER BY s.sale_datetime DESC, s.sale_id DESC
+        LIMIT ?
+        """,
+        (since.strftime(TIMESTAMP_FORMAT), limit),
+    )]
+    if not sales:
+        return []
+    ids = [sale["sale_id"] for sale in sales]
+    marks = ",".join("?" * len(ids))       # one ? per sale: still placeholders, never values
+    lines = conn.execute(
+        f"""
+        SELECT si.sale_id, b.title, si.quantity
+        FROM sale_items AS si
+        JOIN books AS b ON b.book_id = si.book_id
+        WHERE si.sale_id IN ({marks})
+        ORDER BY si.sale_item_id
+        """,  # nosec B608
+        ids,
+    )
+    books: dict[int, list[str]] = {}
+    for line in lines:
+        books.setdefault(line["sale_id"], []).append(
+            line["title"] if line["quantity"] == 1 else f"{line['title']} ×{line['quantity']}")
+    for sale in sales:
+        sale["books"] = ", ".join(books.get(sale["sale_id"], []))
+    return sales
+
+
 def get_sale(conn: sqlite3.Connection, sale_id: int) -> dict | None:
     """One sale with its lines and, if cancelled, when and why."""
     sale = conn.execute(

@@ -16,6 +16,7 @@ import json
 import re
 import time
 import urllib.parse
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -23,8 +24,9 @@ import streamlit as st
 from streamlit.testing.v1 import AppTest
 
 from database import connect, connect_accounts, ensure_shop_database, get_connection, reset_empty, reset_with_sample_data
-from services import accounts, limits, openlibrary
+from services import accounts, clock, limits, openlibrary
 from services.books import BookInput, add_book
+from services.sales import SaleLine, record_sale
 from ui import session
 
 PROJECT = Path(__file__).parent.parent
@@ -305,7 +307,7 @@ def test_sign_up_create_a_shop_and_land_on_its_overview(data_dir):
     app.button(key="FormSubmitter:create_shop-Create shop").click().run()
     assert not app.exception
     text = all_text(app)
-    assert "Kitaab Corner" in text and "Your shop is empty" in text
+    assert "Kitaab Corner" in text and "Welcome to Lekha." in text
     assert "Your shop is ready" in text                         # shown here, not on the next page
 
     with connect_accounts() as acc:
@@ -332,9 +334,9 @@ def test_people_only_see_their_own_shop(data_dir):
         add_book(conn, BookInput(title="Only at Asha's", author="A", genre="Fiction", selling_price=100))
 
     text = all_text(run_app(asha))
-    assert "Asha's Books" in text and "Your shop is empty" not in text
+    assert "Asha's Books" in text and "Welcome to Lekha." not in text
     text = all_text(run_app(ben))
-    assert "Ben's Books" in text and "Your shop is empty" in text
+    assert "Ben's Books" in text and "Welcome to Lekha." in text
     assert "Only at Asha's" not in text
 
 
@@ -434,6 +436,73 @@ def test_broken_database_shows_a_friendly_message(data_dir):
     app.button(key="FormSubmitter:sign_in-Sign in").click().run()   # ...signing in does
     assert not app.exception                                    # no traceback shown
     assert any("couldn't read or write its database" in shown(box.value) for box in app.error)
+
+
+# ---------- Overview ----------
+
+OVERVIEW_NOW = datetime(2026, 11, 12, 16, 45)       # a Thursday afternoon
+
+
+@pytest.fixture
+def fixed_now(monkeypatch):
+    monkeypatch.setattr(clock, "now", lambda: OVERVIEW_NOW)
+
+
+def html_bodies(app: AppTest) -> str:
+    """The page's HTML blocks as text, leaving out the stylesheet."""
+    bodies = (str(element.proto.body) for element in app.get("html"))
+    return " ".join(html.unescape(body) for body in bodies if not body.lstrip().startswith("<style"))
+
+
+def overview_as_owner() -> tuple[int, Path]:
+    """An owner with a new shop, and the path to that shop's database.
+    Overview links to other pages, so it runs inside the whole app."""
+    owner, shop = person_with_shop("asha", "Kitab Ghar")
+    return owner, ensure_shop_database(shop)
+
+
+def test_overview_of_a_new_shop_shows_the_first_steps(data_dir, fixed_now):
+    owner, _ = overview_as_owner()
+    app = run_app(owner)
+    assert not app.exception and not app.error
+    bodies = html_bodies(app)
+    assert "Welcome to Lekha." in bodies and "Three steps to get started" in bodies
+    assert "None yet" in bodies and "Nothing to reorder" in bodies
+    assert "Reorder these" not in bodies and "Latest sales" not in bodies
+
+
+def test_overview_of_a_trading_shop(data_dir, fixed_now):
+    owner, shop_file = overview_as_owner()
+    with connect(shop_file) as conn:
+        malgudi = add_book(conn, BookInput(title="Malgudi Days", author="R. K. Narayan", genre="Fiction",
+                                           selling_price="250", stock_quantity=20))
+        gitanjali = add_book(conn, BookInput(title="Gitanjali", author="Rabindranath Tagore", genre="Poetry",
+                                             selling_price="300", stock_quantity=1, reorder_level=3))
+        record_sale(conn, [SaleLine(malgudi, 1, 25_000)], sale_datetime=datetime(2026, 11, 5, 10, 0),
+                    now=OVERVIEW_NOW)                                           # last Thursday morning
+        record_sale(conn, [SaleLine(malgudi, 2, 25_000), SaleLine(gitanjali, 1, 30_000)],
+                    sale_datetime=datetime(2026, 11, 12, 11, 20), now=OVERVIEW_NOW)
+    app = run_app(owner)
+    assert not app.exception and not app.error
+    bodies = html_bodies(app)
+    assert "Thursday 12 November" in bodies
+    assert "₹800 in sales so far today, and 1 book needs reordering." in bodies
+    assert "₹250 by this time last Thursday" in bodies
+    assert "This week so far" in bodies and "Last 30 days" in bodies
+    assert "Reorder these" in bodies and "Out of stock" in bodies
+    assert "Malgudi Days ×2, Gitanjali" in bodies                       # latest sales, in words
+    assert "Gitanjali sold out, so it's on the reorder list." in bodies
+    assert "Three steps to get started" not in bodies
+
+
+def test_overview_shows_book_titles_as_typed(data_dir, fixed_now):
+    owner, shop_file = overview_as_owner()
+    with connect(shop_file) as conn:
+        add_book(conn, BookInput(title="<b>Bold</b> & Co", author="A", genre="Fiction",
+                                 selling_price="100", stock_quantity=0))    # out of stock: in Reorder these
+    app = run_app(owner)
+    assert "<b>Bold</b> & Co" in html_bodies(app)                  # read back as text...
+    assert "<b>Bold</b>" not in " ".join(str(e.proto.body) for e in app.get("html"))   # ...never as markup
 
 
 # ---------- A real, empty shop ----------

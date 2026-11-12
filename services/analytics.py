@@ -198,6 +198,18 @@ def best_sellers(conn, period: Period, genre: str | None = None) -> list[dict]:
     return _query(conn, "best_sellers", period, genre)
 
 
+def selling_this_week(conn, now: datetime, limit: int = 5) -> list[dict]:
+    """The books that sold the most copies from Monday midnight up to now,
+    with each one's cover and stock, so the page can show sold-out books."""
+    monday = now.date() - timedelta(days=now.weekday())
+    rows = best_sellers(conn, Window(datetime.combine(monday, time()), now))[:limit]
+    for row in rows:
+        book = conn.execute("SELECT cover_id, stock_quantity FROM books WHERE book_id = ?",
+                            (row["book_id"],)).fetchone()
+        row["cover_id"], row["stock_quantity"] = book["cover_id"], book["stock_quantity"]
+    return rows
+
+
 def unsold_books(conn, period: Period, genre: str | None = None) -> list[dict]:
     return _query(conn, "unsold_books", period, genre)
 
