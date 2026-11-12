@@ -19,6 +19,7 @@ import streamlit as st
 from database import connect_accounts
 from services import accounts
 from services.permissions import ACTIONS, can
+from ui.components import plain
 
 log = logging.getLogger("lekha.security")
 
@@ -38,6 +39,26 @@ MIN_COOKIE_SECRET_LENGTH = 32
 
 def user_id() -> int | None:
     return st.session_state.get(USER)
+
+
+# Longest name shown in the account menu's label before it's cut short.
+ACCOUNT_LABEL_NAME_LIMIT = 24
+
+
+def account_label(display_name: str, shop_name: str | None = None) -> str:
+    """The account menu's label in the navigation bar: "Asha · Kitab Ghar".
+
+    Streamlit reads navigation labels as Markdown, and both names are
+    typed by people, so each goes through plain() (a name like
+    "**Owner**" shows exactly as typed). Long names are cut short with
+    "…" so the menu can't push the pages off the bar.
+    """
+    def short(text: str) -> str:
+        text = " ".join(str(text).split())
+        return text if len(text) <= ACCOUNT_LABEL_NAME_LIMIT else text[:ACCOUNT_LABEL_NAME_LIMIT - 1].rstrip() + "…"
+
+    label = plain(short(display_name))
+    return f"{label} · {plain(short(shop_name))}" if shop_name else label
 
 
 def role() -> str | None:

@@ -34,15 +34,25 @@ st.set_page_config(
 
 ui.load_styles()
 
+# The five pages used every day, in the navigation bar itself.
 SHOP_PAGES = [
     ("views/overview.py", "Overview", None),
     ("views/books.py", "Books", None),
     ("views/sales.py", "Sales", "sell"),
     ("views/inventory.py", "Inventory", "view_stock"),
     ("views/insights.py", "Insights", "view_insights"),
+]
+# Everything about the person and the shop, in the account menu just after
+# the page links (its label is the person and the shop).
+ACCOUNT_PAGES = [
     ("views/team.py", "Team", "manage_team"),
     ("views/settings.py", "Settings", None),
 ]
+
+
+def sign_out_page() -> None:
+    """"Sign out" in the account menu: opening it signs this tab out."""
+    session.sign_out()
 
 
 def sign_in_from_google() -> None:
@@ -67,24 +77,16 @@ def choose_current_shop(memberships: list[accounts.Membership]) -> accounts.Memb
     return current
 
 
-def account_bar(user: dict, memberships: list[accounts.Membership], current: accounts.Membership | None) -> None:
-    """Shop switcher, who's signed in, and Sign out, above every page."""
-    shop_col, who_col, out_col = st.columns([3, 3, 1], vertical_alignment="center")
-    if current and len(memberships) > 1:
-        by_id = {m.shop_id: m for m in memberships}
-        picked = shop_col.selectbox(
-            "Shop", list(by_id), index=list(by_id).index(current.shop_id),
-            format_func=lambda shop_id: f"{by_id[shop_id].shop_name} ({by_id[shop_id].role})",
-            key="account_bar_shop",
-        )
-        if picked != current.shop_id:
-            session.choose_shop(picked)
-            st.rerun()
-    elif current:
-        shop_col.markdown(f"**{ui.plain(current.shop_name)}**")
-    who_col.markdown(f"Signed in as **{ui.plain(user['display_name'])}**" + (f" · {current.role}" if current else ""))
-    if out_col.button("Sign out", key="account_bar_sign_out"):
-        session.sign_out()
+def account_pages(memberships: list[accounts.Membership]) -> list:
+    """What the account menu holds: Team (owners), Settings, Switch shop
+    (only with more than one shop), Start or join a shop, and Sign out."""
+    pages = [st.Page(path, title=title) for path, title, action in ACCOUNT_PAGES
+             if action is None or session.can_do(action)]
+    if len(memberships) > 1:
+        pages.append(st.Page("views/switch_shop.py", title="Switch shop"))
+    pages.append(st.Page("views/get_started.py", title="Start or join a shop"))
+    pages.append(st.Page(sign_out_page, title="Sign out", url_path="sign-out"))
+    return pages
 
 
 try:
@@ -104,22 +106,26 @@ try:
         use_database(None)
         page = st.navigation([st.Page("views/signin.py", title="Sign in")], position="hidden")
     elif not memberships:
-        # Signed in, but not part of any shop yet.
+        # Signed in, but not part of any shop yet: Get started, and Sign out
+        # in the account menu.
         use_database(None)
-        account_bar(user, memberships, None)
-        page = st.navigation([st.Page("views/get_started.py", title="Get started")], position="hidden")
+        page = st.navigation({
+            "": [st.Page("views/get_started.py", title="Get started")],
+            session.account_label(user["display_name"]): [st.Page(sign_out_page, title="Sign out", url_path="sign-out")],
+        }, position="top")
     else:
         current = choose_current_shop(memberships)
         # Every query on this page run now goes to this shop's own file.
         use_database(ensure_shop_database(current.shop_id))
-        account_bar(user, memberships, current)
-        pages = [
+        daily = [
             st.Page(path, title=title, default=(path == "views/overview.py"))
             for path, title, action in SHOP_PAGES
             if action is None or session.can_do(action)
         ]
-        pages.append(st.Page("views/get_started.py", title="Start or join a shop", visibility="hidden"))
-        page = st.navigation(pages, position="top")
+        # "" puts the daily pages first; the labelled section becomes the
+        # account menu, a dropdown at the end of the bar.
+        label = session.account_label(user["display_name"], current.shop_name)
+        page = st.navigation({"": daily, label: account_pages(memberships)}, position="top")
         if st.session_state.pop("lekha_go_home", False):   # just created or joined a shop
             st.switch_page("views/overview.py")
 
