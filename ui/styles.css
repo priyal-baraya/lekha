@@ -637,6 +637,7 @@ button:active:not(:disabled) {
 }
 .lekha-table {
   width: 100%;
+  min-width: 30rem;                  /* narrower than this, it scrolls sideways instead of squashing */
   border-collapse: collapse;
   font-family: var(--lekha-sans);
   font-size: 0.875rem;
@@ -653,6 +654,7 @@ button:active:not(:disabled) {
 }
 .lekha-table td {
   padding: 0.625rem 1rem 0.625rem 0;
+  min-width: 3.5rem;
   border-bottom: 1px solid var(--lekha-parchment);
   vertical-align: middle;
   transition: background-color 120ms ease-out;
@@ -813,4 +815,70 @@ ul.lekha-booklist {
   .st-key-lekha_card_selling {
     display: none;
   }
+}
+
+/* ---------- The till (Sales) ---------- */
+/* A one-line message at the till: what happened, or why not */
+.lekha-message {
+  font-family: var(--lekha-sans);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  margin: 0;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--lekha-radius);
+  border-left: 3px solid currentColor;
+}
+.lekha-message--success { color: var(--lekha-success); background: var(--lekha-success-bg); }
+.lekha-message--warning { color: var(--lekha-warning); background: var(--lekha-warning-bg); }
+.lekha-message--error   { color: var(--lekha-error);   background: var(--lekha-error-bg); }
+.lekha-message--info    { color: var(--lekha-info-fg); background: var(--lekha-info-bg); }
+.lekha-qty {
+  display: inline-block;
+  min-width: 1.5rem;
+  text-align: center;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-weight: 700;
+}
+.lekha-till__price,
+.lekha-till__line-total {
+  font-size: 0.875rem;
+  font-variant-numeric: lining-nums tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.lekha-till__price {
+  color: var(--lekha-ink-secondary);
+}
+.lekha-till__line-total {
+  display: inline-block;
+  min-width: 4.5rem;
+}
+.lekha-till__total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--lekha-border);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.lekha-till__total span:first-child {
+  color: var(--lekha-ink-secondary);
+}
+.lekha-till__total span:last-child {
+  font-family: var(--lekha-serif);
+  font-weight: 600;
+  font-size: 1.375rem;
+}
+/* Cards below one another on the Recent sales tab */
+.st-key-lekha_card_cancel {
+  max-width: 40rem;
+}
+/* The till's search box: Streamlit's "Press Enter to submit form · 0/100"
+   ran over the placeholder on a phone. The label and placeholder say it. */
+.st-key-till_query [data-testid="InputInstructions"] {
+  display: none;
+}
+/* Recent sales: one line per sale; on a phone the table scrolls sideways */
+.lekha-table-wrap.lekha-nowrap td {
+  white-space: nowrap;
 }

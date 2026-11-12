@@ -149,7 +149,7 @@ def person_with_shop(username: str, shop_name: str) -> tuple[int, int]:
     "page, expected",
     [
         ("books", "Showing <strong>12</strong> of 12 books"),
-        ("sales", "The sale is empty"),
+        ("sales", "The basket is empty."),
         ("inventory", "books need attention"),
         ("insights", "What the numbers suggest"),
     ],
@@ -165,32 +165,130 @@ def test_page_opens_without_errors(sample_file, page, expected):
 
 # ---------- The example from the brief, through the real page ----------
 
-def test_selling_two_copies_through_the_sales_page(sample_file):
-    assert stock(sample_file, 1) == 8
-    app = run_page("sales", role="staff", user_id=5)            # staff may sell
+# ---------- The till (Sales) ----------
 
-    app.selectbox(key="sale_book_0").set_value(1).run()        # The Monsoon Ledger
-    app.number_input(key="sale_qty_0").set_value(2).run()
-    app.button(key="sale_add_0").click().run()
-    assert "2 copies × ₹399.00 = **₹798.00**" in all_text(app)
+def till_shop(username: str = "asha") -> tuple[int, Path, dict]:
+    """An owner whose shop has four books: Malgudi Days has an ISBN,
+    two books are by R. K. Narayan, and Gitanjali is out of stock."""
+    owner, shop = person_with_shop(username, "Kitab Ghar")
+    shop_file = ensure_shop_database(shop)
+    with connect(shop_file) as conn:
+        ids = {
+            "malgudi": add_book(conn, BookInput(title="Malgudi Days", author="R. K. Narayan", genre="Fiction",
+                                                selling_price="300", stock_quantity=5, isbn="9780143039655")),
+            "guide": add_book(conn, BookInput(title="The Guide", author="R. K. Narayan", genre="Fiction",
+                                              selling_price="299", stock_quantity=2)),
+            "train": add_book(conn, BookInput(title="Train to Pakistan", author="Khushwant Singh", genre="Fiction",
+                                              selling_price="350", stock_quantity=8)),
+            "gitanjali": add_book(conn, BookInput(title="Gitanjali", author="Rabindranath Tagore", genre="Poetry",
+                                                  selling_price="300", stock_quantity=0)),
+        }
+    return owner, shop_file, ids
 
-    app.button(key="sale_complete_0").click().run()
+
+def open_till(user_id: int) -> AppTest:
+    app = run_app(user_id)
+    app.switch_page("views/sales.py").run()
     assert not app.exception
-    assert any("Sale #16 recorded: 2 copies, ₹798.00" in shown(box.value) for box in app.success)
-    assert stock(sample_file, 1) == 6                           # exactly 2 fewer
-    assert "The sale is empty" in all_text(app)                 # basket cleared
-    conn = get_connection(sample_file)
-    try:
-        assert conn.execute("SELECT recorded_by FROM sales WHERE sale_id = 16").fetchone()[0] == 5
-    finally:
-        conn.close()
+    return app
 
 
-def test_out_of_stock_book_cannot_be_added(sample_file):
-    app = run_page("sales")
-    app.selectbox(key="sale_book_0").set_value(5).run()        # 0 in stock
-    assert any("out of stock" in shown(box.value) for box in app.warning)
-    assert not app.button                                        # no Add button offered
+def find(app: AppTest, text: str) -> None:
+    """Type in Find a book and press Enter (what a barcode scanner does too)."""
+    app.text_input(key="till_query").set_value(text)
+    app.button(key="FormSubmitter:till_search-Find").click().run()
+    assert not app.exception
+
+
+def record_label(app: AppTest) -> str:
+    return app.button(key="till_record").label
+
+
+def test_a_sale_at_the_till_from_search_to_undo(data_dir):
+    owner, shop_file, ids = till_shop()
+    app = open_till(owner)
+    assert "The basket is empty." in html_bodies(app)
+
+    find(app, "train")                                   # one match: straight into the sale
+    find(app, "978-0-14-303965-5")                       # a scanned ISBN
+    app.button(key=f"till_more_{ids['malgudi']}").click().run()
+    assert record_label(app) == "Record sale · ₹950.00"   # 1 × ₹350 + 2 × ₹300
+    assert "Recorded as now" in html_bodies(app)
+
+    app.button(key="till_record").click().run()
+    assert not app.exception
+    bodies = html_bodies(app)
+    assert "Sale #1 recorded." in bodies and "3 copies, ₹950.00" in bodies
+    assert "The basket is empty." in bodies
+    assert stock(shop_file, ids["malgudi"]) == 3
+
+    app.button(key="till_undo").click().run()            # a mistake: undo it
+    assert "Sale #1 undone. Its copies are back in stock." in html_bodies(app)
+    assert stock(shop_file, ids["malgudi"]) == 5
+    with connect(shop_file) as conn:
+        assert conn.execute("SELECT status FROM sales WHERE sale_id = 1").fetchone()[0] == "cancelled"
+
+
+def test_several_matches_are_listed_to_choose_from(data_dir):
+    owner, _, ids = till_shop()
+    app = open_till(owner)
+    find(app, "narayan")
+    assert "2 matches for “narayan”." in html_bodies(app)
+    app.button(key=f"till_add_{ids['guide']}").click().run()
+    assert record_label(app) == "Record sale · ₹299.00"
+
+
+def test_no_match_says_what_to_try(data_dir):
+    owner, _, _ = till_shop()
+    app = open_till(owner)
+    find(app, "kafka on the shore")
+    assert "No book matches “kafka on the shore”." in html_bodies(app)
+
+
+def test_an_out_of_stock_book_is_refused_with_the_reason(data_dir):
+    owner, _, _ = till_shop()
+    app = open_till(owner)
+    find(app, "gitanjali")
+    assert "Gitanjali can't be sold until it's restocked." in html_bodies(app)
+    assert not any(button.key == "till_record" for button in app.button)     # nothing to record
+
+
+def test_the_basket_stops_at_the_copies_on_the_shelf(data_dir):
+    owner, _, ids = till_shop()
+    app = open_till(owner)
+    find(app, "the guide")
+    app.button(key=f"till_more_{ids['guide']}").click().run()
+    app.button(key=f"till_more_{ids['guide']}").click().run()   # a third copy that isn't there
+    assert "Only 2 copies of The Guide are in stock, and both are in this sale." in html_bodies(app)
+    assert record_label(app) == "Record sale · ₹598.00"
+
+
+def test_staff_sales_are_recorded_under_their_name(data_dir):
+    owner, shop_file, ids = till_shop()
+    with connect_accounts() as acc:
+        staff = accounts.create_user(acc, "vikram", "Vikram", PASSWORD)
+        accounts.redeem_invitation(acc, staff, accounts.create_invitation(acc, owner, 1))
+    app = open_till(staff)
+    find(app, "train")
+    app.button(key="till_record").click().run()
+    with connect(shop_file) as conn:
+        assert conn.execute("SELECT recorded_by FROM sales WHERE sale_id = 1").fetchone()[0] == staff
+
+
+def test_recent_sales_list_the_books_and_cancel_with_a_reason(data_dir):
+    owner, shop_file, ids = till_shop()
+    with connect(shop_file) as conn:
+        record_sale(conn, [SaleLine(ids["malgudi"], 2, 30_000)], recorded_by=owner)
+    app = open_till(owner)
+    app.session_state["sales_view"] = "Recent sales"
+    app.run()
+    bodies = html_bodies(app)
+    assert "Malgudi Days ×2" in bodies and "Showing the last 1 sale." in bodies
+    app.text_input(key="cancel_reason").set_value("Customer changed their mind")
+    app.button(key="FormSubmitter:cancel_sale-Cancel sale").click().run()
+    assert not app.exception
+    assert "Sale #1 cancelled. Copies returned to stock: Malgudi Days ×2." in all_text(app) + html_bodies(app)
+    assert stock(shop_file, ids["malgudi"]) == 5
 
 
 # ---------- Other pages' main actions ----------
