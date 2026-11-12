@@ -270,6 +270,31 @@ def summary_header(date_line: str, sentence: str) -> None:
     st.html(summary_header_html(date_line, sentence))
 
 
+def wordmark_html(name: str, tagline: str) -> str:
+    """The sign-in page's heading: the name as the page's h1, centred, and its tagline."""
+    return (f'<header class="lekha-wordmark"><h1 class="lekha-wordmark__name">{escape(name)}</h1>'
+            f'<p class="lekha-wordmark__tagline">{escape(tagline)}</p></header>')
+
+
+def wordmark(name: str, tagline: str) -> None:
+    st.html(wordmark_html(name, tagline))
+
+
+def card_heading_html(title: str, description: str) -> str:
+    """A card's title (h2) and one short line under it. No label above it."""
+    return (f'<div class="lekha-cardhead"><h2 class="lekha-cardhead__title">{escape(title)}</h2>'
+            f'<p class="lekha-cardhead__description">{escape(description)}</p></div>')
+
+
+def card_heading(title: str, description: str) -> None:
+    st.html(card_heading_html(title, description))
+
+
+def or_divider() -> None:
+    """A thin line with "or" in the middle, between two ways of doing one thing."""
+    st.html('<div class="lekha-or"><span aria-hidden="true"></span>or<span aria-hidden="true"></span></div>')
+
+
 @dataclass(frozen=True)
 class Figure:
     """One figure in a strip.

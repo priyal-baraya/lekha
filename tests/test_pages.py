@@ -257,6 +257,40 @@ def test_signed_out_visitors_only_see_sign_in(data_dir):
     assert "The daily read" not in text                        # no shop data without signing in
 
 
+def test_sign_in_page_follows_the_design(data_dir):
+    app = run_app()
+    text = all_text(app)
+    assert '<h1 class="lekha-wordmark__name">Lekha</h1>' in str([e.proto.body for e in app.get("html")])
+    assert "Independent bookstore insights" not in text            # no label above the heading
+    assert "A password sign-in lasts until you close or refresh this tab" in text
+    assert "Sign in with Google" not in [button.label for button in app.button]   # Google isn't set up
+    assert "A Google sign-in is remembered" not in text
+
+
+def test_google_sign_in_is_offered_below_the_password_form_when_set_up(data_dir, monkeypatch):
+    monkeypatch.setattr(session, "google_configured", lambda: True)
+    # The page on its own: the whole app would also ask Google who's signed in.
+    app = AppTest.from_file(str(PROJECT / "views" / "signin.py"), default_timeout=TIMEOUT).run()
+    assert not app.exception
+    google = next(button for button in app.button if button.label == "Sign in with Google")
+    assert google.proto.type == "secondary"                       # the password form's button leads
+    assert "A Google sign-in is remembered after a refresh." in all_text(app)
+
+
+def test_get_started_follows_the_design(data_dir):
+    with connect_accounts() as acc:
+        priya = accounts.create_user(acc, "priya", "Priya", PASSWORD)
+    app = run_app(priya)
+    assert not app.exception
+    bodies = " ".join(str(e.proto.body) for e in app.get("html"))
+    assert '<h1 class="lekha-pagehead__title">Get started</h1>' in bodies
+    assert '<h2 class="lekha-cardhead__title">Start a shop</h2>' in bodies
+    assert '<h2 class="lekha-cardhead__title">Join with a code</h2>' in bodies
+    text = all_text(app)
+    for old_label in ("Your shops", "New shop", "Existing shop"):  # labels above headings are gone
+        assert old_label not in text
+
+
 def test_sign_up_create_a_shop_and_land_on_its_overview(data_dir):
     app = run_app()
     field(app, "Your name").set_value("Priya")

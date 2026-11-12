@@ -696,3 +696,14 @@ The main choices, agreed on the canvas and signed off by the owner:
 **Why:** A design review (Nielsen's heuristics, Impeccable's craft rules and Emil Kowalski's interface principles) scored the old design 25/40: no first-run states, a slow till, a generic metric-card template and charts that couldn't be read precisely. The revised canvas scored 33/40 with no serious issues left. The decorative look also competed with the data; the owner asked for something that reads first as an analytics tool.
 
 **What it costs:** Streamlit draws its own navigation dropdown, tables and inputs, so some details (the account menu's exact position, the till's result list) will look slightly different from the canvas. Each difference is reported as it's built.
+
+## 2026-11-12: Sign in and Get started, as designed
+
+**Decision:** Both pages now follow the canvas. Sign in shows the name and tagline centred, then one narrow card with the two forms as tabs; Google, when set up, sits below an "or" line as a second, plain button. Get started has the new page header and two cards, which stack on a phone. Three small departures from the canvas:
+- The sign-in note says a password sign-in lasts "until you close or refresh this tab", not "for this tab": refreshing really does sign people out, so the note says so.
+- The Create an account tab keeps a short password hint (at least 10 characters, a few unrelated words, stored only as a hash). The canvas only showed the Sign in tab.
+- The Join card drops "Each code works once, for 7 days". The owner is told this when they make the code, and an expired code says so when it's typed.
+
+**Why:** The old Sign in page had a label above its heading and put Google first, as the main button, even though most people sign in with a password. Get started had labels ("New shop", "Existing shop") above every heading, which the redesign removes everywhere.
+
+**What it costs:** Streamlit's own top bar still shows above the sign-in page (the canvas has a plain bar with the logo). That bar belongs to every page, so it's handled with the navigation, not here.

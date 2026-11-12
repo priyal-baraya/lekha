@@ -1,5 +1,9 @@
 """Create a shop or join one: for people signed in but not part of any shop yet,
-and from Settings for anyone who wants another shop."""
+and from the account menu ("Start or join a shop") for anyone who wants another.
+
+Laid out as on the design canvas (GetStarted artboard): the page header,
+then two cards side by side, which stack on a phone.
+"""
 
 import streamlit as st
 
@@ -8,19 +12,14 @@ from services import ValidationError, accounts, limits
 from ui import components as ui
 from ui import session
 
-ui.page_intro(
-    eyebrow="Get started",
-    title="Your shops",
-    description="Start a new shop as its owner, or join an existing shop with an invite code from its owner.",
-)
+ui.page_header("Get started", "Start a new shop, or join one you've been invited to.")
 ui.show_flash()
 
-create_col, join_col = st.columns(2, gap="large")
+create_col, join_col = st.columns(2, gap="medium")
 
-with create_col:
-    ui.section_header(eyebrow="New shop", title="Start a shop",
-                      description="You'll be its owner, and can invite staff afterwards.")
-    with st.form("create_shop"):
+with create_col, st.container(key="lekha_card_create_shop"):
+    ui.card_heading("Start a shop", "You'll own it and can invite staff.")
+    with st.form("create_shop", border=False):
         name = st.text_input("Shop name", placeholder="As it appears on your sign", max_chars=80)
         created = st.form_submit_button("Create shop", type="primary")
     if created:
@@ -36,10 +35,9 @@ with create_col:
             ui.flash("success", "Your shop is ready. Add your first book on the Books page.")
             st.rerun()
 
-with join_col:
-    ui.section_header(eyebrow="Existing shop", title="Join with a code",
-                      description="Ask the shop's owner for an invite code. Each code works once, for 7 days.")
-    with st.form("join_shop"):
+with join_col, st.container(key="lekha_card_join_shop"):
+    ui.card_heading("Join with a code", "Ask the shop's owner for an invite code.")
+    with st.form("join_shop", border=False):
         code = st.text_input("Invite code", placeholder="For example ABCDE-FGHJK", max_chars=20)
         joined = st.form_submit_button("Join shop", type="primary")
     # Wrong codes are limited per person, so codes can't be guessed by trying many.

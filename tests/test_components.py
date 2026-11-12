@@ -7,12 +7,14 @@ these tests can check the exact markup without running Streamlit.
 from services.comparisons import Comparison
 from ui.components import (
     Figure,
+    card_heading_html,
     cover_letter_html,
     figure_strip_html,
     page_header_html,
     status_html,
     step_html,
     summary_header_html,
+    wordmark_html,
 )
 
 
@@ -101,3 +103,20 @@ def test_cover_letter_uses_the_first_letter_and_names_the_book():
 def test_cover_letter_for_a_title_starting_with_a_symbol():
     assert '>"</span>' not in cover_letter_html('"Quoted" title')
     assert ">Q</span>" in cover_letter_html('"Quoted" title')
+
+
+# ---------- Sign in and Get started ----------
+
+def test_wordmark_is_the_one_h1_with_its_tagline():
+    html = wordmark_html("Lekha", "Reading between the numbers.")
+    assert html.count("<h1") == 1
+    assert '<h1 class="lekha-wordmark__name">Lekha</h1>' in html
+    assert '<p class="lekha-wordmark__tagline">Reading between the numbers.</p>' in html
+
+
+def test_card_heading_is_an_h2_with_a_short_description():
+    html = card_heading_html("Start a shop", "You'll own it & can invite staff.")
+    assert '<h2 class="lekha-cardhead__title">Start a shop</h2>' in html
+    assert "You&#x27;ll own it &amp; can invite staff." in html
+    assert "eyebrow" not in html and "<h1" not in html
+

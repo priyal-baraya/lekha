@@ -562,3 +562,71 @@ button:active:not(:disabled) {
     transform: none;
   }
 }
+
+/* ---------- Sign in and Get started ---------- */
+/* A centred column for the sign-in card (st.container(key="lekha_narrow")) */
+.st-key-lekha_narrow {
+  max-width: 25rem;                  /* 400px */
+  margin: 0 auto;
+}
+/* Cards: st.container(key="lekha_card_…"). Keyed, so other boxes are untouched. */
+[class*="st-key-lekha_card"] {
+  background: var(--lekha-porcelain);
+  border: 1px solid var(--lekha-parchment);
+  border-radius: var(--lekha-radius);
+  padding: var(--lekha-space-4);
+  box-sizing: border-box;
+}
+.lekha-wordmark {
+  text-align: center;
+  margin: var(--lekha-space-4) 0 var(--lekha-space-2);
+}
+.lekha-wordmark__name {
+  font-family: var(--lekha-serif);
+  font-size: 2.5rem;                 /* 40px */
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--lekha-crimson);
+  margin: 0;
+  padding: 0;
+}
+.lekha-wordmark__tagline {
+  font-family: var(--lekha-serif);
+  font-style: italic;
+  font-size: 1.125rem;               /* 18px */
+  color: var(--lekha-ink-secondary);
+  margin: var(--lekha-space-1) 0 0;
+}
+.lekha-cardhead__title {
+  font-family: var(--lekha-serif);
+  font-size: 1.25rem;                /* 20px */
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--lekha-ink);
+  margin: 0;
+  padding: 0;
+}
+.lekha-cardhead__description,
+.lekha-note {
+  font-family: var(--lekha-sans);
+  font-size: 0.8125rem;              /* 13px */
+  line-height: 1.4;
+  color: var(--lekha-ink-secondary);
+  margin: var(--lekha-space-1) 0 0;
+}
+.lekha-note {
+  margin: 0;
+}
+.lekha-or {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--lekha-sans);
+  font-size: 0.8125rem;
+  color: var(--lekha-ink-muted);
+}
+.lekha-or span {
+  flex: 1;
+  height: 1px;
+  background: var(--lekha-parchment);
+}

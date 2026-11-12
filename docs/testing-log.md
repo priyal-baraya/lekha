@@ -409,3 +409,27 @@ Created an account and a shop, then checked the navigation: the five daily pages
 
 - **The account menu sits straight after the page links, not at the far right of the bar.** Streamlit places navigation sections in order; moving it would mean drawing our own navigation, which isn't worth losing Streamlit's built-in phone menu for.
 
+
+---
+
+## 2026-11-12: Sign in and Get started (branch `redesign/signin-get-started`)
+
+### Automated tests: **378 passed**
+
+Written before the pages changed, and failing first:
+
+| File | Tests | What it covers |
+|---|---|---|
+| `tests/test_components.py` | 15 (2 new) | The sign-in wordmark is the page's one h1, with its tagline; a card heading is an h2 with escaped text and no label above it |
+| `tests/test_pages.py` | 31 (3 new) | Sign in has no label above its heading and the new note; with Google not set up there's no Google button or Google line; with it set up, Google is a plain (secondary) button so the password form's button leads; Get started has the page header and both card headings, and none of the old labels |
+
+### Browser check (throwaway data folder, port 8502)
+
+- **Desktop:** Sign in matches the canvas (centred name, one 400px card, tabs, full-width button, note). Created an account through the Create an account tab, with a 26-character name: it landed on Get started, and the account menu cut the name short ("Venkatalakshmi Subraman…"). Get started shows two cards side by side.
+- **Phone (375px):** the sign-in card fills the width with even margins; the Get started cards stack.
+- **Keyboard only:** typed the username, Tab to the password, Enter signed in. Tab from Shop name reaches Create shop, with a visible focus ring.
+- The data folder was deleted afterwards.
+
+### Not yet checked
+
+- Google sign-in end to end (it still needs `.streamlit/secrets.toml`). Its button's place and style are covered by a test.
