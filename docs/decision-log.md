@@ -676,3 +676,23 @@ Each entry: what was decided, why, and what else was considered. Newest at the b
 **Decision:** bandit flagged 7 SQL strings built with f-strings. Each was read: they only join fixed text from the code (column names, a fixed sort order, a fixed status expression), and every value is a placeholder. Each line is marked `# nosec B608` with the reason beside it, instead of turning that check off for the whole project.
 
 **Why:** A new f-string SQL query added later will still be flagged and need its own review.
+
+---
+
+## 2026-11-12: Redesign: a calm, analytics-first dashboard
+
+**Decision:** Replace the manuscript-panel look (Deep Wine hero, ornamental dividers, uppercase labels above every heading) with a calm, light dashboard. The palette, Lora and Lato stay. The plan, phases and approved designs are in [docs/redesign-plan.md](redesign-plan.md).
+
+The main choices, agreed on the canvas and signed off by the owner:
+
+- **Each page has one job.** Overview is today and what to do (today's sales, what to reorder, the latest sales, what's selling); Insights is trends; Sales is the till. Overview and Insights no longer repeat each other's figures.
+- **Say it in words.** Overview and Insights open with one sentence that sums up the figures, built from them by fixed rules, never invented.
+- **Fair comparisons.** Today's sales so far are compared with the same time last week, not with a whole day. With nothing fair to compare against, no change is shown. Green and red only where "up" is good; a change in average sale stays neutral.
+- **The first day is designed.** A new shop sees three steps instead of a page of dashes and ₹0.00.
+- **A faster till:** search by title, author or ISBN (a barcode scanner types the ISBN), quantity buttons, and Undo after recording a sale.
+- **The account menu moves into the navigation bar,** with Team, Settings, switching shops and Sign out inside it.
+- **Palette refined:** a new error red kept well apart from Manuscript Crimson (they were nearly identical), a colour-blind-safe chart set (madder, peacock, turmeric, indigo), and Terracotta, Botanical Olive and Faded Rose retired.
+
+**Why:** A design review (Nielsen's heuristics, Impeccable's craft rules and Emil Kowalski's interface principles) scored the old design 25/40: no first-run states, a slow till, a generic metric-card template and charts that couldn't be read precisely. The revised canvas scored 33/40 with no serious issues left. The decorative look also competed with the data; the owner asked for something that reads first as an analytics tool.
+
+**What it costs:** Streamlit draws its own navigation dropdown, tables and inputs, so some details (the account menu's exact position, the till's result list) will look slightly different from the canvas. Each difference is reported as it's built.
