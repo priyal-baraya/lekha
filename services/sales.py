@@ -188,13 +188,15 @@ def list_sales(conn: sqlite3.Connection, limit: int = 50) -> list[dict]:
     return [dict(row) for row in rows]
 
 
-def latest_sales(conn: sqlite3.Connection, since: datetime, limit: int = 5) -> list[dict]:
-    """Sales from `since` onwards, newest first, each with its books in
-    words ("Malgudi Days ×2, Train to Pakistan"). Cancelled sales are
-    included, with status 'cancelled', so the list matches the till."""
+def latest_sales(conn: sqlite3.Connection, since: datetime | None = None, limit: int = 5) -> list[dict]:
+    """Sales from `since` onwards (or all of them), newest first, each with
+    its copies and its books in words ("Malgudi Days ×2, Train to
+    Pakistan"). Cancelled sales are included, with status 'cancelled',
+    so the list matches the till."""
     sales = [dict(row) for row in conn.execute(
         """
         SELECT s.sale_id, s.sale_datetime, s.status, s.recorded_by,
+               SUM(si.quantity)                       AS copies,
                SUM(si.quantity * si.unit_price_paise) AS total_paise
         FROM sales AS s
         JOIN sale_items AS si ON si.sale_id = s.sale_id
@@ -203,7 +205,7 @@ def latest_sales(conn: sqlite3.Connection, since: datetime, limit: int = 5) -> l
         ORDER BY s.sale_datetime DESC, s.sale_id DESC
         LIMIT ?
         """,
-        (since.strftime(TIMESTAMP_FORMAT), limit),
+        (since.strftime(TIMESTAMP_FORMAT) if since else "", limit),     # "" comes before every time
     )]
     if not sales:
         return []
