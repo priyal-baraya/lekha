@@ -380,3 +380,32 @@ On a throwaway copy with a temporary data folder, deleted afterwards. The test a
 3. **A `# nosec` marker ended up inside an SQL string** while marking reviewed queries, which would have broken the search. Caught before running; a small experiment showed bandit accepts the marker after the closing `"""`.
 4. **bandit read the explanation after `# nosec` as test names** and printed dozens of warnings. **Fix:** the reason goes on the line above.
 5. **Tests compared raw Markdown.** After escaping, `Sale #16` became `Sale \#16`. **Fix:** a `shown()` helper compares the text as a person reads it.
+
+---
+
+## 2026-11-12: Redesign foundations (branch `redesign/foundations`)
+
+### Automated tests: **373 passed**
+
+The new calculations were written test-first: every test below existed, and failed, before its code.
+
+| File | Tests | What it covers |
+|---|---|---|
+| `tests/test_comparisons.py` | 22 (new) | Whole-rupee amounts with Indian grouping (₹1,11,444), rounded half up; revenue compared as "12% more than ₹43,080", down as "less", under 1% as "about the same"; **no comparison at all when the earlier figure is zero**; counts as a percentage or a difference ("25 more than 140"); neutral "₹308 before"; "₹1,620 by this time last Thursday" |
+| `tests/test_sentences.py` | 21 (new) | Overview's sentence for a brand-new shop, books without sales, and every mix of today's sales and books to reorder (1 book, 137 books, nothing); Insights' sentence for no sales, too little history, rises, falls, about the same, one genre, nothing to compare against; "Showing 5 of 137" |
+| `tests/test_time_windows.py` | 8 (new) | Today so far stops at now; **the same time last week stops at the same minute** (a sale at exactly that minute is left out); the week starts on Monday; cancelled sales never count; the period before has the same length; days of history |
+| `tests/test_components.py` | 13 (new) | The page header has one h1 and no label above it; names in the date line are escaped; a good or bad change gets a drawn arrow, a neutral one none; a missing figure is a dash that screen readers hear as "No data yet"; unknown tones and status kinds are refused; a missing cover shows the title's first letter |
+| `tests/test_pages.py` | 28 (2 new, 1 rewritten) | The account menu's label shows Markdown in names as typed and cuts long names to 24 characters; Switch shop lists every shop, marks the open one and opens the chosen one. The text helper now reads HTML as a person would (`&#x27;` as `'`) |
+
+### Browser check (throwaway data folder, port 8502)
+
+Created an account and a shop, then checked the navigation: the five daily pages, and "Asha · Kitab Ghar" as a menu holding Team, Settings, Start or join a shop and Sign out (Switch shop correctly absent with one shop). Settings opened from the menu; Sign out returned to the sign-in page. The data folder was deleted afterwards.
+
+### Issues found and fixed
+
+1. **Wrong weekday in my own test data and on the canvas.** I'd assumed 12 November 2026 was a Wednesday; it's a Thursday. The test caught it (a "Sunday" sale was really Monday, inside the week). **Fix:** the test data names the right days; the canvas's "Wednesday" was corrected too.
+
+### Noted, not changed
+
+- **The account menu sits straight after the page links, not at the far right of the bar.** Streamlit places navigation sections in order; moving it would mean drawing our own navigation, which isn't worth losing Streamlit's built-in phone menu for.
+

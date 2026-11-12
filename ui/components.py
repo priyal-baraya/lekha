@@ -14,10 +14,14 @@ plain() first (see below).
 
 import base64
 import re
+from dataclasses import dataclass
 from html import escape
 from pathlib import Path
 
 import streamlit as st
+
+from services.comparisons import Comparison
+from services.sentences import showing
 
 UI_DIR = Path(__file__).parent
 ASSETS_DIR = UI_DIR / "assets"
@@ -232,3 +236,109 @@ def show_errors(errors: list[str]) -> None:
     """Show every validation problem in one error box."""
     lines = "\n".join(f"- {plain(error)}" for error in errors)
     st.error(f"Nothing was saved. Please fix the following:\n\n{lines}")
+
+
+# ================================================================
+# Redesign building blocks (Lekha Design System, 12 Nov 2026).
+# Each piece is built as an HTML string first (the *_html functions),
+# so tests can check the exact markup; the plain-named functions show
+# it. All text is escaped with html.escape. Pages move onto these in
+# phase 4; the pieces above stay until then.
+# ================================================================
+
+TONES = ("good", "bad", "neutral")
+STATUS_KINDS = ("success", "warning", "error", "info", "neutral")
+
+
+def page_header_html(title: str, description: str) -> str:
+    """A page title (the page's only h1) and one line. No label above it."""
+    return (f'<header class="lekha-pagehead"><h1 class="lekha-pagehead__title">{escape(title)}</h1>'
+            f'<p class="lekha-pagehead__description">{escape(description)}</p></header>')
+
+
+def page_header(title: str, description: str) -> None:
+    st.html(page_header_html(title, description))
+
+
+def summary_header_html(date_line: str, sentence: str) -> str:
+    """Overview and Insights: a plain date line, then the summary sentence as the h1."""
+    return (f'<header class="lekha-pagehead"><p class="lekha-pagehead__meta">{escape(date_line)}</p>'
+            f'<h1 class="lekha-pagehead__summary">{escape(sentence)}</h1></header>')
+
+
+def summary_header(date_line: str, sentence: str) -> None:
+    st.html(summary_header_html(date_line, sentence))
+
+
+@dataclass(frozen=True)
+class Figure:
+    """One figure in a strip.
+
+    value None means "no data": it shows a dash that screen readers hear
+    as "No data yet". words=True is for a value that is a phrase rather
+    than a number ("No sales yet"), shown a little smaller.
+    """
+
+    label: str
+    value: str | None
+    comparison: Comparison | None = None
+    note: str | None = None
+    words: bool = False
+
+
+def _comparison_html(comparison: Comparison) -> str:
+    if comparison.tone not in TONES:
+        raise ValueError(f"Unknown tone: {comparison.tone}")
+    arrow = '<span class="lekha-change__arrow" aria-hidden="true"></span>' if comparison.tone != "neutral" else ""
+    return (f'<p class="lekha-change lekha-change--{comparison.tone}">'
+            f'{arrow}<span>{escape(comparison.text)}</span></p>')
+
+
+def _figure_html(figure: Figure) -> str:
+    if figure.value is None:
+        value = '<span aria-hidden="true">—</span><span class="lekha-sr-only">No data yet</span>'
+    else:
+        value = escape(figure.value)
+    value_class = "lekha-figure__value lekha-figure__value--words" if figure.words else "lekha-figure__value"
+    comparison = _comparison_html(figure.comparison) if figure.comparison else ""
+    note = f'<p class="lekha-figure__note">{escape(figure.note)}</p>' if figure.note else ""
+    return (f'<div class="lekha-figure"><p class="lekha-figure__label">{escape(figure.label)}</p>'
+            f'<p class="{value_class}">{value}</p>{comparison}{note}</div>')
+
+
+def figure_strip_html(figures: list[Figure]) -> str:
+    """Figures side by side in one connected strip (not separate cards)."""
+    return f'<div class="lekha-strip">{"".join(_figure_html(f) for f in figures)}</div>'
+
+
+def figure_strip(figures: list[Figure]) -> None:
+    st.html(figure_strip_html(figures))
+
+
+def status_html(kind: str, text: str) -> str:
+    """A one- or two-word status. The word carries the meaning; colour only reinforces it."""
+    if kind not in STATUS_KINDS:
+        raise ValueError(f"Unknown status kind: {kind}")
+    return f'<span class="lekha-status lekha-status--{kind}">{escape(text)}</span>'
+
+
+def step_html(number: int, title: str, text: str, waiting: bool = False) -> str:
+    """One numbered first-run step. waiting=True greys it out until it can be done."""
+    state = " lekha-step--waiting" if waiting else ""
+    return (f'<div class="lekha-step{state}"><span class="lekha-step__number" aria-hidden="true">{number}</span>'
+            f'<div><p class="lekha-step__title">{escape(title)}</p>'
+            f'<p class="lekha-step__text">{escape(text)}</p></div></div>')
+
+
+def cover_letter_html(title: str) -> str:
+    """Stands in for a missing Open Library cover: the title's first letter on parchment."""
+    letter = next((ch.upper() for ch in title if ch.isalnum()), "·")
+    return (f'<span class="lekha-cover-letter" role="img" aria-label="No cover: {escape(title)}">'
+            f'{escape(letter)}</span>')
+
+
+def showing_note(shown: int, total: int) -> None:
+    """The line under a shortened list ("Showing 5 of 137."), if there is one."""
+    text = showing(shown, total)
+    if text:
+        st.html(f'<p class="lekha-showing">{escape(text)}</p>')

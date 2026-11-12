@@ -134,7 +134,7 @@ An earlier version used a larger *generated* dataset for screenshots. It was rem
 ## 8. Interface and design decisions
 
 - **Identity:** antique Indian manuscript art translated into a calm product: Manuscript Crimson and Persian Teal on parchment, Lora headings, Lato body, slightly rounded corners (6px), two original SVG ornaments (an arch and a rosette divider), used sparingly.
-- **Practical navigation:** Overview, Books, Sales, Inventory, Insights, plus Team and Settings; each role sees only the pages it can use, and a slim bar above every page shows the shop, who's signed in and their role. Literary names ("The daily read", "Shelf check") appear only in section introductions.
+- **Practical navigation:** Overview, Books, Sales, Inventory, Insights, each role sees only the pages it can use. Team, Settings, switching shops and Sign out sit in an account menu at the end of the navigation bar, labelled with the person and the shop. Literary names ("The daily read", "Shelf check") appear only in section introductions.
 - **Honest charts:** one series, one colour; partial periods drawn as outlines (shape, not colour); empty weeks shown as zero; bars instead of pies.
 - **Phones:** a five-column basket grid fell apart when Streamlit stacked it, so basket lines became sentences ("1 copy × ₹399.00 = ₹399.00"); tables put decision columns straight after the title.
 - **Tokens:** colours and a six-step spacing scale live in `.streamlit/config.toml` and `ui/styles.css`, ready to map onto Figma variables.
@@ -149,8 +149,9 @@ An earlier version used a larger *generated* dataset for screenshots. It was rem
 | Open Library and migration | Lookups and searches against **real saved Open Library responses** (no internet needed); genre suggestions; plain errors; a Phase 7 database upgraded without losing data | 31 |
 | Accounts and shops | Password hashing, rules and lockout, Google accounts, invite codes, every role's limits, a shop never losing its last owner, two shops never seeing each other's books, two simultaneous visitors kept apart, who-did-what recorded | 45 |
 | Security | Escaping of names and titles, limits on repeated attempts, password changes and lockout, Open Library answers checked, input sizes, safe server settings | 26 |
-| Pages (`AppTest`) | Every page opens; sign up, create a shop and land on it; staff see no editing, stock correction, profit or Team page; removed staff lose access on their next click; an empty shop shows real zeros; a real book added by ISBN saves exactly what Open Library said plus the owner's price; a 2-copy sale reduces stock by exactly 2; a broken database shows a friendly message; a password change signs out other tabs; idle tabs are signed out; repeated failed sign-ins are refused; names show as typed | 26 |
-| **Total** | Run on every push and pull request by GitHub Actions | **307** |
+| Redesign foundations | Fair comparisons ("12% more than ₹43,080", and none when there's nothing to compare against); a summary sentence for every case, including a brand-new shop; today so far against the same time last week, to the minute; whole-rupee amounts with Indian grouping; the new page pieces escape text and never show a missing figure as a real one | 64 |
+| Pages (`AppTest`) | Every page opens; sign up, create a shop and land on it; staff see no editing, stock correction, profit or Team page; removed staff lose access on their next click; an empty shop shows real zeros; a real book added by ISBN saves exactly what Open Library said plus the owner's price; a 2-copy sale reduces stock by exactly 2; a broken database shows a friendly message; a password change signs out other tabs; idle tabs are signed out; repeated failed sign-ins are refused; names show as typed, including in the account menu; Switch shop opens the chosen shop | 28 |
+| **Total** | Run on every push and pull request by GitHub Actions | **373** |
 
 **Testing the tests.** Twice I broke the code on purpose to check a test could fail: once removing the foreign-key PRAGMA (a bad sale line got in), once removing the sale rollback (stock was left at 6 instead of 8). Both times the relevant test caught it.
 

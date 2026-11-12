@@ -40,6 +40,21 @@
      config.toml. Tags are smaller, so they use a smaller radius. */
   --lekha-radius: 6px;
   --lekha-radius-small: 4px;
+
+  /* Redesign tokens (Lekha Design System, 12 Nov 2026) */
+  --lekha-hover: #EFE3D1;
+  --lekha-field: #FFFDF9;
+  --lekha-ink-muted: #7A6858;
+  --lekha-crimson-50: #F6E8E4;       /* selected background; crimson text on it is 8.9:1 */
+  --lekha-crimson-600: #64141D;      /* primary button hover */
+  --lekha-success: #215C42;
+  --lekha-success-bg: #E5F1E8;
+  --lekha-warning: #704A0E;
+  --lekha-warning-bg: #F8EBCB;
+  --lekha-error: #B42318;            /* kept apart from crimson */
+  --lekha-error-bg: #FBE9E7;
+  --lekha-chart-past: #C4767E;       /* earlier weeks in a chart, 3.2:1 */
+  --lekha-shadow-popover: 0 8px 24px rgba(53, 40, 33, 0.14), 0 2px 6px rgba(53, 40, 33, 0.10);
 }
 
 /* Screen-reader-only text: read aloud, not shown */
@@ -331,5 +346,219 @@ textarea::placeholder {
   }
   .lekha-metric + .lekha-metric {
     border-top: 1px solid var(--lekha-parchment);
+  }
+}
+
+/* =================================================================
+   Redesign building blocks (Lekha Design System, 12 Nov 2026).
+   Pages move onto these in phase 4; the classes above stay until then.
+   ================================================================= */
+
+/* ---------- Page header: a title and one line, no label above ---------- */
+.lekha-pagehead {
+  margin: 0 0 var(--lekha-space-5);
+}
+.lekha-pagehead__title {
+  font-family: var(--lekha-serif);
+  font-size: 2rem;                   /* 32px */
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--lekha-ink);
+  margin: 0;
+  padding: 0;
+}
+.lekha-pagehead__description {
+  font-family: var(--lekha-sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--lekha-ink-secondary);
+  max-width: 35rem;
+  margin: var(--lekha-space-1) 0 0;
+}
+/* Overview and Insights: a date line, then the summary sentence */
+.lekha-pagehead__meta {
+  font-family: var(--lekha-sans);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--lekha-ink-secondary);
+  margin: 0 0 var(--lekha-space-2);
+}
+.lekha-pagehead__summary {
+  font-family: var(--lekha-serif);
+  font-size: 1.75rem;                /* 28px, at most two lines */
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--lekha-ink);
+  max-width: 40rem;
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------- Figure strip: connected figures with plain comparisons ---------- */
+.lekha-strip {
+  display: flex;
+  flex-wrap: wrap;
+  background: var(--lekha-porcelain);
+  border: 1px solid var(--lekha-parchment);
+  border-radius: var(--lekha-radius);
+}
+.lekha-figure {
+  flex: 1 1 12rem;
+  min-width: 0;
+  padding: var(--lekha-space-3) 1.25rem;
+  border-left: 1px solid var(--lekha-parchment);
+}
+.lekha-figure:first-child {
+  border-left: none;
+}
+.lekha-figure__label {
+  font-family: var(--lekha-sans);
+  font-size: 0.875rem;
+  color: var(--lekha-ink-secondary);
+  margin: 0;
+}
+.lekha-figure__value {
+  font-family: var(--lekha-serif);
+  font-size: 1.875rem;               /* 30px */
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--lekha-ink);
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+.lekha-figure__value--words {
+  font-size: 1.375rem;               /* "No sales yet" reads as words, not a number */
+}
+.lekha-figure__note {
+  font-family: var(--lekha-sans);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--lekha-ink-secondary);
+  margin: var(--lekha-space-1) 0 0;
+}
+.lekha-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--lekha-sans);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  margin: 6px 0 0;
+}
+.lekha-change--good { color: var(--lekha-success); }     /* 7.4:1 */
+.lekha-change--bad { color: var(--lekha-error); }        /* 6.2:1 */
+.lekha-change--neutral { color: var(--lekha-ink-secondary); }
+/* The arrow is drawn with borders (no text character), so screen
+   readers hear only the words. */
+.lekha-change__arrow {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+}
+.lekha-change--good .lekha-change__arrow { border-bottom: 7px solid currentColor; }
+.lekha-change--bad .lekha-change__arrow { border-top: 7px solid currentColor; }
+
+/* ---------- Status tags: one word, colour only reinforces it ---------- */
+.lekha-status {
+  display: inline-block;
+  font-family: var(--lekha-sans);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  padding: 2px var(--lekha-space-2);
+  border-radius: var(--lekha-radius-small);
+  white-space: nowrap;
+}
+.lekha-status--success { color: var(--lekha-success); background: var(--lekha-success-bg); }
+.lekha-status--warning { color: var(--lekha-warning); background: var(--lekha-warning-bg); }
+.lekha-status--error { color: var(--lekha-error); background: var(--lekha-error-bg); }
+.lekha-status--info { color: var(--lekha-info-fg); background: var(--lekha-info-bg); }
+.lekha-status--neutral { color: var(--lekha-ink-secondary); background: var(--lekha-hover); }
+
+/* ---------- First-run steps ---------- */
+.lekha-step {
+  display: flex;
+  gap: var(--lekha-space-3);
+  align-items: flex-start;
+}
+.lekha-step__number {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--lekha-crimson-50);
+  color: var(--lekha-crimson);
+  font-family: var(--lekha-sans);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lekha-step--waiting .lekha-step__number {
+  background: var(--lekha-hover);
+  color: var(--lekha-ink-secondary);
+}
+.lekha-step__title {
+  font-family: var(--lekha-serif);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--lekha-ink);
+  margin: 0;
+}
+.lekha-step--waiting .lekha-step__title {
+  color: var(--lekha-ink-secondary);
+}
+.lekha-step__text {
+  font-family: var(--lekha-sans);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--lekha-ink-secondary);
+  max-width: 35rem;
+  margin: 2px 0 0;
+}
+
+/* ---------- A book with no cover: its first letter on parchment ---------- */
+.lekha-cover-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 33px;
+  border-radius: 2px;
+  background: var(--lekha-parchment);
+  box-shadow: inset 0 0 0 1px var(--lekha-border);
+  color: var(--lekha-ink-secondary);
+  font-family: var(--lekha-serif);
+  font-weight: 600;
+}
+
+/* ---------- "Showing 5 of 137" under shortened lists ---------- */
+.lekha-showing {
+  font-family: var(--lekha-sans);
+  font-size: 0.875rem;
+  color: var(--lekha-ink-secondary);
+  margin: var(--lekha-space-2) 0 0;
+}
+
+/* ---------- How things respond ----------
+   Buttons shrink slightly when pressed, so the press is felt. Plain
+   element selectors, so a Streamlit update can't break them. */
+button {
+  transition: transform 160ms ease-out, background-color 150ms ease-out;
+}
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+::selection {
+  background: var(--lekha-crimson-50);
+  color: var(--lekha-ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  button {
+    transition: none;
+  }
+  button:active:not(:disabled) {
+    transform: none;
   }
 }

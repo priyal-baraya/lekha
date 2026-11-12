@@ -11,6 +11,7 @@ Two kinds of test:
 The real data/ folder is never touched.
 """
 
+import html
 import json
 import re
 import time
@@ -114,7 +115,8 @@ def shown(markdown: str) -> str:
 def all_text(app: AppTest) -> str:
     """Everything the page wrote with markdown, html, info, success or error boxes."""
     parts = [element.value for element in app.markdown]
-    parts += [str(element.proto.body) for element in app.get("html")]
+    # HTML pieces escape characters like ' and &; read them as a person would.
+    parts += [html.unescape(str(element.proto.body)) for element in app.get("html")]
     parts += [box.value for box in [*app.info, *app.error, *app.success]]
     return shown("\n".join(parts))
 
@@ -358,10 +360,34 @@ def test_names_are_shown_as_typed_not_as_formatting(data_dir):
         user = accounts.create_user(acc, "sneaky", "**Owner** ![x](https://example.com/p.png)", PASSWORD)
         accounts.create_shop(acc, user, "$5 Books")
     app = run_app(user)
-    bar = [element.value for element in app.markdown if "Signed in as" in element.value][0]
-    assert "![x](" not in bar and r"\*\*Owner\*\*" in bar
-    assert "$5 Books" in shown("\n".join(element.value for element in app.markdown))
-    assert any(r"\$5 Books" in element.value for element in app.markdown)
+    assert not app.exception
+    # The account menu's label (Streamlit reads it as Markdown).
+    label = session.account_label("**Owner** ![x](https://example.com/p.png)", "$5 Books")
+    assert "![x](" not in label and r"\*\*Owner\*\*" in label and r"\$5 Books" in label
+    assert shown(label).startswith("**Owner** ![x](https")      # reads exactly as typed (cut short at 24)
+
+
+def test_long_names_are_cut_short_in_the_account_menu():
+    label = session.account_label("Venkatalakshmi Subramanian", "Sri Venkateswara Book Depot & Stationers")
+    name, shop = shown(label).split(" · ")
+    assert name == "Venkatalakshmi Subraman…" and len(name) == session.ACCOUNT_LABEL_NAME_LIMIT
+    assert shop.endswith("…") and len(shop) == session.ACCOUNT_LABEL_NAME_LIMIT
+
+
+def test_switch_shop_lists_every_shop_and_opens_the_chosen_one(data_dir):
+    asha, first = person_with_shop("asha", "Kitaab Corner")
+    with connect_accounts() as acc:
+        second = accounts.create_shop(acc, asha, "$5 Books")
+    app = AppTest.from_file(str(PROJECT / "views" / "switch_shop.py"), default_timeout=TIMEOUT)
+    app.session_state[session.USER] = asha
+    app.session_state[session.SHOP] = first
+    app.run()
+    assert not app.exception
+    buttons = {button.label: button for button in app.button}
+    assert set(buttons) == {"Kitaab Corner · owner · open now", r"\$5 Books · owner"}    # names escaped
+    assert buttons["Kitaab Corner · owner · open now"].disabled                   # the shop already open
+    buttons[r"\$5 Books · owner"].click().run()
+    assert app.session_state[session.SHOP] == second
 
 
 # ---------- Errors ----------
