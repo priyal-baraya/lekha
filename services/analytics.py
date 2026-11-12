@@ -13,7 +13,7 @@ Division of work:
 import calendar
 import sqlite3
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
@@ -103,6 +103,65 @@ def _query(conn, name: str, period: Period, genre: str | None, **extra) -> list[
     sql = f"WITH period_lines AS (\n{cte}\n)\n{body}"
     params = {"start": period.start_text, "end": period.end_exclusive_text, "genre": genre, **extra}
     return [dict(row) for row in conn.execute(sql, params)]
+
+
+def previous_period(period: Period) -> Period:
+    """The period of the same length that ends the day before this one starts.
+
+    Last 30 days (14 Oct to 12 Nov) -> 14 Sep to 13 Oct, "the 30 days before".
+    """
+    length = (period.end - period.start).days + 1
+    end = period.start - timedelta(days=1)
+    label = "the day before" if length == 1 else f"the {length} days before"
+    return Period(end - timedelta(days=length - 1), end, label)
+
+
+def days_of_history(conn: sqlite3.Connection, today: date) -> int:
+    """Days from the first completed sale to today, both included (0 with no sales)."""
+    first = earliest_sale_date(conn)
+    return (today - first).days + 1 if first else 0
+
+
+# ------------------------------------------------- exact time windows
+
+@dataclass(frozen=True)
+class Window:
+    """From one moment up to (not including) another, for figures that
+    stop part-way through a day: "today so far", "by this time last week".
+    Has the same two properties as Period, so the same SQL runs on it."""
+
+    start: datetime
+    end: datetime
+
+    @property
+    def start_text(self) -> str:
+        return self.start.strftime("%Y-%m-%d %H:%M:%S")
+
+    @property
+    def end_exclusive_text(self) -> str:
+        return self.end.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _window_totals(conn, window: Window) -> dict:
+    return _query(conn, "summary", window, None)[0]
+
+
+def today_so_far(conn, now: datetime) -> dict:
+    """Completed sales from midnight up to now."""
+    return _window_totals(conn, Window(datetime.combine(now.date(), time()), now))
+
+
+def same_time_last_week(conn, now: datetime) -> dict:
+    """Completed sales on the same weekday last week, from midnight up to
+    the same time of day. The fair comparison for "today so far"."""
+    then = now - timedelta(days=7)
+    return _window_totals(conn, Window(datetime.combine(then.date(), time()), then))
+
+
+def week_so_far(conn, now: datetime) -> dict:
+    """Completed sales from Monday midnight up to now."""
+    monday = now.date() - timedelta(days=now.weekday())
+    return _window_totals(conn, Window(datetime.combine(monday, time()), now))
 
 
 def percent(part: int, whole: int) -> Decimal:

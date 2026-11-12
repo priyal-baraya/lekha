@@ -7,7 +7,7 @@ gives 1998.9999999999998, and int() of that is 1998: a paisa lost.
 Decimal stores the digits exactly as written, so the conversion is exact.
 """
 
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 PAISE_PER_RUPEE = 100
 TWO_PLACES = Decimal("0.01")
@@ -57,3 +57,15 @@ def format_rupees(paise: int) -> str:
         digits = ",".join(([head] if head else []) + pairs) + "," + tail
     sign = "-" if paise < 0 else ""
     return f"{sign}₹{digits}.{paise_part:02d}"
+
+
+def format_rupees_whole(paise: int) -> str:
+    """Format paise as whole rupees, rounded half up, with Indian grouping.
+
+    Used for headline figures and comparisons, where paise would only add
+    noise: 4308000 -> "₹43,080", 34999 -> "₹350". Amounts the shop
+    charges and records (prices, sale totals) keep format_rupees().
+    """
+    rupees = (Decimal(abs(paise)) / PAISE_PER_RUPEE).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+    text = format_rupees(int(rupees) * PAISE_PER_RUPEE)[:-3]      # drop ".00"
+    return f"-{text}" if paise < 0 else text
