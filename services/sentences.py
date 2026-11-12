@@ -6,6 +6,7 @@ traced to a number. Nothing is guessed or generated, and nothing claims
 a cause: "Revenue rose 12%", never "Revenue rose because…".
 """
 
+from datetime import date, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
 from services.money import format_rupees_whole
@@ -69,6 +70,32 @@ def insights_sentence(
         top, share = genres[0]
         return f"{movement}, and {top} brought in {_whole(share)}% of it."
     return f"{movement}."
+
+
+def sale_time_label(when: datetime, today: date) -> str:
+    """When a sale happened, as short as it can be: "16:45" today,
+    "Yesterday 18:05", otherwise "5 Nov 10:00"."""
+    clock = f"{when:%H:%M}"
+    if when.date() == today:
+        return clock
+    if when.date() == today - timedelta(days=1):
+        return f"Yesterday {clock}"
+    return f"{when.day} {when:%b} {clock}"
+
+
+def _and(names: list[str]) -> str:
+    return names[0] if len(names) == 1 else f"{', '.join(names[:-1])} and {names[-1]}"
+
+
+def selling_well_note(rows: list[dict]) -> str:
+    """The line under "Selling well this week", naming any book that sold out."""
+    note = "Copies sold since Monday."
+    sold_out = [row["title"] for row in rows if row["stock_quantity"] == 0]
+    if len(sold_out) == 1:
+        return f"{note} {sold_out[0]} sold out, so it's on the reorder list."
+    if sold_out:
+        return f"{note} {_and(sold_out)} sold out, so they're on the reorder list."
+    return note
 
 
 def showing(shown: int, total: int) -> str:

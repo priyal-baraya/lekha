@@ -7,10 +7,16 @@ these tests can check the exact markup without running Streamlit.
 from services.comparisons import Comparison
 from ui.components import (
     Figure,
+    Html,
+    ShelfBook,
+    book_cell_html,
+    book_list_html,
     card_heading_html,
     cover_letter_html,
     figure_strip_html,
+    data_table_html,
     page_header_html,
+    shelf_html,
     status_html,
     step_html,
     summary_header_html,
@@ -119,4 +125,41 @@ def test_card_heading_is_an_h2_with_a_short_description():
     assert '<h2 class="lekha-cardhead__title">Start a shop</h2>' in html
     assert "You&#x27;ll own it &amp; can invite staff." in html
     assert "eyebrow" not in html and "<h1" not in html
+
+
+# ---------- Overview: tables, book cells and the shelf ----------
+
+def test_table_escapes_plain_values_and_keeps_built_html():
+    html = data_table_html(
+        [("Book", "left"), ("In stock", "right")],
+        [["<script>x</script>", 0], [Html('<span class="lekha-status">Low</span>'), 2]],
+    )
+    assert "&lt;script&gt;x&lt;/script&gt;" in html and "<script>" not in html
+    assert '<span class="lekha-status">Low</span>' in html
+    assert '<th scope="col" class="lekha-table__num">In stock</th>' in html
+    assert '<td class="lekha-table__num">0</td>' in html
+
+
+def test_book_cell_with_a_cover_has_an_empty_alt():
+    html = book_cell_html("Malgudi Days", "R. K. Narayan", "https://covers.openlibrary.org/b/id/1-S.jpg")
+    assert 'alt=""' in html and 'loading="lazy"' in html      # the title is right beside it
+    assert "lekha-cover-letter" not in html
+
+
+def test_book_cell_without_a_cover_shows_its_letter_and_escapes():
+    html = book_cell_html("<Godaan>", "Premchand", None)
+    assert "lekha-cover-letter" in html and "&lt;Godaan&gt;" in html and "<img" not in html
+
+
+def test_shelf_marks_sold_out_books_in_words():
+    html = shelf_html([ShelfBook("Gitanjali", 4, None, sold_out=True), ShelfBook("Godaan", 1, None)])
+    assert html.count("Sold out") == 1
+    assert "4 sold" in html and "1 sold" in html
+
+
+def test_book_list_for_phones_says_stock_in_words():
+    html = book_list_html([("Gitanjali", None, 0, 3), ("The <Guide>", "https://covers.openlibrary.org/b/id/1-S.jpg", 1, 4)])
+    assert "0 left · reorder at 3" in html and "1 left · reorder at 4" in html
+    assert html.count("Out of stock") == 1 and html.count(">Low<") == 1
+    assert "The &lt;Guide&gt;" in html
 

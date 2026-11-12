@@ -35,7 +35,7 @@ def low_stock_books(conn: sqlite3.Connection) -> list[dict]:
     """Books at or below their reorder level, emptiest shelves first."""
     rows = conn.execute(
         f"""
-        SELECT book_id, title, author, genre, stock_quantity, reorder_level,
+        SELECT book_id, title, author, genre, stock_quantity, reorder_level, cover_id,
                {STOCK_STATUS_SQL} AS stock_status
         FROM books
         WHERE stock_quantity <= reorder_level
