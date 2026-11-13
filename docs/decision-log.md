@@ -744,3 +744,21 @@ The main choices, agreed on the canvas and signed off by the owner:
 - On a phone, a long table scrolls sideways inside its card rather than squashing every column.
 
 **What it costs:** The basket lives in the browser tab, as before. When Lekha's code changes while it's running (only during development), Streamlit reloads it and an unsaved basket starts empty.
+
+## 2026-11-13: Books, as designed
+
+**Decision:** Books now follows the canvas (Books, BooksAdd, BooksEmpty and BooksPhone artboards):
+- The page title has an **Add a book** button beside it, which opens the Add tab ready for an ISBN.
+- **Browse** is a plain table: cover and title with the author under it, genre, price, copies, reorder level, and stock in words (In stock, Low, Out of stock). Search covers title, author **and ISBN**. Under the table, one line says how many books are shown ("12 books.", "Showing 2 of 12 books.").
+- On a phone, the table becomes a list: title, then "author · ₹price · copies in stock", and the status.
+- **Add a book** offers its three ways (ISBN, title or author, type it in) as a segmented control. A book found on Open Library shows its cover and facts in one box ("Found on Open Library. The God of Small Things · Arundhati Roy · Flamingo, 1998…"), and the shop's own fields sit under "Your shop's details".
+- An empty catalogue shows a card, "No books yet", with "Add your first book".
+
+**Why:** The old page's table was Streamlit's spreadsheet-style grid (hard to read, codes like "Low stock" in a narrow column), the ISBN box in Browse didn't search ISBNs, and adding a book started with a radio list under a label.
+
+**Details worth knowing:**
+- ISBN search needs at least 4 digits, so typing "000" doesn't match every ISBN.
+- The table draws at most 100 books at once; the line underneath says so and asks for a search to find the rest. A shop with thousands of books stays quick.
+- Overview's reorder list and Books now share one rule for stock in words.
+
+**Departures from the canvas:** Genre and Sort are Streamlit's dropdowns with labels, not the canvas's compact buttons. Edit a book keeps its existing form, now in a card.

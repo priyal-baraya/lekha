@@ -498,3 +498,31 @@ The till's tests were written first and failed first (the module didn't exist). 
 ### Not yet checked
 
 - A real barcode scanner (it types digits and presses Enter, which is what the check did by hand).
+
+---
+
+## 2026-11-13: Books (branch `redesign/books`)
+
+### Automated tests: **437 passed**
+
+Written before the code, and failing first:
+
+| File | Tests | What it covers |
+|---|---|---|
+| `tests/test_books.py` | 35 (2 new) | The catalogue can be searched by ISBN, with or without dashes; a short number isn't treated as an ISBN |
+| `tests/test_sentences.py` | 27 (6 new) | The line under the catalogue: "12 books.", "1 book.", "Showing 2 of 12 books.", the first 100 of 2,000, the first 100 of 150 matches, and what to try when nothing matches |
+| `tests/test_components.py` | 25 (5 new) | Stock in words for 0, at, below and above the reorder level; a phone list escapes its details |
+| `tests/test_pages.py` | 41 (2 new, 4 changed) | Books searched by ISBN; the header button and "Add your first book" both open Add a book; the ISBN lookup and Open Library search tests now find their boxes and buttons by name, not by position |
+
+### Browser check (throwaway data folder, port 8502)
+
+- **Desktop:** the table, statuses and header button match the canvas. Add a book opened on the ISBN lookup; a real lookup (978-0-00-655068-6) on Open Library showed the cover and "Found on Open Library. The God of Small Things · Arundhati Roy · Flamingo, 1998"; with a price and stock it was added. Searching Browse by that ISBN found it, with its cover and "Showing 1 of 8 books."
+- **Phone (375px):** the list with "author · ₹price · copies in stock" and the status, as on the phone artboard.
+- **Keyboard:** Tab goes from the header's Add a book, to the tabs, to the search box.
+- The data folder was deleted afterwards.
+
+### Issues found and fixed
+
+1. **The Open Library link was the browser's default blue.** **Fix:** links inside Lekha's own HTML take the theme's teal.
+2. **Long author names hid the price on a phone** ("Rabindranath Tagore · ₹30…"). **Fix:** the detail line wraps in phone lists.
+3. **A script edit was interrupted** when the session ended; I checked the page had been rewritten before carrying on.
