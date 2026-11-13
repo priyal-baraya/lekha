@@ -144,7 +144,9 @@ def network_address() -> str:
 
 def choose_shop(shop_id: int) -> None:
     st.session_state[SHOP] = shop_id
-    for key in (ROLE, SHOP_NAME, DEFAULT_REORDER, "basket"):
+    # The basket and anything else half-done at the till belong to the old shop.
+    till = [key for key in st.session_state if str(key).startswith("till_")]
+    for key in (ROLE, SHOP_NAME, DEFAULT_REORDER, "basket", *till):
         st.session_state.pop(key, None)
 
 

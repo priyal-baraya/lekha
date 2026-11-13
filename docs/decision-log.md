@@ -726,3 +726,21 @@ The main choices, agreed on the canvas and signed off by the owner:
 - The "Showing N of M" line appears only when the reorder list is actually cut short.
 
 **What it costs:** Streamlit stacks the two cards on a phone in its own way, and its phone menu opens by itself after signing in; both are Streamlit's, not Lekha's.
+
+## 2026-11-13: Sales, as a till
+
+**Decision:** The Sales page now follows the canvas (Sales, SalesRecorded, SalesNoMatch, SalesOutOfStock, SalesRecent and SalesPhone artboards):
+- **Find a book** takes a title, author or ISBN. Pressing Enter (which a barcode scanner does after typing the ISBN) adds the book straight away when there's exactly one match; several matches are listed with an Add button each; no match says what to try and links to Books; an out-of-stock book says why it can't be sold and links to Inventory.
+- **This sale** has − and + for copies, Remove, the total, when the sale will be recorded ("Recorded as now, 13 Nov, 09:40", or a chosen earlier time for receipts), and one button, "Record sale · ₹950.00", which Ctrl + Enter also presses.
+- **After recording**, a line says what was saved, with **Undo**. Undo cancels the sale with the reason "Undone at the till straight after recording", so nothing is ever deleted and the record stays honest.
+- **Recent sales** lists the last 20 sales with their books, and a small "Cancel a sale" form with a required reason.
+
+**Why:** The old page made a sale in four steps per book (choose from a long dropdown, set a quantity, Add, then Complete), couldn't use a barcode scanner, and needed a sale's number to see what was in it.
+
+**Departures from the canvas:**
+- The canvas shows matches while typing. Streamlit only hears a text box when Enter is pressed, so the till searches on Enter. For a scanner that's the same thing, and one match still goes straight in.
+- Recent sales has a **Books** column (the canvas didn't), so a sale can be recognised without opening it.
+- Cancelling no longer needs a tick box as well as a reason; the required reason is the confirmation, as on the canvas.
+- On a phone, a long table scrolls sideways inside its card rather than squashing every column.
+
+**What it costs:** The basket lives in the browser tab, as before. When Lekha's code changes while it's running (only during development), Streamlit reloads it and an unsaved basket starts empty.

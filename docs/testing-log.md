@@ -467,3 +467,34 @@ Filled a throwaway shop with seven books and 50 days of sales, then signed in.
 ### Not yet checked
 
 - Overview for staff (they can see everything on it today; the links check permissions anyway).
+
+---
+
+## 2026-11-13: Sales, the till (branch `redesign/sales`)
+
+### Automated tests: **422 passed**
+
+| File | Tests | What it covers |
+|---|---|---|
+| `tests/test_till.py` | 16 (new) | Search: one title match, every book by an author, an ISBN typed with dashes finds exactly that book, an unknown ISBN finds nothing, an empty search finds nothing (not the whole catalogue), a few shown and the rest counted. Basket: adding twice makes two copies, an out-of-stock book is refused with the reason, never more copies than the shelf ("Only 2 copies of The Guide are in stock, and both are in this sale."), one more and one fewer (stopping at one), remove and clear, sale lines at the price shown. "Recorded as now…" and an earlier time. Recent sales list every sale with its copies |
+| `tests/test_pages.py` | 39 (7 new, 2 replaced) | Through the whole app: a sale from search to scan to + to Record sale to Undo (stock back, sale cancelled not deleted); several matches; no match; out of stock; the basket stopping at the shelf; a staff member's sale recorded under their name; Recent sales listing the books and cancelling with a reason |
+
+The till's tests were written first and failed first (the module didn't exist). The page tests were written before the new page, but I didn't run them against the old one; they can't pass there, as it has no Find a book box.
+
+### Browser check (throwaway data folder, port 8502)
+
+- **Desktop:** "narayan" listed two books with Add buttons; Add put The Guide in the sale; typing Malgudi Days' ISBN and Enter added it at once; "train" and Enter added Train to Pakistan. Ctrl + Enter from the search box recorded the sale; the notice offered Undo; Undo cancelled it and Recent sales showed it as Cancelled. "Change date or time" set the sale to the day before ("Recorded as Thursday 12 Nov, 00:05").
+- **Phone (375px):** search, then the sale card; each line wraps its total and Remove under the title. Recent sales scrolls sideways, one line per sale.
+- **Keyboard:** typing, Enter and Ctrl + Enter run the whole sale without the mouse; focus stays in Find a book after each book, ready for the next scan.
+- The data folder was deleted afterwards.
+
+### Issues found and fixed
+
+1. **"Ctrl + Enter" appeared twice.** Streamlit prints the shortcut inside the button; my note under it repeated it. **Fix:** the note is gone.
+2. **Streamlit's "Press Enter to submit form · 0/100" ran over the placeholder on a phone.** **Fix:** hidden for the till's search box only.
+3. **Recent sales squashed on a phone** (dates and titles wrapped a word per line). **Fix:** tables keep a minimum width and scroll sideways; Recent sales keeps each sale on one line.
+4. **My check data's ISBN never saved.** My script didn't commit; the till correctly said "No book matches". Fixed in the check data, not the app.
+
+### Not yet checked
+
+- A real barcode scanner (it types digits and presses Enter, which is what the check did by hand).
