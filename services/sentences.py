@@ -98,6 +98,19 @@ def selling_well_note(rows: list[dict]) -> str:
     return note
 
 
+def catalogue_note(shown: int, matched: int, total: int) -> str:
+    """The line under the Books table: how many books, and how many are shown."""
+    if matched == 0:
+        return "No books match. Try fewer letters, or choose All genres."
+    if shown < matched:
+        rest = (f"{matched:,} books. Search to find the rest" if matched == total
+                else f"{matched:,} matches. Type more to narrow it")
+        return f"Showing the first {shown} of {rest}."
+    if matched < total:
+        return f"Showing {matched} of {total:,} books."
+    return f"{_plural(total, 'book', 'books')}."
+
+
 def showing(shown: int, total: int) -> str:
     """The line under a shortened list: "Showing 5 of 137." """
     if total <= 1:

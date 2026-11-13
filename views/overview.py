@@ -129,8 +129,7 @@ if show_reorder or show_recent:
                 [("Book", "left"), ("In stock", "right"), ("Reorder at", "right"), ("Status", "left")],
                 [[ui.book_cell_html(book["title"], book["author"], cover_url(book["cover_id"], "S")),
                   book["stock_quantity"], book["reorder_level"],
-                  ui.Html(ui.status_html("error", "Out of stock") if book["stock_quantity"] == 0
-                          else ui.status_html("warning", "Low"))]
+                  ui.Html(ui.stock_status_html(book["stock_quantity"], book["reorder_level"]))]
                  for book in low_stock[:REORDER_ROWS]],
                 css_class="lekha-wide-only",
             ))

@@ -89,14 +89,18 @@ def search_books(
     genre: str | None = None,
     sort: str = "title",
 ) -> list[dict]:
-    """Books whose title or author contains `text`, optionally in one genre.
+    """Books whose title, author or ISBN contains `text`, optionally in one genre.
 
     Matching ignores upper/lower case for English letters (SQLite's LIKE
-    default). An empty `text` matches every book.
+    default). An empty `text` matches every book. An ISBN may be typed
+    with dashes or spaces; it needs at least 4 digits, so a short number
+    doesn't match every ISBN.
     """
     if sort not in SORT_OPTIONS:
         raise ValueError(f"Unknown sort option: {sort}")
     pattern = f"%{_escape_like(text.strip()[:MAX_SEARCH_LENGTH])}%"
+    digits = clean_isbn(text[:MAX_SEARCH_LENGTH]) or ""
+    isbn_pattern = f"%{digits}%" if len(digits) >= 4 and digits[:-1].isdigit() else None
     rows = conn.execute(
         f"""
         SELECT book_id, isbn, title, author, genre,
@@ -105,11 +109,12 @@ def search_books(
                publisher, published_year, cover_id, openlibrary_key,
                {STOCK_STATUS_SQL} AS stock_status
         FROM books
-        WHERE (title LIKE :pattern ESCAPE '\\' OR author LIKE :pattern ESCAPE '\\')
+        WHERE (title LIKE :pattern ESCAPE '\\' OR author LIKE :pattern ESCAPE '\\'
+               OR (:isbn_pattern IS NOT NULL AND isbn LIKE :isbn_pattern))
           AND (:genre IS NULL OR genre = :genre)
         ORDER BY {SORT_OPTIONS[sort]}
         """,  # nosec B608
-        {"pattern": pattern, "genre": genre},
+        {"pattern": pattern, "genre": genre, "isbn_pattern": isbn_pattern},
     )
     return [dict(row) for row in rows]
 

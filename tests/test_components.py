@@ -4,13 +4,17 @@ Each block is built as an HTML string first (the *_html functions), so
 these tests can check the exact markup without running Streamlit.
 """
 
+import pytest
+
 from services.comparisons import Comparison
 from ui.components import (
     Figure,
     Html,
     ShelfBook,
     book_cell_html,
+    BookRow,
     book_list_html,
+    book_rows_html,
     card_heading_html,
     cover_letter_html,
     figure_strip_html,
@@ -18,6 +22,7 @@ from ui.components import (
     page_header_html,
     shelf_html,
     status_html,
+    stock_status_html,
     step_html,
     summary_header_html,
     wordmark_html,
@@ -162,4 +167,17 @@ def test_book_list_for_phones_says_stock_in_words():
     assert "0 left · reorder at 3" in html and "1 left · reorder at 4" in html
     assert html.count("Out of stock") == 1 and html.count(">Low<") == 1
     assert "The &lt;Guide&gt;" in html
+
+
+@pytest.mark.parametrize(
+    "stock, reorder, kind, words",
+    [(0, 3, "error", "Out of stock"), (2, 3, "warning", "Low"), (3, 3, "warning", "Low"), (5, 3, "success", "In stock")],
+)
+def test_stock_status_in_words(stock, reorder, kind, words):
+    assert stock_status_html(stock, reorder) == f'<span class="lekha-status lekha-status--{kind}">{words}</span>'
+
+
+def test_book_rows_for_phones_escape_their_details():
+    html = book_rows_html([BookRow("Godaan", None, "Premchand · ₹250 · <3> in stock", stock_status_html(3, 3))])
+    assert "Premchand · ₹250 · &lt;3&gt; in stock" in html and ">Low<" in html
 

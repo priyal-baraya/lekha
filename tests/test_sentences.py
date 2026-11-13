@@ -7,7 +7,7 @@ names the figures and the exact words they must produce.
 
 import pytest
 
-from services.sentences import insights_sentence, overview_sentence, showing
+from services.sentences import catalogue_note, insights_sentence, overview_sentence, showing
 
 
 # ---------- Overview ----------
@@ -104,3 +104,19 @@ def test_insights_nothing_to_compare_against():
 ])
 def test_showing(shown, total, text):
     assert showing(shown, total) == text
+
+
+@pytest.mark.parametrize(
+    "shown, matched, total, text",
+    [
+        (12, 12, 12, "12 books."),
+        (1, 1, 1, "1 book."),
+        (2, 2, 12, "Showing 2 of 12 books."),
+        (100, 2000, 2000, "Showing the first 100 of 2,000 books. Search to find the rest."),
+        (100, 150, 2000, "Showing the first 100 of 150 matches. Type more to narrow it."),
+        (0, 0, 12, "No books match. Try fewer letters, or choose All genres."),
+    ],
+)
+def test_catalogue_note(shown, matched, total, text):
+    assert catalogue_note(shown, matched, total) == text
+
