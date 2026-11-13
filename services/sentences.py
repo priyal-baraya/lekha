@@ -129,3 +129,13 @@ def showing(shown: int, total: int) -> str:
     if shown >= total:
         return f"All {total} shown."
     return f"Showing {shown} of {total}."
+
+
+def profit_note(coverage_percent: Decimal) -> str:
+    """The line under estimated gross profit: how much revenue it covers
+    (books without a cost are left out) and what it leaves out."""
+    if coverage_percent <= 0:
+        return "No books have a cost recorded yet."
+    covered = "" if coverage_percent >= 100 else (
+        f"From the {float(coverage_percent):g}% of revenue with a cost recorded. ")
+    return covered + "Rent and wages aren't included."

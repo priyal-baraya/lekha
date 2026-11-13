@@ -214,12 +214,15 @@ def test_a_sale_at_the_till_from_search_to_undo(data_dir):
     find(app, "978-0-14-303965-5")                       # a scanned ISBN
     app.button(key=f"till_more_{ids['malgudi']}").click().run()
     assert record_label(app) == "Record sale · ₹950.00"   # 1 × ₹350 + 2 × ₹300
-    assert "Recorded as now" in html_bodies(app)
+    bodies = html_bodies(app)
+    assert "Recorded as now" not in bodies                # no line when the sale is for now
+    assert "<span>Total</span>" in bodies and "<span>3 copies</span>" not in bodies
 
     app.button(key="till_record").click().run()
     assert not app.exception
     bodies = html_bodies(app)
     assert "Sale #1 recorded." in bodies and "3 copies, ₹950.00" in bodies
+    assert "Ready for the next customer" not in bodies
     assert "The basket is empty." in bodies
     assert stock(shop_file, ids["malgudi"]) == 3
 
@@ -355,6 +358,9 @@ def test_insights_all_time_figures_match_hand_calculations(sample_file):
     text = all_text(app)
     for figure in ("₹11,144.00", "₹796.00", "₹3,992.00", "Fiction brought in the most revenue"):
         assert figure in text, figure
+    # Short explanations: what profit leaves out, and what the findings are
+    assert "Rent and wages aren't included." in text and "Calculated on" not in text
+    assert "Patterns in your sales, not proof of why." in text and "Plain-language findings" not in text
 
 
 # ---------- What staff can and can't see ----------

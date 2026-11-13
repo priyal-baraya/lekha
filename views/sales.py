@@ -124,7 +124,7 @@ def render_last_sale(conn) -> None:
         return
     with st.container(horizontal=True, vertical_alignment="center", key="till_recorded"):
         st.html(f'<p class="lekha-message lekha-message--success"><strong>Sale #{last["sale_id"]} recorded.</strong> '
-                f'{copies(last["copies"])}, {format_rupees(last["total_paise"])}. Ready for the next customer.</p>')
+                f'{copies(last["copies"])}, {format_rupees(last["total_paise"])}.</p>')
         if st.button("Undo", key="till_undo", help="Cancel this sale and put its copies back in stock"):
             try:
                 cancel_sale(conn, last["sale_id"], UNDO_REASON, cancelled_by=session.user_id())
@@ -166,7 +166,7 @@ def render_basket(conn) -> None:
                     st.session_state.pop("till_message", None)
                     st.rerun()
 
-        st.html(f'<div class="lekha-till__total"><span>{copies(basket.copies)}</span>'
+        st.html(f'<div class="lekha-till__total"><span>Total</span>'
                 f'<span>{format_rupees(basket.total_paise)}</span></div>')
         render_when()
         if st.button(f"Record sale · {format_rupees(basket.total_paise)}", key="till_record", type="primary",
@@ -179,7 +179,8 @@ def render_when() -> None:
     entering receipts afterwards."""
     when = st.session_state.get("till_when")
     with st.container(horizontal=True, vertical_alignment="center"):
-        note(recorded_as(when, now))
+        if when:                       # a sale for now needs no line
+            note(recorded_as(when, now))
         with st.popover("Change date or time", type="tertiary"):
             day = st.date_input("Date", value=(when or now).date(), max_value=now.date(), key="till_day",
                                 format="DD/MM/YYYY")

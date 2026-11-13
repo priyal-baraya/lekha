@@ -5,6 +5,8 @@ Every sentence is built from figures by fixed rules, so each case here
 names the figures and the exact words they must produce.
 """
 
+from decimal import Decimal
+
 import pytest
 
 from services.sentences import (
@@ -13,6 +15,7 @@ from services.sentences import (
     insights_sentence,
     low_stock_note,
     overview_sentence,
+    profit_note,
     showing,
 )
 
@@ -142,3 +145,14 @@ def test_low_stock_note(count, text):
 def test_correction_hint(current, counted, text):
     assert correction_hint(current, counted) == text
 
+
+# ---------- Insights: the line under estimated gross profit ----------
+
+@pytest.mark.parametrize(("coverage", "expected"), [
+    (Decimal("100.0"), "Rent and wages aren't included."),
+    (Decimal("92.0"), "From the 92% of revenue with a cost recorded. Rent and wages aren't included."),
+    (Decimal("36.3"), "From the 36.3% of revenue with a cost recorded. Rent and wages aren't included."),
+    (Decimal("0.0"), "No books have a cost recorded yet."),
+])
+def test_profit_note(coverage, expected):
+    assert profit_note(coverage) == expected

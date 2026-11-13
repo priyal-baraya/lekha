@@ -573,3 +573,7 @@ Tests changed first and failing first: no "Showing the last" or "The copies go b
 ### Spacing after the cuts: **448 passed**
 
 CSS and layout only, so the counts don't change. Browser check on throwaway data at 1280px and 375px: the gap from every page title to the first card or tab row measured 32px on Overview, Books, Sales, Inventory, Get started and Switch shop. The new-shop steps are evenly spaced, with "Add a book" at the right edge (and lined up under its step on a phone). The phone Overview's "Reorder these" no longer has an empty 16px slot above its list. The changed canvas artboards were checked the same way. The data folder was deleted afterwards.
+
+### Third round: **452 passed**
+
+Changed first, failing first: the till shows no "Recorded as now" and its total row says Total; the sale message has no "Ready for the next customer"; `recorded_as` is empty for a sale made now; Insights shows the short profit and findings lines. Four new tests for the profit line: all books costed, some, a decimal share, none. Browser check on throwaway data: a one-copy sale showed "Total ₹450.00", then "Sale #52 recorded. 1 copy, ₹450.00."; Insights with no costs recorded said "No books have a cost recorded yet." The canvas artboards were checked the same way. The data folder was deleted afterwards.

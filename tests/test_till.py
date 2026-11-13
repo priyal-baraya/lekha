@@ -140,8 +140,8 @@ def test_the_basket_becomes_sale_lines_at_the_price_shown(shop):
 
 # ---------- When the sale is recorded ----------
 
-def test_recorded_as_now():
-    assert recorded_as(None, NOW) == "Recorded as now, 12 Nov, 16:45."
+def test_recorded_as_now_says_nothing():
+    assert recorded_as(None, NOW) == ""            # a sale for now needs no line
 
 
 def test_recorded_as_an_earlier_time():

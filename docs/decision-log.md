@@ -804,3 +804,11 @@ The main choices, agreed on the canvas and signed off by the owner:
 - **New-shop steps:** each step is one row: the heading fills it, and its button sits at the right edge, as on the canvas. Before, the button floated in a narrow column, and steps without one kept an empty column, so on a phone the steps were unevenly spaced. On a phone the button wraps under its step, lined up with the step's words.
 - **Phone and desktop versions of a list:** the hidden version (the desktop table on a phone, the phone list on a desktop) still took one of Streamlit's 16px gaps. Its slot is now hidden too.
 - **Canvas:** card headings whose line was cut get back the canvas's own 12px spacer, instead of sitting on the table or field below. Fields in a column were set to grow 200px, which left holes in Get started, Settings, Team and Sign in. Side-by-side cards now hug their content, as in the app.
+
+**Third round (the till and Insights, same day):**
+- The till has no "Recorded as now…" line. It appears only when a sale is set to another time ("Recorded as Tuesday 10 Nov, 09:05."), so a receipt entered afterwards still can't be saved at the wrong time unnoticed. "Change date or time" stays.
+- The basket's total row says **Total**, not "3 copies".
+- After a sale, the message ends at the amount: no "Ready for the next customer."
+- On the canvas, the single search match no longer says "Press Enter to add one copy." (the Enter key label beside it already says it).
+- Estimated gross profit has one short line: "From the 92% of revenue with a cost recorded. Rent and wages aren't included." The first half shows only when some books have no cost; with none, it says "No books have a cost recorded yet." Gone: the note that today's cost per copy is used, and the line under the heading.
+- "What the numbers suggest" has a short line instead of two sentences: "Patterns in your sales, not proof of why."
