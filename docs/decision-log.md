@@ -763,6 +763,21 @@ The main choices, agreed on the canvas and signed off by the owner:
 
 **Departures from the canvas:** Genre and Sort are Streamlit's dropdowns with labels, not the canvas's compact buttons. Edit a book keeps its existing form, now in a card.
 
+## 2026-11-13: Inventory, as designed
+
+**Decision:** Inventory now follows the canvas (Inventory and InventoryClear artboards), as three cards:
+- **Low on stock:** cover, title and author, copies, reorder level and stock in words, emptiest first ("All 6 shown, emptiest first."). A list on a phone. When nothing is low, a green line: "Nothing to reorder. Every book is above its reorder level."
+- **Correct stock** (owners only): choose the book, type the copies counted, and a line says what will happen **before** saving: "Lekha has 3 in stock, so it will record a change of −1." When the count matches, it says so and Save stays off. Then the reason, and a note (still required for "Other").
+- **Recent corrections:** when, book, before, after, change (+4, −1), reason, note and who, never edited or deleted. With none yet, a line says what will appear there.
+
+**Why:** The old page used Streamlit's spreadsheet-style tables and labels above every heading, and the correction form gave no hint of what it would record until after saving.
+
+**Details worth knowing:**
+- The correction fields are no longer inside a form, so the line can update as the count changes. The safety check is unchanged: the correction is refused if the stock changed since the page showed it.
+- The Book list shows title and author, not the stock. Streamlit keeps the chosen option's wording after a save, so "0 in stock" stayed on screen after a delivery made it 4. The line under the count says Lekha's current count instead, and is always fresh.
+- Changes use a real minus sign (−1), easier to read than a hyphen.
+
+**Departures from the canvas:** The Book list's options read "Godaan · Premchand" rather than "Godaan · 3 in stock", for the reason above. The note says it's required for "Other", where the canvas just said optional.
 ## 2026-11-13: Less text
 
 **Decision:** Cut text that explains what's already clear, so pages read at a glance:

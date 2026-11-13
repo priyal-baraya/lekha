@@ -108,6 +108,20 @@ def catalogue_note(shown: int, matched: int, total: int) -> str:
     return f"{_plural(total, 'book', 'books')}."
 
 
+def low_stock_note(count: int) -> str:
+    """The line under Inventory's low-stock list (every low book is shown)."""
+    return "1 book." if count == 1 else f"All {count} shown, emptiest first."
+
+
+def correction_hint(current: int, counted: int) -> str:
+    """Lekha's count, and what saving the correction will record, said before it's saved."""
+    change = counted - current
+    if change == 0:
+        return f"Lekha has {current} in stock too, so there's nothing to record."
+    sign = "+" if change > 0 else "−"            # a real minus sign, easier to read than "-"
+    return f"Lekha has {current} in stock, so it will record a change of {sign}{abs(change)}."
+
+
 def showing(shown: int, total: int) -> str:
     """The line under a shortened list: "Showing 5 of 137." """
     if total <= 1:
