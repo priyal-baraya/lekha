@@ -354,9 +354,11 @@ textarea::placeholder {
    Pages move onto these in phase 4; the classes above stay until then.
    ================================================================= */
 
-/* ---------- Page header: a title and one line, no label above ---------- */
+/* ---------- Page header: a title, sometimes one line, no label above ----------
+   16px here plus Streamlit's 16px gap between elements puts the first
+   card or tab row 32px under the title, as on the canvas. */
 .lekha-pagehead {
-  margin: 0 0 var(--lekha-space-5);
+  margin: 0 0 var(--lekha-space-3);
 }
 .lekha-pagehead__title {
   font-family: var(--lekha-serif);
@@ -800,6 +802,13 @@ ul.lekha-booklist {
 .lekha-narrow-only {
   display: none;
 }
+/* Hide the Streamlit element holding the hidden version too, or its empty
+   slot still takes one of Streamlit's 16px gaps. */
+@media (min-width: 641px) {
+  .stElementContainer:has(> .stHtml > .lekha-narrow-only) {
+    display: none;
+  }
+}
 /* The phone Overview, as on the canvas (OverviewPhone): today, the last
    30 days and what to reorder. Latest sales and the shelf stay on bigger
    screens; the till and Insights have them in full. */
@@ -809,6 +818,14 @@ ul.lekha-booklist {
   }
   .lekha-narrow-only {
     display: block;
+  }
+  .stElementContainer:has(> .stHtml > .lekha-wide-only) {
+    display: none;
+  }
+  /* A step's button wraps under it: line its words up with the step's
+     title (32px number + 16px gap, less the link's own 8px padding) */
+  [class*="st-key-lekha_step_"] [data-testid="stPageLink"] {
+    margin-left: calc(32px + var(--lekha-space-3) - 8px);
   }
   .st-key-lekha_overview_figures .lekha-figure:nth-child(2),
   .st-key-lekha_card_latest_sales,

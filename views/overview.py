@@ -69,10 +69,10 @@ if not has_sales:
     with st.container(key="lekha_card_steps"):
         st.html(f'<h2 class="lekha-steps-title">{count_word} steps to get started</h2>')
         for number, (title, link) in enumerate(steps, start=1):
-            step_col, action_col = st.columns([5, 1], vertical_alignment="center")
-            with step_col:
-                st.html(ui.step_html(number, title, waiting=link is None))
-            with action_col:
+            # One row: the step fills it and pushes its button to the right edge,
+            # as on the canvas. A step with no button leaves no empty space.
+            with st.container(horizontal=True, vertical_alignment="center", key=f"lekha_step_{number}"):
+                st.html(ui.step_html(number, title, waiting=link is None), width="stretch")
                 if link:
                     page_link(*link)
 

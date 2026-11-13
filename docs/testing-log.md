@@ -569,3 +569,7 @@ A trading shop's Overview shows three plain figures. A second shop created from 
 
 Tests changed first and failing first: no "Showing the last" or "The copies go back" on Sales, no advice under "no match", no line under the Sales title, Sign in's single note, no step labels, no lines under Overview's card headings, "5 matches." alone, Selling well's note only for sold-out books, Inventory without its explanatory lines. A new component test: a card heading works without a line under it. Browser check: Sign in, Overview, Sales (with no match) and Inventory read as intended.
 
+
+### Spacing after the cuts: **448 passed**
+
+CSS and layout only, so the counts don't change. Browser check on throwaway data at 1280px and 375px: the gap from every page title to the first card or tab row measured 32px on Overview, Books, Sales, Inventory, Get started and Switch shop. The new-shop steps are evenly spaced, with "Add a book" at the right edge (and lined up under its step on a phone). The phone Overview's "Reorder these" no longer has an empty 16px slot above its list. The changed canvas artboards were checked the same way. The data folder was deleted afterwards.

@@ -798,3 +798,9 @@ The main choices, agreed on the canvas and signed off by the owner:
 - No "Showing the last 20 sales." or "The latest 20 changes…" lines; shorter hover help on the book form; the Open Library credit only on the Add tab, where its details come in.
 - The design canvas was updated to match (16 artboards).
 
+
+**Spacing after the cuts (same day):** taking the lines away left gaps sized for them. Closed them using the canvas's own spacing:
+- **Under page titles:** the header kept 40px below it, plus Streamlit's 16px gap: 56px, sized for a line that's gone. It's now 16px plus the gap, so the first card or tab row sits 32px under every title, as on the canvas (and as Books already was).
+- **New-shop steps:** each step is one row: the heading fills it, and its button sits at the right edge, as on the canvas. Before, the button floated in a narrow column, and steps without one kept an empty column, so on a phone the steps were unevenly spaced. On a phone the button wraps under its step, lined up with the step's words.
+- **Phone and desktop versions of a list:** the hidden version (the desktop table on a phone, the phone list on a desktop) still took one of Streamlit's 16px gaps. Its slot is now hidden too.
+- **Canvas:** card headings whose line was cut get back the canvas's own 12px spacer, instead of sitting on the table or field below. Fields in a column were set to grow 200px, which left holes in Get started, Settings, Team and Sign in. Side-by-side cards now hug their content, as in the app.
