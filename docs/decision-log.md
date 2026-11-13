@@ -762,3 +762,16 @@ The main choices, agreed on the canvas and signed off by the owner:
 - Overview's reorder list and Books now share one rule for stock in words.
 
 **Departures from the canvas:** Genre and Sort are Streamlit's dropdowns with labels, not the canvas's compact buttons. Edit a book keeps its existing form, now in a card.
+
+## 2026-11-13: Less text
+
+**Decision:** Cut text that explains what's already clear, so pages read at a glance:
+- A brand-new shop's Overview says only **"Welcome to Lekha!"** at the top: no date or shop line.
+- "Three steps to get started" keeps its headings and buttons; the explanation under each step is gone.
+- Overview's three figures show just the amount: no "₹1,620 by this time last Thursday", "2 sales · 4 copies", "Monday to today" or percentage change under them.
+- Books has no line under its title, and "No books yet" says only "Look a book up by its ISBN, then add your price and stock."
+- Insights' too-little-history line is now "Trends appear after two weeks of sales."
+
+**Why:** The owner's review: every extra sentence made the dashboard look more complex than it is, and the labels already say what each figure means.
+
+**What it costs:** Overview no longer compares today with the same time last week, or the last 30 days with the 30 before. The comparison code stays (it's tested, and Insights can use it); bringing a short "▲ 12%" back is a one-line change if it's missed.

@@ -526,3 +526,19 @@ Written before the code, and failing first:
 1. **The Open Library link was the browser's default blue.** **Fix:** links inside Lekha's own HTML take the theme's teal.
 2. **Long author names hid the price on a phone** ("Rabindranath Tagore · ₹30…"). **Fix:** the detail line wraps in phone lists.
 3. **A script edit was interrupted** when the session ended; I checked the page had been rewritten before carrying on.
+
+---
+
+## 2026-11-13: Less text (branch `redesign/less-text`)
+
+### Automated tests: **440 passed**
+
+Changed first, failing first: the welcome is "Welcome to Lekha!" with no date line; step headings without explanations; Overview's figures with nothing under them; Books without a description; the shorter Insights line. Three new component tests: a page header, summary header and step each work without their extra line. Four page tests that found the shop's name in the old date line now check which shop is open directly.
+
+### Browser check (throwaway data folder, port 8502)
+
+A trading shop's Overview shows three plain figures. A second shop created from the account menu opened on "Welcome to Lekha!", the three step headings and their buttons; its Books page shows the shorter "No books yet" card and no line under the title. The data folder was deleted afterwards.
+
+### Not yet visible
+
+- The shorter Insights line: the Insights page hasn't been rebuilt yet, so nothing shows it today.

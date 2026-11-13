@@ -419,7 +419,7 @@ def test_sign_up_create_a_shop_and_land_on_its_overview(data_dir):
     app.button(key="FormSubmitter:create_shop-Create shop").click().run()
     assert not app.exception
     text = all_text(app)
-    assert "Kitaab Corner" in text and "Welcome to Lekha." in text
+    assert app.session_state[session.SHOP_NAME] == "Kitaab Corner" and "Welcome to Lekha!" in text
     assert "Your shop is ready" in text                         # shown here, not on the next page
 
     with connect_accounts() as acc:
@@ -445,11 +445,11 @@ def test_people_only_see_their_own_shop(data_dir):
     with connect(ensure_shop_database(asha_shop)) as conn:
         add_book(conn, BookInput(title="Only at Asha's", author="A", genre="Fiction", selling_price=100))
 
-    text = all_text(run_app(asha))
-    assert "Asha's Books" in text and "Welcome to Lekha." not in text
-    text = all_text(run_app(ben))
-    assert "Ben's Books" in text and "Welcome to Lekha." in text
-    assert "Only at Asha's" not in text
+    app = run_app(asha)
+    assert app.session_state[session.SHOP_NAME] == "Asha's Books" and "Welcome to Lekha!" not in all_text(app)
+    app = run_app(ben)
+    assert app.session_state[session.SHOP_NAME] == "Ben's Books" and "Welcome to Lekha!" in all_text(app)
+    assert "Only at Asha's" not in all_text(app)
 
 
 def test_removed_staff_lose_access_on_their_next_click(data_dir):
@@ -458,7 +458,7 @@ def test_removed_staff_lose_access_on_their_next_click(data_dir):
         staff = accounts.create_user(acc, "assistant", "Assistant", PASSWORD)
         accounts.redeem_invitation(acc, staff, accounts.create_invitation(acc, owner, shop))
     app = run_app(staff)
-    assert "Kitaab Corner" in all_text(app)
+    assert app.session_state[session.SHOP_NAME] == "Kitaab Corner"         # in the shop
 
     with connect_accounts() as acc:
         accounts.remove_member(acc, owner, shop, staff)
@@ -472,7 +472,7 @@ def test_removed_staff_lose_access_on_their_next_click(data_dir):
 def test_changing_the_password_signs_out_other_tabs(data_dir):
     priya, _ = person_with_shop("priya", "Kitaab Corner")
     other_tab = run_app(priya)
-    assert "Kitaab Corner" in all_text(other_tab)
+    assert other_tab.session_state[session.SHOP_NAME] == "Kitaab Corner"
 
     with connect_accounts() as acc:                             # changed in another tab
         accounts.change_password(acc, priya, PASSWORD, "a brand new passphrase")
@@ -578,7 +578,9 @@ def test_overview_of_a_new_shop_shows_the_first_steps(data_dir, fixed_now):
     app = run_app(owner)
     assert not app.exception and not app.error
     bodies = html_bodies(app)
-    assert "Welcome to Lekha." in bodies and "Three steps to get started" in bodies
+    assert "Welcome to Lekha!" in bodies and "Three steps to get started" in bodies
+    assert "Thursday 12 November" not in bodies                         # just the welcome at the top
+    assert "Add your first book" in bodies and "Look it up by ISBN" not in bodies   # headings, no explanations
     assert "None yet" in bodies and "Nothing to reorder" in bodies
     assert "Reorder these" not in bodies and "Latest sales" not in bodies
 
@@ -599,8 +601,9 @@ def test_overview_of_a_trading_shop(data_dir, fixed_now):
     bodies = html_bodies(app)
     assert "Thursday 12 November" in bodies
     assert "₹800 in sales so far today, and 1 book needs reordering." in bodies
-    assert "₹250 by this time last Thursday" in bodies
     assert "This week so far" in bodies and "Last 30 days" in bodies
+    for extra in ("by this time last Thursday", "sales ·", "Monday to today", "Compared with"):
+        assert extra not in bodies                                     # just the figures
     assert "Reorder these" in bodies and "Out of stock" in bodies
     assert "Malgudi Days ×2, Gitanjali" in bodies                       # latest sales, in words
     assert "Gitanjali sold out, so it's on the reorder list." in bodies
@@ -621,7 +624,8 @@ def test_overview_shows_book_titles_as_typed(data_dir, fixed_now):
 
 def test_empty_shop_books_page_offers_ways_to_add(empty_shop):
     app = run_page("books")
-    assert "No books yet" in all_text(app)
+    text = all_text(app)
+    assert "No books yet" in text and "Every book in your shop" not in text
     app.button(key="books_add_first").click().run()          # "Add your first book"
     assert app.session_state["books_tab"] == "Add a book"
 

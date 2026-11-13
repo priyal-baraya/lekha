@@ -52,7 +52,7 @@ Keeping SQL and network calls out of the pages means the rules are tested withou
 
 ## Quality
 
-- **437 automated tests** (pytest), run on every push and pull request by GitHub Actions: sign-in, lockout, invite codes and every role's limits, two shops that must never see each other's books, rules the database must refuse, transactions that must roll back, every analytics figure against numbers worked out by hand, Open Library lookups replayed from **real saved responses** (so the tests don't need the internet), a schema migration that must keep existing data, and the pages themselves via Streamlit's `AppTest`, including adding a real book by ISBN and a 2-copy sale that must reduce stock by exactly 2.
+- **440 automated tests** (pytest), run on every push and pull request by GitHub Actions: sign-in, lockout, invite codes and every role's limits, two shops that must never see each other's books, rules the database must refuse, transactions that must roll back, every analytics figure against numbers worked out by hand, Open Library lookups replayed from **real saved responses** (so the tests don't need the internet), a schema migration that must keep existing data, and the pages themselves via Streamlit's `AppTest`, including adding a real book by ISBN and a 2-copy sale that must reduce stock by exactly 2.
 - **Test data stays in the tests.** The analytics are checked against a small, hand-calculated fictional dataset (`data/sample_data.sql`). It is loaded only into temporary test databases, never into the app.
 - **Accessibility:** a contrast audit of every piece of text on every page went from 37 failures to 0 (WCAG 2.2 AA); visible keyboard focus; charts with alt text, tooltips, written summaries and table views; layouts checked at 1280px and 375px.
 - **Security** ([details](docs/security.md)): scrypt password hashes, lockout after 5 wrong passwords (also on the change-password form), limits on repeated sign-ins, sign-ups and invite codes, sign-out after 60 idle minutes or a password change elsewhere, roles checked in the services, names and Open Library text escaped so they can't inject formatting, links or pictures, Open Library answers checked before use, and only this computer can open the app by default. GitHub checks every package for known vulnerabilities (**pip-audit**) and scans the code (**bandit**) on every push and weekly; Dependabot proposes updates.
@@ -97,7 +97,7 @@ lekha/
 │   ├── analytics/          The analytics queries, one commented file each
 │   └── 01_first_queries.sql
 ├── data/sample_data.sql    The fictional, hand-checked dataset the tests use
-├── tests/                  437 pytest tests; fixtures/ holds real Open Library responses
+├── tests/                  440 pytest tests; fixtures/ holds real Open Library responses
 ├── scripts/                Screenshot capture (development only)
 ├── .github/workflows/      Runs the tests on GitHub
 └── docs/                   Case study, setup, schema, analytics, design, decisions, logs

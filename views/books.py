@@ -90,8 +90,7 @@ def render_browse(conn) -> None:
     total = count_books(conn)
     if total == 0:
         with st.container(key="lekha_card_books_empty"):
-            ui.card_heading("No books yet", "Type the ISBN printed by the barcode and Lekha fills in the title, "
-                            "author and cover from Open Library. You add your own price and stock.")
+            ui.card_heading("No books yet", "Look a book up by its ISBN, then add your price and stock.")
             st.button("Add your first book", key="books_add_first", type="primary", on_click=open_add_tab)
         return
 
@@ -399,7 +398,7 @@ def render_edit(conn) -> None:
 # ------------------------------------------------------------------ page
 
 with st.container(horizontal=True, vertical_alignment="bottom", key="books_header"):
-    ui.page_header("Books", "Every book in your shop, with your own price and stock.")
+    ui.page_header("Books")
     if st.session_state.get("books_tab") != ADD_TAB and session.can_do("add_books"):
         st.button("Add a book", key="books_add_header", type="primary", on_click=open_add_tab)
 ui.show_flash()

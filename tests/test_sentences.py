@@ -14,8 +14,7 @@ from services.sentences import catalogue_note, insights_sentence, overview_sente
 
 def test_overview_brand_new_shop():
     assert overview_sentence(total_books=0, has_sales=False, today_revenue_paise=0, low_stock=0) == (
-        "Welcome to Lekha. Add your books and record your sales, "
-        "and your shop's numbers will start to appear here."
+        "Welcome to Lekha!"
     )
 
 
@@ -52,15 +51,14 @@ def test_insights_no_sales_in_period():
 def test_insights_too_little_history():
     assert insights_sentence(revenue_paise=184_900, previous_revenue_paise=0, sales=3, genres=GENRES,
                              history_days=3, before_label="the 30 days before") == (
-        "Insights need a little more history. You've recorded 3 sales so far; "
-        "trends appear after two weeks of sales."
+        "Trends appear after two weeks of sales."
     )
 
 
 def test_insights_one_sale_of_history():
     assert insights_sentence(revenue_paise=30_000, previous_revenue_paise=0, sales=1, genres=[],
-                             history_days=1, before_label="the 30 days before").startswith(
-        "Insights need a little more history. You've recorded 1 sale so far;"
+                             history_days=1, before_label="the 30 days before") == (
+        "Trends appear after two weeks of sales."
     )
 
 

@@ -22,8 +22,7 @@ def _plural(n: int, one: str, many: str) -> str:
 def overview_sentence(total_books: int, has_sales: bool, today_revenue_paise: int, low_stock: int) -> str:
     """Overview's opening line: today so far, and what needs reordering."""
     if total_books == 0:
-        return ("Welcome to Lekha. Add your books and record your sales, "
-                "and your shop's numbers will start to appear here.")
+        return "Welcome to Lekha!"
     if not has_sales:
         return "Your books are in. Record your first sale on the Sales page, and today's figures will appear here."
     today = (f"{format_rupees_whole(today_revenue_paise)} in sales so far today" if today_revenue_paise > 0
@@ -55,8 +54,7 @@ def insights_sentence(
     if sales == 0:
         return "No completed sales in this period. Try a longer one."
     if history_days < MIN_HISTORY_DAYS:
-        return (f"Insights need a little more history. You've recorded {_plural(sales, 'sale', 'sales')} so far; "
-                "trends appear after two weeks of sales.")
+        return "Trends appear after two weeks of sales."
     if previous_revenue_paise <= 0:
         movement = f"{format_rupees_whole(revenue_paise)} in revenue"
     else:
