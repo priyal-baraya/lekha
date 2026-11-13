@@ -48,6 +48,11 @@ def test_summary_header_without_a_date_line():
     assert "lekha-pagehead__meta" not in html and ">Welcome to Lekha!</h1>" in html
 
 
+def test_card_heading_without_a_description():
+    html = card_heading_html("Latest sales")
+    assert "lekha-cardhead__description" not in html and ">Latest sales</h2>" in html
+
+
 def test_step_without_an_explanation():
     html = step_html(1, "Add your first book")
     assert "lekha-step__text" not in html and "Add your first book" in html

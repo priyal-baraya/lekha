@@ -280,13 +280,13 @@ def wordmark(name: str, tagline: str) -> None:
     st.html(wordmark_html(name, tagline))
 
 
-def card_heading_html(title: str, description: str) -> str:
-    """A card's title (h2) and one short line under it. No label above it."""
-    return (f'<div class="lekha-cardhead"><h2 class="lekha-cardhead__title">{escape(title)}</h2>'
-            f'<p class="lekha-cardhead__description">{escape(description)}</p></div>')
+def card_heading_html(title: str, description: str = "") -> str:
+    """A card's title (h2), and one short line under it if needed. No label above it."""
+    line = f'<p class="lekha-cardhead__description">{escape(description)}</p>' if description else ""
+    return f'<div class="lekha-cardhead"><h2 class="lekha-cardhead__title">{escape(title)}</h2>{line}</div>'
 
 
-def card_heading(title: str, description: str) -> None:
+def card_heading(title: str, description: str = "") -> None:
     st.html(card_heading_html(title, description))
 
 

@@ -20,7 +20,7 @@ def test_overview_brand_new_shop():
 
 def test_overview_books_but_no_sales_yet():
     assert overview_sentence(total_books=12, has_sales=False, today_revenue_paise=0, low_stock=0) == (
-        "Your books are in. Record your first sale on the Sales page, and today's figures will appear here."
+        "Your books are in. Record your first sale."
     )
 
 

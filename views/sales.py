@@ -91,7 +91,6 @@ def render_find(conn) -> None:
     result = till_search(conn, looked_for)
     if result.total == 0:
         st.html(f'<p class="lekha-message lekha-message--info">No book matches “{ui.escape(looked_for)}”.</p>')
-        note("Check the spelling, try the author, or scan the barcode. If it's a new book, add it in Books first.")
         page_link("views/books.py", "Add it in Books", "add_books")
         return
     shown = f" The first {len(result.books)} are shown; type more to narrow it." if result.total > len(result.books) else ""
@@ -232,12 +231,10 @@ def render_recent(conn) -> None:
              for row in rows],
             css_class="lekha-nowrap",
         ))
-        note(f"Showing the last {len(rows)} {'sale' if len(rows) == 1 else 'sales'}.")
 
     completed = {row["sale_id"]: row for row in rows if row["status"] == "completed"}
     with st.container(key="lekha_card_cancel"):
-        ui.card_heading("Cancel a sale",
-                        "The copies go back into stock and the sale stays in the record, marked as cancelled.")
+        ui.card_heading("Cancel a sale")
         if not completed:
             note("There are no completed sales here to cancel.")
             return
@@ -259,7 +256,7 @@ def render_recent(conn) -> None:
 
 # ------------------------------------------------------------------ page
 
-ui.page_header("Sales", "Find a book, add it, record the sale. A barcode scanner types the ISBN for you.")
+ui.page_header("Sales")
 ui.show_flash()
 
 with connect() as conn:

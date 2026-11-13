@@ -127,16 +127,16 @@ def test_sale_time_label(when, expected):
 
 def test_selling_well_note_with_nothing_sold_out():
     rows = [{"title": "Malgudi Days", "stock_quantity": 3}]
-    assert selling_well_note(rows) == "Copies sold since Monday."
+    assert selling_well_note(rows) == ""                      # nothing worth saying
 
 
 def test_selling_well_note_names_a_sold_out_book():
     rows = [{"title": "Gitanjali", "stock_quantity": 0}, {"title": "Malgudi Days", "stock_quantity": 3}]
-    assert selling_well_note(rows) == "Copies sold since Monday. Gitanjali sold out, so it's on the reorder list."
+    assert selling_well_note(rows) == "Gitanjali sold out, so it's on the reorder list."
 
 
 def test_selling_well_note_names_several_sold_out_books():
     rows = [{"title": "Gitanjali", "stock_quantity": 0}, {"title": "The Guide", "stock_quantity": 0},
             {"title": "Godaan", "stock_quantity": 0}]
-    assert selling_well_note(rows) == ("Copies sold since Monday. Gitanjali, The Guide and Godaan sold out, "
+    assert selling_well_note(rows) == ("Gitanjali, The Guide and Godaan sold out, "
                                        "so they're on the reorder list.")

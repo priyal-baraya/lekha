@@ -75,9 +75,6 @@ if not has_sales:
             with action_col:
                 if link:
                     page_link(*link)
-                else:
-                    st.html('<p class="lekha-note">After 2 weeks</p>' if title == "See your trends"
-                            else '<p class="lekha-note">After your first book</p>')
 
     ui.figure_strip([
         ui.Figure("Today", "No sales yet", words=True),
@@ -104,7 +101,7 @@ if show_reorder or show_recent:
 
     if show_reorder:
         with next(cards), st.container(key="lekha_card_reorder"):
-            ui.card_heading("Reorder these", "At or below their reorder level, emptiest first.")
+            ui.card_heading("Reorder these")
             st.html(ui.data_table_html(
                 [("Book", "left"), ("In stock", "right"), ("Reorder at", "right"), ("Status", "left")],
                 [[ui.book_cell_html(book["title"], book["author"], cover_url(book["cover_id"], "S")),
@@ -122,7 +119,7 @@ if show_reorder or show_recent:
 
     if show_recent:
         with next(cards), st.container(key="lekha_card_latest_sales"):
-            ui.card_heading("Latest sales", "Today and yesterday.")
+            ui.card_heading("Latest sales")
             if recent:
                 names = session.names({sale["recorded_by"] for sale in recent if sale["recorded_by"]})
                 st.html(ui.data_table_html(

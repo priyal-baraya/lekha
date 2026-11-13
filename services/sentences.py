@@ -24,7 +24,7 @@ def overview_sentence(total_books: int, has_sales: bool, today_revenue_paise: in
     if total_books == 0:
         return "Welcome to Lekha!"
     if not has_sales:
-        return "Your books are in. Record your first sale on the Sales page, and today's figures will appear here."
+        return "Your books are in. Record your first sale."
     today = (f"{format_rupees_whole(today_revenue_paise)} in sales so far today" if today_revenue_paise > 0
              else "No sales yet today")
     if low_stock == 0:
@@ -86,14 +86,13 @@ def _and(names: list[str]) -> str:
 
 
 def selling_well_note(rows: list[dict]) -> str:
-    """The line under "Selling well this week", naming any book that sold out."""
-    note = "Copies sold since Monday."
+    """The line under "Selling well this week": only when a book sold out ("" otherwise)."""
     sold_out = [row["title"] for row in rows if row["stock_quantity"] == 0]
     if len(sold_out) == 1:
-        return f"{note} {sold_out[0]} sold out, so it's on the reorder list."
+        return f"{sold_out[0]} sold out, so it's on the reorder list."
     if sold_out:
-        return f"{note} {_and(sold_out)} sold out, so they're on the reorder list."
-    return note
+        return f"{_and(sold_out)} sold out, so they're on the reorder list."
+    return ""
 
 
 def catalogue_note(shown: int, matched: int, total: int) -> str:
