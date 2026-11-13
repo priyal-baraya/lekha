@@ -148,7 +148,7 @@ def person_with_shop(username: str, shop_name: str) -> tuple[int, int]:
 @pytest.mark.parametrize(
     "page, expected",
     [
-        ("books", "Showing <strong>12</strong> of 12 books"),
+        ("books", "12 books."),
         ("sales", "The basket is empty."),
         ("inventory", "books need attention"),
         ("insights", "What the numbers suggest"),
@@ -296,7 +296,21 @@ def test_recent_sales_list_the_books_and_cancel_with_a_reason(data_dir):
 def test_search_filters_the_catalogue(sample_file):
     app = run_page("books")
     app.text_input(key="books_search").set_value("menon").run()
-    assert "Showing **2** of 12 books" in all_text(app)
+    assert "Showing 2 of 12 books." in all_text(app)
+
+
+def test_the_catalogue_can_be_searched_by_isbn(sample_file):
+    app = run_page("books")
+    app.text_input(key="books_search").set_value("000-000-000-0003").run()
+    text = all_text(app)
+    assert "Showing 1 of 12 books." in text and "The Lighthouse at Kovalam" in text
+
+
+def test_the_header_button_opens_add_a_book(sample_file):
+    app = run_page("books")
+    app.button(key="books_add_header").click().run()
+    assert app.session_state["books_tab"] == "Add a book"
+    assert app.segmented_control(key="add_method").value == "isbn"
 
 
 def test_stock_correction_through_the_inventory_page(sample_file):
@@ -608,18 +622,20 @@ def test_overview_shows_book_titles_as_typed(data_dir, fixed_now):
 def test_empty_shop_books_page_offers_ways_to_add(empty_shop):
     app = run_page("books")
     assert "No books yet" in all_text(app)
+    app.button(key="books_add_first").click().run()          # "Add your first book"
+    assert app.session_state["books_tab"] == "Add a book"
 
 
 def test_adding_a_real_book_by_isbn(empty_shop, open_library):
     app = run_page("books", role="staff")                      # staff may add books
     app.session_state["books_tab"] = "Add a book"
     app.run()
-    app.radio(key="add_method").set_value("isbn").run()
-    app.text_input[0].set_value("978-0-00-655068-6")
-    app.button[0].click().run()                    # "Look up"
+    app.segmented_control(key="add_method").set_value("isbn").run()
+    app.text_input(key="isbn_lookup_input").set_value("978-0-00-655068-6")
+    app.button(key="FormSubmitter:isbn_lookup-Look up").click().run()
     assert not app.exception
     text = all_text(app)
-    assert "Details from Open Library" in text
+    assert "Found on Open Library." in text
     assert "This is the exact edition with this ISBN." in text
 
     # The form is pre-filled from Open Library; price and stock are ours.
@@ -650,9 +666,9 @@ def test_searching_open_library_lists_real_matches(empty_shop, open_library):
     app = run_page("books")
     app.session_state["books_tab"] = "Add a book"
     app.run()
-    app.radio(key="add_method").set_value("search").run()
-    app.text_input[0].set_value("the god of small things")
-    app.button[0].click().run()                    # "Search"
+    app.segmented_control(key="add_method").set_value("search").run()
+    app.text_input(key="ol_search_input").set_value("the god of small things")
+    app.button(key="FormSubmitter:openlibrary_search-Search").click().run()
     assert not app.exception
     text = all_text(app)
     assert "5 matches" in text

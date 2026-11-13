@@ -430,19 +430,40 @@ def shelf_html(books: list[ShelfBook]) -> str:
     return f'<ul class="lekha-shelf">{"".join(items)}</ul>'
 
 
-def _stock_status_html(in_stock: int) -> str:
-    return status_html("error", "Out of stock") if in_stock == 0 else status_html("warning", "Low")
+def stock_status_html(in_stock: int, reorder_at: int) -> str:
+    """A book's stock in words: Out of stock, Low (at or below its reorder level), In stock."""
+    if in_stock <= 0:
+        return status_html("error", "Out of stock")
+    if in_stock <= reorder_at:
+        return status_html("warning", "Low")
+    return status_html("success", "In stock")
+
+
+@dataclass(frozen=True)
+class BookRow:
+    """One book in a phone list: cover, title, one line of detail, a status."""
+    title: str
+    cover_url: str | None
+    detail: str
+    status: str = ""            # built HTML from status_html / stock_status_html
+
+
+def book_rows_html(rows: list[BookRow]) -> str:
+    """Books as a list, for phones, where a table with many columns is too tight."""
+    items = []
+    for row in rows:
+        cover = (f'<img class="lekha-book__cover" src="{escape(row.cover_url)}" alt="" loading="lazy" '
+                 f'width="22" height="33">' if row.cover_url else cover_letter_html(row.title))
+        items.append(f'<li class="lekha-booklist__item">{cover}<span class="lekha-book__text">'
+                     f'<span class="lekha-book__title">{escape(row.title)}</span>'
+                     f'<span class="lekha-book__author">{escape(row.detail)}</span></span>{row.status}</li>')
+    return f'<ul class="lekha-booklist">{"".join(items)}</ul>'
 
 
 def book_list_html(books: list[tuple[str, str | None, int, int]]) -> str:
-    """Books to reorder as a list, for phones, where a four-column table is
-    too tight. Each item is (title, cover_url, in_stock, reorder_at)."""
-    items = []
-    for title, url, in_stock, reorder_at in books:
-        cover = (f'<img class="lekha-book__cover" src="{escape(url)}" alt="" loading="lazy" width="22" height="33">'
-                 if url else cover_letter_html(title))
-        items.append(f'<li class="lekha-booklist__item">{cover}<span class="lekha-book__text">'
-                     f'<span class="lekha-book__title">{escape(title)}</span>'
-                     f'<span class="lekha-book__author">{in_stock} left · reorder at {reorder_at}</span></span>'
-                     f'{_stock_status_html(in_stock)}</li>')
-    return f'<ul class="lekha-booklist">{"".join(items)}</ul>'
+    """Books to reorder as a list, for phones. Each item is
+    (title, cover_url, in_stock, reorder_at)."""
+    return book_rows_html([
+        BookRow(title, url, f"{in_stock} left · reorder at {reorder_at}", stock_status_html(in_stock, reorder_at))
+        for title, url, in_stock, reorder_at in books
+    ])

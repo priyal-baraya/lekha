@@ -209,3 +209,12 @@ def test_edit_missing_book(sample_db):
     with pytest.raises(ValidationError) as caught:
         update_book(sample_db, 999, new_book(isbn=None))
     assert caught.value.errors == ["This book no longer exists."]
+
+
+def test_search_matches_an_isbn_with_or_without_dashes(sample_db):
+    assert ids(search_books(sample_db, "0000000000003")) == [3]
+    assert ids(search_books(sample_db, "000-000-000-0003")) == [3]
+
+
+def test_a_short_number_is_not_treated_as_an_isbn(sample_db):
+    assert search_books(sample_db, "000") == []          # would match every stand-in ISBN

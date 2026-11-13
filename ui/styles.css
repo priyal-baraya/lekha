@@ -882,3 +882,56 @@ ul.lekha-booklist {
 .lekha-table-wrap.lekha-nowrap td {
   white-space: nowrap;
 }
+
+/* ---------- Books ---------- */
+/* The page title with "Add a book" on the right; the button wraps under it on a phone */
+.st-key-books_header {
+  margin-bottom: var(--lekha-space-3);
+}
+.st-key-books_header .lekha-pagehead {
+  margin-bottom: 0;
+}
+/* A book found on Open Library (or the one being edited): cover beside its details */
+.lekha-found {
+  display: flex;
+  gap: var(--lekha-space-3);
+  align-items: flex-start;
+  padding: var(--lekha-space-3);
+  background: var(--lekha-paper);
+  border-radius: var(--lekha-radius);
+}
+.lekha-found__cover {
+  width: 72px;
+  height: auto;
+  border-radius: 3px;
+  flex: none;
+}
+.lekha-found__text {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--lekha-ink);
+}
+.lekha-subhead {
+  font-family: var(--lekha-serif);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--lekha-ink);
+  margin: var(--lekha-space-3) 0 0;
+  padding: 0;
+}
+/* Links inside Lekha's own HTML blocks take the theme's link colour */
+.lekha-found__text a,
+.lekha-note a {
+  color: var(--lekha-teal);
+  text-underline-offset: 3px;
+}
+.lekha-found__text a:hover,
+.lekha-note a:hover {
+  color: var(--lekha-ink);
+}
+/* In a phone list the detail line wraps, so a long author doesn't hide the price */
+.lekha-booklist__item .lekha-book__author {
+  white-space: normal;
+}
