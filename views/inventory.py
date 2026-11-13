@@ -1,9 +1,12 @@
 """Inventory: low-stock alerts, stock corrections and their history.
 
-The rules live in services/inventory.py. This page only shows them.
+Laid out as on the design canvas (Inventory and InventoryClear
+artboards). The rules live in services/inventory.py; this page only
+shows them.
 """
 
-import pandas as pd
+from datetime import datetime
+
 import streamlit as st
 
 from database import connect
@@ -16,151 +19,145 @@ from services.inventory import (
     low_stock_books,
     recent_adjustments,
 )
+from services.openlibrary import cover_url
+from services.sentences import correction_hint, low_stock_note
 from ui import components as ui
 from ui import session
 
 
+def note(text: str) -> None:
+    st.html(f'<p class="lekha-note">{ui.escape(text)}</p>')
+
+
+def signed(change: int) -> str:
+    """+6 or −1, with a real minus sign."""
+    return f"+{change}" if change > 0 else f"−{abs(change)}" if change < 0 else "0"
+
+
 def render_alerts(conn) -> None:
-    ui.section_header(
-        eyebrow="Alerts",
-        title="Low on stock",
-        description=(
-            "Books at or below the reorder level you set. This is an alert, not a "
-            "recommendation to reorder: that decision also depends on how fast a "
-            "book sells and how long a delivery takes."
-        ),
-    )
     rows = low_stock_books(conn)
-    if not rows:
-        ui.empty_state("No books are at or below their reorder level.")
-        return
-    st.markdown(f"**{len(rows)}** {'book needs' if len(rows) == 1 else 'books need'} attention.")
-    st.dataframe(
-        pd.DataFrame(rows)[["title", "stock_status", "stock_quantity", "reorder_level", "author"]],
-        hide_index=True,
-        column_config={
-            "title": st.column_config.TextColumn("Title"),
-            "author": st.column_config.TextColumn("Author"),
-            "stock_quantity": st.column_config.NumberColumn("In stock"),
-            "reorder_level": st.column_config.NumberColumn("Reorder level"),
-            "stock_status": st.column_config.TextColumn("Status"),
-        },
-    )
+    with st.container(key="lekha_card_low_stock"):
+        ui.card_heading("Low on stock", "At or below their reorder level.")
+        if not rows:
+            st.html('<p class="lekha-message lekha-message--success"><strong>Nothing to reorder.</strong> '
+                    "Every book is above its reorder level.</p>")
+            return
+        st.html(ui.data_table_html(
+            [("Book", "left"), ("In stock", "right"), ("Reorder at", "right"), ("Status", "left")],
+            [[ui.book_cell_html(book["title"], book["author"], cover_url(book["cover_id"], "S")),
+              book["stock_quantity"], book["reorder_level"],
+              ui.Html(ui.stock_status_html(book["stock_quantity"], book["reorder_level"]))]
+             for book in rows],
+            css_class="lekha-wide-only",
+        ))
+        st.html('<div class="lekha-narrow-only">' + ui.book_list_html(
+            [(book["title"], cover_url(book["cover_id"], "S"), book["stock_quantity"], book["reorder_level"])
+             for book in rows]) + "</div>")
+        note(low_stock_note(len(rows)))
 
 
 def render_correction(conn) -> None:
-    ui.section_header(
-        eyebrow="Corrections",
-        title="Correct stock",
-        description=(
-            "After counting a shelf, receiving a delivery or finding damaged copies, "
-            "enter the number of copies actually there. Lekha records the change and why."
-        ),
-    )
-    books = search_books(conn)
-    if not books:
-        st.info("There are no books yet.")
-        return
-    labels = {book["book_id"]: f"{book['title']} — {book['author']}" for book in books}
-    book_id = st.selectbox(
-        "Book", list(labels), format_func=labels.get, index=None,
-        placeholder="Choose a book", key="correct_choice",
-    )
+    with st.container(key="lekha_card_correct"):
+        ui.card_heading("Correct stock", "Count the copies on the shelf. Lekha records the difference and why.")
+        books = search_books(conn)
+        if not books:
+            note("There are no books yet.")
+            return
+        # Title and author only: Streamlit keeps the chosen option's wording
+        # after a save, so a stock number here would go stale. The line under
+        # the count field says Lekha's current count instead.
+        labels = {book["book_id"]: f"{book['title']} · {book['author']}" for book in books}
+        book_id = st.selectbox(
+            "Book", list(labels), format_func=labels.get, index=None,
+            placeholder="Choose a book", key="correct_choice",
+        )
 
-    # Remember which stock number the user is looking at. On the run where
-    # they press Save, this is read back BEFORE the page stores the new
-    # number, so the correction is checked against what they actually saw.
-    shown = st.session_state.get("correct_shown")
-    if book_id is None:
-        st.session_state["correct_shown"] = None
-        return
-    book = get_book(conn, book_id)
-    current = book["stock_quantity"]
-    expected = shown["quantity"] if shown and shown["book_id"] == book_id else current
+        # Remember which stock number the person is looking at. On the run
+        # where they press Save, this is read back BEFORE the page stores the
+        # new number, so the correction is checked against what they saw.
+        shown = st.session_state.get("correct_shown")
+        if book_id is None:
+            st.session_state["correct_shown"] = None
+            return
+        book = get_book(conn, book_id)
+        current = book["stock_quantity"]
+        expected = shown["quantity"] if shown and shown["book_id"] == book_id else current
 
-    st.markdown(f"Lekha's current count: **{current}** · reorder level {book['reorder_level']}")
-    version = st.session_state.setdefault("correct_form_version", 0)
-    with st.form(f"correct_form_{book_id}_{version}"):
+        # Not a form: the line saying what will be recorded updates as the count changes.
+        version = st.session_state.setdefault("correct_form_version", 0)
         counted_col, reason_col = st.columns(2)
         counted = counted_col.number_input(
-            "Copies actually there", min_value=0, step=1, value=current,
+            "Copies counted on the shelf", min_value=0, step=1, value=current,
             key=f"correct_counted_{book_id}_{version}",
         )
         reason = reason_col.selectbox(
             "Reason", list(REASONS), format_func=REASONS.get, key=f"correct_reason_{book_id}_{version}",
         )
-        note = st.text_input(
+        note(correction_hint(current, int(counted)))
+        why = st.text_input(
             "Note (required when the reason is “Other”)", key=f"correct_note_{book_id}_{version}",
+            max_chars=200, placeholder="What happened",
         )
-        submitted = st.form_submit_button("Save correction", type="primary")
+        save = st.button("Save correction", type="primary", key=f"correct_save_{book_id}_{version}",
+                         disabled=int(counted) == current)
 
-    if submitted:
-        session.require("correct_stock")     # checked again at the moment of saving
-        try:
-            correct_stock(conn, book_id, expected, int(counted), reason, note, recorded_by=session.user_id())
-        except ValidationError as problem:
-            ui.show_errors(problem.errors)
-        except StockChangedError as problem:
-            st.error(str(problem))
-        else:
-            change = int(counted) - expected
-            ui.flash(
-                "success",
-                f"Stock for “{book['title']}” changed from {expected} to {int(counted)} "
-                f"({change:+d}). The change is recorded below.",
-            )
-            st.session_state["correct_form_version"] = version + 1
-            st.rerun()
+        if save:
+            session.require("correct_stock")     # checked again at the moment of saving
+            try:
+                correct_stock(conn, book_id, expected, int(counted), reason, why, recorded_by=session.user_id())
+            except ValidationError as problem:
+                ui.show_errors(problem.errors)
+            except StockChangedError as problem:
+                st.error(str(problem))
+            else:
+                ui.flash(
+                    "success",
+                    f"Stock for “{book['title']}” changed from {expected} to {int(counted)} "
+                    f"({signed(int(counted) - expected)}). The change is recorded below.",
+                )
+                st.session_state["correct_form_version"] = version + 1
+                st.rerun()
 
-    st.session_state["correct_shown"] = {"book_id": book_id, "quantity": current}
+        st.session_state["correct_shown"] = {"book_id": book_id, "quantity": current}
 
 
 def render_history(conn) -> None:
-    ui.section_header(
-        eyebrow="History",
-        title="Recent corrections",
-        description="The latest 20 changes, newest first. Corrections are never edited or deleted.",
-    )
     rows = recent_adjustments(conn)
-    if not rows:
-        ui.empty_state("No stock corrections have been recorded yet.")
-        return
-    table = pd.DataFrame(rows)
-    table["change"] = table["change"].map(lambda value: f"{value:+d}")   # -3, +6
-    table["note"] = table["note"].fillna("")   # show blank, not "None", when there's no note
-    people = session.names(table["recorded_by"].dropna())
-    table["by"] = table["recorded_by"].map(lambda uid: people.get(uid, "") if pd.notna(uid) else "")
-    st.dataframe(
-        table[["title", "change", "reason_label", "adjusted_at", "by", "quantity_before", "quantity_after", "note"]],
-        hide_index=True,
-        column_config={
-            "adjusted_at": st.column_config.TextColumn("When"),
-            "title": st.column_config.TextColumn("Book"),
-            "quantity_before": st.column_config.NumberColumn("Before"),
-            "quantity_after": st.column_config.NumberColumn("After"),
-            "change": st.column_config.TextColumn("Change"),
-            "reason_label": st.column_config.TextColumn("Reason"),
-            "note": st.column_config.TextColumn("Note"),
-            "by": st.column_config.TextColumn("By"),
-        },
-    )
+    with st.container(key="lekha_card_corrections"):
+        st.html('<h2 class="lekha-cardhead__title">Recent corrections</h2>')
+        if not rows:
+            note("No corrections yet. When a shelf count doesn't match Lekha, correct it above and the "
+                 "change is recorded here with its reason.")
+            return
+        people = session.names({row["recorded_by"] for row in rows if row["recorded_by"]})
+
+        def when(text: str) -> str:
+            moment = datetime.fromisoformat(text)
+            return f"{moment.day} {moment:%b}, {moment:%H:%M}"
+
+        st.html(ui.data_table_html(
+            [("When", "left"), ("Book", "left"), ("Before", "right"), ("After", "right"), ("Change", "right"),
+             ("Reason", "left"), ("Note", "left"), ("By", "left")],
+            [[when(row["adjusted_at"]), row["title"], row["quantity_before"], row["quantity_after"],
+              signed(row["change"]), row["reason_label"], row["note"] or "",
+              people.get(row["recorded_by"], "")]
+             for row in rows],
+            css_class="lekha-nowrap",
+        ))
+        note("The latest 20 changes, newest first. Corrections are never edited or deleted.")
 
 
 # ------------------------------------------------------------------ page
 
-ui.page_intro(
-    eyebrow="Shelf check",
-    title="Inventory",
-    description=("What's running low, and a recorded way to correct stock counts."
-                 if session.can_do("correct_stock")
-                 else "What's running low. Only the shop's owners can correct stock counts."),
+ui.page_header(
+    "Inventory",
+    "What's running low, and corrections when a count doesn't match." if session.can_do("correct_stock")
+    else "What's running low. Only the shop's owners can correct stock counts.",
 )
 ui.show_flash()
 
 with connect() as conn:
     render_alerts(conn)
     if session.can_do("correct_stock"):      # owners only
-        ui.divider()
         render_correction(conn)
-        ui.divider()
         render_history(conn)

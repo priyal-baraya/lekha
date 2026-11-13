@@ -150,7 +150,7 @@ def person_with_shop(username: str, shop_name: str) -> tuple[int, int]:
     [
         ("books", "12 books."),
         ("sales", "The basket is empty."),
-        ("inventory", "books need attention"),
+        ("inventory", "emptiest first."),
         ("insights", "What the numbers suggest"),
     ],
 )
@@ -316,13 +316,31 @@ def test_the_header_button_opens_add_a_book(sample_file):
 def test_stock_correction_through_the_inventory_page(sample_file):
     app = run_page("inventory", user_id=3)
     app.selectbox(key="correct_choice").set_value(1).run()
-    # Inside a form, typed values only count when the form is submitted, so
-    # type and press Save in the same run, as a person would.
-    app.number_input(key="correct_counted_1_0").set_value(5)
-    app.button(key="FormSubmitter:correct_form_1_0-Save correction").click().run()
+    app.number_input(key="correct_counted_1_0").set_value(5).run()
+    assert "Lekha has 8 in stock, so it will record a change of −3." in all_text(app)   # before saving
+    app.button(key="correct_save_1_0").click().run()
     assert not app.exception
     assert stock(sample_file, 1) == 5
     assert any("changed from 8 to 5" in shown(box.value) for box in app.success)
+    assert "Shelf count" in all_text(app)                              # in Recent corrections
+    assert "Lekha has 5 in stock too" in all_text(app)                 # the new count, not the old one
+
+
+def test_a_correction_that_matches_the_count_records_nothing(sample_file):
+    app = run_page("inventory", user_id=3)
+    app.selectbox(key="correct_choice").set_value(1).run()
+    assert "Lekha has 8 in stock too, so there's nothing to record." in all_text(app)
+    assert app.button(key="correct_save_1_0").disabled
+
+
+def test_inventory_with_nothing_to_reorder(empty_shop):
+    with connect(empty_shop) as conn:
+        add_book(conn, BookInput(title="Malgudi Days", author="R. K. Narayan", genre="Fiction",
+                                 selling_price="300", stock_quantity=9, reorder_level=2))
+    app = run_page("inventory")
+    text = all_text(app)
+    assert "Nothing to reorder." in text and "Every book is above its reorder level." in text
+    assert "No corrections yet." in text
 
 
 def test_insights_all_time_figures_match_hand_calculations(sample_file):
@@ -343,8 +361,8 @@ def test_staff_cannot_edit_books(sample_file):
 def test_staff_cannot_correct_stock(sample_file):
     app = run_page("inventory", role="staff")
     text = all_text(app)
-    assert "books need attention" in text                      # can see alerts
-    assert "Correct stock" not in text
+    assert "emptiest first." in text                           # can see alerts
+    assert "Correct stock" not in text and "Recent corrections" not in text
 
 
 def test_staff_do_not_see_profit(sample_file):
