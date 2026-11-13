@@ -37,7 +37,7 @@ def signed(change: int) -> str:
 def render_alerts(conn) -> None:
     rows = low_stock_books(conn)
     with st.container(key="lekha_card_low_stock"):
-        ui.card_heading("Low on stock", "At or below their reorder level.")
+        ui.card_heading("Low on stock")
         if not rows:
             st.html('<p class="lekha-message lekha-message--success"><strong>Nothing to reorder.</strong> '
                     "Every book is above its reorder level.</p>")
@@ -58,7 +58,7 @@ def render_alerts(conn) -> None:
 
 def render_correction(conn) -> None:
     with st.container(key="lekha_card_correct"):
-        ui.card_heading("Correct stock", "Count the copies on the shelf. Lekha records the difference and why.")
+        ui.card_heading("Correct stock")
         books = search_books(conn)
         if not books:
             note("There are no books yet.")
@@ -126,8 +126,7 @@ def render_history(conn) -> None:
     with st.container(key="lekha_card_corrections"):
         st.html('<h2 class="lekha-cardhead__title">Recent corrections</h2>')
         if not rows:
-            note("No corrections yet. When a shelf count doesn't match Lekha, correct it above and the "
-                 "change is recorded here with its reason.")
+            note("No corrections yet.")
             return
         people = session.names({row["recorded_by"] for row in rows if row["recorded_by"]})
 
@@ -144,16 +143,11 @@ def render_history(conn) -> None:
              for row in rows],
             css_class="lekha-nowrap",
         ))
-        note("The latest 20 changes, newest first. Corrections are never edited or deleted.")
 
 
 # ------------------------------------------------------------------ page
 
-ui.page_header(
-    "Inventory",
-    "What's running low, and corrections when a count doesn't match." if session.can_do("correct_stock")
-    else "What's running low. Only the shop's owners can correct stock counts.",
-)
+ui.page_header("Inventory")
 ui.show_flash()
 
 with connect() as conn:

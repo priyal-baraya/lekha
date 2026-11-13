@@ -326,6 +326,7 @@ def test_stock_correction_through_the_inventory_page(sample_file):
     assert stock(sample_file, 1) == 5
     assert any("changed from 8 to 5" in shown(box.value) for box in app.success)
     assert "Shelf count" in all_text(app)                              # in Recent corrections
+    assert "The latest 20 changes" not in all_text(app)
     assert "Lekha has 5 in stock too" in all_text(app)                 # the new count, not the old one
 
 
@@ -343,7 +344,9 @@ def test_inventory_with_nothing_to_reorder(empty_shop):
     app = run_page("inventory")
     text = all_text(app)
     assert "Nothing to reorder." in text and "Every book is above its reorder level." in text
-    assert "No corrections yet." in text
+    assert "No corrections yet." in text and "When a shelf count doesn't match" not in text
+    for extra in ("What's running low", "At or below their reorder level.", "Count the copies on the shelf"):
+        assert extra not in text
 
 
 def test_insights_all_time_figures_match_hand_calculations(sample_file):
