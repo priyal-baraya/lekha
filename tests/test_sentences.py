@@ -7,7 +7,14 @@ names the figures and the exact words they must produce.
 
 import pytest
 
-from services.sentences import catalogue_note, insights_sentence, overview_sentence, showing
+from services.sentences import (
+    catalogue_note,
+    correction_hint,
+    insights_sentence,
+    low_stock_note,
+    overview_sentence,
+    showing,
+)
 
 
 # ---------- Overview ----------
@@ -119,4 +126,21 @@ def test_showing(shown, total, text):
 )
 def test_catalogue_note(shown, matched, total, text):
     assert catalogue_note(shown, matched, total) == text
+
+
+@pytest.mark.parametrize("count, text", [(1, "1 book."), (6, "All 6 shown, emptiest first.")])
+def test_low_stock_note(count, text):
+    assert low_stock_note(count) == text
+
+
+@pytest.mark.parametrize(
+    "current, counted, text",
+    [
+        (3, 2, "Lekha has 3 in stock, so it will record a change of −1."),   # a real minus sign
+        (3, 9, "Lekha has 3 in stock, so it will record a change of +6."),
+        (4, 4, "Lekha has 4 in stock too, so there's nothing to record."),
+    ],
+)
+def test_correction_hint(current, counted, text):
+    assert correction_hint(current, counted) == text
 
