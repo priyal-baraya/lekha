@@ -790,3 +790,11 @@ The main choices, agreed on the canvas and signed off by the owner:
 **Why:** The owner's review: every extra sentence made the dashboard look more complex than it is, and the labels already say what each figure means.
 
 **What it costs:** Overview no longer compares today with the same time last week, or the last 30 days with the 30 before. The comparison code stays (it's tested, and Insights can use it); bringing a short "▲ 12%" back is a one-line change if it's missed.
+
+**Second round (approved the same day):** the same rule across every rebuilt page:
+- No line under the titles of Sales, Inventory, Get started or Switch shop, and none under most card headings ("Reorder these", "Latest sales", "Low on stock", "Correct stock", "Cancel a sale", "Start a shop", "Join with a code").
+- Shorter messages: "Your shop is ready.", "Your books are in. Record your first sale.", "5 matches.", "No corrections yet.", and Sign in's note "Signs out after 60 minutes without activity."
+- "Selling well this week" says something only when a book sold out. The step labels "After your first book" and "After 2 weeks" are gone. No match at the till is the message and an "Add it in Books" link.
+- No "Showing the last 20 sales." or "The latest 20 changes…" lines; shorter hover help on the book form; the Open Library credit only on the Add tab, where its details come in.
+- The design canvas was updated to match (16 artboards).
+

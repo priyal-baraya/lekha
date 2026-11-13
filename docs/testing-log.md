@@ -564,3 +564,8 @@ A trading shop's Overview shows three plain figures. A second shop created from 
 ### Not yet visible
 
 - The shorter Insights line: the Insights page hasn't been rebuilt yet, so nothing shows it today.
+
+### Second round: **448 passed** (with Inventory's branch merged in)
+
+Tests changed first and failing first: no "Showing the last" or "The copies go back" on Sales, no advice under "no match", no line under the Sales title, Sign in's single note, no step labels, no lines under Overview's card headings, "5 matches." alone, Selling well's note only for sold-out books, Inventory without its explanatory lines. A new component test: a card heading works without a line under it. Browser check: Sign in, Overview, Sales (with no match) and Inventory read as intended.
+
