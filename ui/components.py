@@ -250,20 +250,20 @@ TONES = ("good", "bad", "neutral")
 STATUS_KINDS = ("success", "warning", "error", "info", "neutral")
 
 
-def page_header_html(title: str, description: str) -> str:
-    """A page title (the page's only h1) and one line. No label above it."""
-    return (f'<header class="lekha-pagehead"><h1 class="lekha-pagehead__title">{escape(title)}</h1>'
-            f'<p class="lekha-pagehead__description">{escape(description)}</p></header>')
+def page_header_html(title: str, description: str = "") -> str:
+    """A page title (the page's only h1), and one line under it if needed. No label above it."""
+    line = f'<p class="lekha-pagehead__description">{escape(description)}</p>' if description else ""
+    return f'<header class="lekha-pagehead"><h1 class="lekha-pagehead__title">{escape(title)}</h1>{line}</header>'
 
 
-def page_header(title: str, description: str) -> None:
+def page_header(title: str, description: str = "") -> None:
     st.html(page_header_html(title, description))
 
 
 def summary_header_html(date_line: str, sentence: str) -> str:
-    """Overview and Insights: a plain date line, then the summary sentence as the h1."""
-    return (f'<header class="lekha-pagehead"><p class="lekha-pagehead__meta">{escape(date_line)}</p>'
-            f'<h1 class="lekha-pagehead__summary">{escape(sentence)}</h1></header>')
+    """Overview and Insights: a plain date line (if any), then the summary sentence as the h1."""
+    meta = f'<p class="lekha-pagehead__meta">{escape(date_line)}</p>' if date_line else ""
+    return f'<header class="lekha-pagehead">{meta}<h1 class="lekha-pagehead__summary">{escape(sentence)}</h1></header>'
 
 
 def summary_header(date_line: str, sentence: str) -> None:
@@ -280,13 +280,13 @@ def wordmark(name: str, tagline: str) -> None:
     st.html(wordmark_html(name, tagline))
 
 
-def card_heading_html(title: str, description: str) -> str:
-    """A card's title (h2) and one short line under it. No label above it."""
-    return (f'<div class="lekha-cardhead"><h2 class="lekha-cardhead__title">{escape(title)}</h2>'
-            f'<p class="lekha-cardhead__description">{escape(description)}</p></div>')
+def card_heading_html(title: str, description: str = "") -> str:
+    """A card's title (h2), and one short line under it if needed. No label above it."""
+    line = f'<p class="lekha-cardhead__description">{escape(description)}</p>' if description else ""
+    return f'<div class="lekha-cardhead"><h2 class="lekha-cardhead__title">{escape(title)}</h2>{line}</div>'
 
 
-def card_heading(title: str, description: str) -> None:
+def card_heading(title: str, description: str = "") -> None:
     st.html(card_heading_html(title, description))
 
 
@@ -347,12 +347,12 @@ def status_html(kind: str, text: str) -> str:
     return f'<span class="lekha-status lekha-status--{kind}">{escape(text)}</span>'
 
 
-def step_html(number: int, title: str, text: str, waiting: bool = False) -> str:
+def step_html(number: int, title: str, text: str = "", waiting: bool = False) -> str:
     """One numbered first-run step. waiting=True greys it out until it can be done."""
     state = " lekha-step--waiting" if waiting else ""
+    more = f'<p class="lekha-step__text">{escape(text)}</p>' if text else ""
     return (f'<div class="lekha-step{state}"><span class="lekha-step__number" aria-hidden="true">{number}</span>'
-            f'<div><p class="lekha-step__title">{escape(title)}</p>'
-            f'<p class="lekha-step__text">{escape(text)}</p></div></div>')
+            f'<div><p class="lekha-step__title">{escape(title)}</p>{more}</div></div>')
 
 
 def cover_letter_html(title: str) -> str:

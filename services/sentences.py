@@ -22,10 +22,9 @@ def _plural(n: int, one: str, many: str) -> str:
 def overview_sentence(total_books: int, has_sales: bool, today_revenue_paise: int, low_stock: int) -> str:
     """Overview's opening line: today so far, and what needs reordering."""
     if total_books == 0:
-        return ("Welcome to Lekha. Add your books and record your sales, "
-                "and your shop's numbers will start to appear here.")
+        return "Welcome to Lekha!"
     if not has_sales:
-        return "Your books are in. Record your first sale on the Sales page, and today's figures will appear here."
+        return "Your books are in. Record your first sale."
     today = (f"{format_rupees_whole(today_revenue_paise)} in sales so far today" if today_revenue_paise > 0
              else "No sales yet today")
     if low_stock == 0:
@@ -55,8 +54,7 @@ def insights_sentence(
     if sales == 0:
         return "No completed sales in this period. Try a longer one."
     if history_days < MIN_HISTORY_DAYS:
-        return (f"Insights need a little more history. You've recorded {_plural(sales, 'sale', 'sales')} so far; "
-                "trends appear after two weeks of sales.")
+        return "Trends appear after two weeks of sales."
     if previous_revenue_paise <= 0:
         movement = f"{format_rupees_whole(revenue_paise)} in revenue"
     else:
@@ -88,14 +86,13 @@ def _and(names: list[str]) -> str:
 
 
 def selling_well_note(rows: list[dict]) -> str:
-    """The line under "Selling well this week", naming any book that sold out."""
-    note = "Copies sold since Monday."
+    """The line under "Selling well this week": only when a book sold out ("" otherwise)."""
     sold_out = [row["title"] for row in rows if row["stock_quantity"] == 0]
     if len(sold_out) == 1:
-        return f"{note} {sold_out[0]} sold out, so it's on the reorder list."
+        return f"{sold_out[0]} sold out, so it's on the reorder list."
     if sold_out:
-        return f"{note} {_and(sold_out)} sold out, so they're on the reorder list."
-    return note
+        return f"{_and(sold_out)} sold out, so they're on the reorder list."
+    return ""
 
 
 def catalogue_note(shown: int, matched: int, total: int) -> str:
@@ -132,3 +129,13 @@ def showing(shown: int, total: int) -> str:
     if shown >= total:
         return f"All {total} shown."
     return f"Showing {shown} of {total}."
+
+
+def profit_note(coverage_percent: Decimal) -> str:
+    """The line under estimated gross profit: how much revenue it covers
+    (books without a cost are left out) and what it leaves out."""
+    if coverage_percent <= 0:
+        return "No books have a cost recorded yet."
+    covered = "" if coverage_percent >= 100 else (
+        f"From the {float(coverage_percent):g}% of revenue with a cost recorded. ")
+    return covered + "Rent and wages aren't included."

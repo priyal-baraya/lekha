@@ -90,8 +90,7 @@ def render_browse(conn) -> None:
     total = count_books(conn)
     if total == 0:
         with st.container(key="lekha_card_books_empty"):
-            ui.card_heading("No books yet", "Type the ISBN printed by the barcode and Lekha fills in the title, "
-                            "author and cover from Open Library. You add your own price and stock.")
+            ui.card_heading("No books yet", "Look a book up by its ISBN, then add your price and stock.")
             st.button("Add your first book", key="books_add_first", type="primary", on_click=open_add_tab)
         return
 
@@ -123,8 +122,6 @@ def render_browse(conn) -> None:
                            ui.stock_status_html(book["stock_quantity"], book["reorder_level"]))
                 for book in shown]) + "</div>")
         note(catalogue_note(len(shown), len(rows), total))
-        if any(book["cover_id"] for book in shown):
-            note(CREDIT)
 
 
 # ------------------------------------------------------------- find a book
@@ -183,7 +180,7 @@ def render_search() -> None:
     if not results:
         st.info("No matches on Open Library. Try fewer words, or just the author's surname.")
         return
-    note(f"{len(results)} matches. Check the author and year to find the right book.")
+    note(f"{len(results)} matches.")
     for index, found in enumerate(results):
         year = found["first_published"]
         with st.container(horizontal=True, vertical_alignment="center", key=f"ol_result_{index}"):
@@ -239,17 +236,16 @@ def render_add_form(conn, found: dict | None) -> None:
             "Genre", options, index=options.index(suggested) if suggested else None,
             accept_new_options=True, key=f"add_genre_{version}",
             placeholder="Choose a genre or type a new one",
-            help=("Suggested from Open Library's subject tags. Change it if it's wrong."
+            help=("Suggested from Open Library."
                   if suggested else None),
         )
         isbn = isbn_col.text_input(
             "ISBN (optional)", value=found.get("isbn") or "", key=f"add_isbn_{version}",
-            help="10 or 13 digits. Hyphens and spaces are removed automatically.",
+            help="10 or 13 digits.",
         )
         publisher_col, year_col = st.columns(2)
         publisher = publisher_col.text_input(
             "Publisher (optional)", value=found.get("publisher") or "", key=f"add_publisher_{version}",
-            help="The publisher of your edition, as printed on the book.",
         )
         published_year = year_col.number_input(
             "Year this edition was published (optional)", min_value=1450, max_value=2100, step=1,
@@ -260,18 +256,18 @@ def render_add_form(conn, found: dict | None) -> None:
         price = price_col.number_input(
             "Selling price (₹)", min_value=0.0, step=1.0, format="%.2f", value=None, key=f"add_price_{version}",
             placeholder="For example 350",
-            help="Only you set prices: Lekha never guesses one. For example, the MRP printed on the book.",
+            help="Only you set prices.",
         )
         cost = cost_col.number_input(
             "Cost price (₹, optional)", min_value=0.0, step=1.0, format="%.2f", value=None,
-            key=f"add_cost_{version}", help="What the shop pays per copy. Leave empty if unknown.",
+            key=f"add_cost_{version}", help="What you pay per copy.",
         )
         stock_col, reorder_col = st.columns(2)
         stock = stock_col.number_input("Copies in stock", min_value=0, step=1, value=0, key=f"add_stock_{version}")
         reorder = reorder_col.number_input(
             "Reorder level", min_value=0, step=1, value=session.default_reorder_level(),
             key=f"add_reorder_{version}",
-            help="Your shop's default, from Settings. Lekha flags the book as low at or below this number.",
+            help="Lekha flags the book as low at or below this.",
         )
         submitted = st.form_submit_button("Add book", type="primary")
 
@@ -321,7 +317,6 @@ def render_add(conn) -> None:
         elif method == "search":
             render_search()
         else:
-            note("Fields marked optional can be left empty. Everything else is required.")
             render_add_form(conn, None)
 
 
@@ -368,7 +363,7 @@ def render_edit(conn) -> None:
         price = price_col.number_input(
             "Selling price (₹)", min_value=0.0, step=1.0, format="%.2f",
             value=price_field(book["selling_price_paise"]), key=f"edit_price_{book_id}",
-            help="Changing the price affects future sales only. Past sales keep the price actually paid.",
+            help="Past sales keep their price.",
         )
         cost = cost_col.number_input(
             "Cost price (₹, optional)", min_value=0.0, step=1.0, format="%.2f",
@@ -399,7 +394,7 @@ def render_edit(conn) -> None:
 # ------------------------------------------------------------------ page
 
 with st.container(horizontal=True, vertical_alignment="bottom", key="books_header"):
-    ui.page_header("Books", "Every book in your shop, with your own price and stock.")
+    ui.page_header("Books")
     if st.session_state.get("books_tab") != ADD_TAB and session.can_do("add_books"):
         st.button("Add a book", key="books_add_header", type="primary", on_click=open_add_tab)
 ui.show_flash()

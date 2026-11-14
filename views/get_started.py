@@ -12,13 +12,13 @@ from services import ValidationError, accounts, limits
 from ui import components as ui
 from ui import session
 
-ui.page_header("Get started", "Start a new shop, or join one you've been invited to.")
+ui.page_header("Get started")
 ui.show_flash()
 
 create_col, join_col = st.columns(2, gap="medium")
 
 with create_col, st.container(key="lekha_card_create_shop"):
-    ui.card_heading("Start a shop", "You'll own it and can invite staff.")
+    ui.card_heading("Start a shop")
     with st.form("create_shop", border=False):
         name = st.text_input("Shop name", placeholder="As it appears on your sign", max_chars=80)
         created = st.form_submit_button("Create shop", type="primary")
@@ -32,11 +32,11 @@ with create_col, st.container(key="lekha_card_create_shop"):
             ensure_shop_database(shop_id)
             session.choose_shop(shop_id)
             st.session_state["lekha_go_home"] = True      # app.py opens the Overview
-            ui.flash("success", "Your shop is ready. Add your first book on the Books page.")
+            ui.flash("success", "Your shop is ready.")
             st.rerun()
 
 with join_col, st.container(key="lekha_card_join_shop"):
-    ui.card_heading("Join with a code", "Ask the shop's owner for an invite code.")
+    ui.card_heading("Join with a code")
     with st.form("join_shop", border=False):
         code = st.text_input("Invite code", placeholder="For example ABCDE-FGHJK", max_chars=20)
         joined = st.form_submit_button("Join shop", type="primary")

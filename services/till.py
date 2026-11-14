@@ -127,7 +127,8 @@ class Basket:
 
 
 def recorded_as(when: datetime | None, now: datetime) -> str:
-    """The line above Record sale: when the sale will be saved as happening."""
+    """The line above Record sale when the sale is for another time.
+    A sale for now needs no line, so it's empty."""
     if when is None:
-        return f"Recorded as now, {now.day} {now:%b}, {now:%H:%M}."
+        return ""
     return f"Recorded as {when:%A} {when.day} {when:%b}, {when:%H:%M}."

@@ -5,7 +5,7 @@ How Lekha moves from the manuscript-panel look to a calm, analytics-first dashbo
 ## Where the design lives
 
 - **Lekha Design System** (Claude Design): palette, type, spacing, components and their rules. [Open it](https://claude.ai/artifact/2Pt2zJdEYY247eivGFWkSu). Approved version: 12 Nov 2026 (`1794491686-7b1e`); `1794494145-873d` only corrects the sample date to Thursday.
-- **Lekha redesign** canvas (Claude Design): 23 artboards covering every page, first-run and empty states, the till's edge cases, phone versions and how things respond. [Open it](https://claude.ai/artifact/Gmpsom9RijvZxzbmmZnVXP). Approved version: 12 Nov 2026 (`1794492702-7a02`); `1794494141-794d` only corrects the weekday to Thursday.
+- **Lekha redesign** canvas (Claude Design): 23 artboards covering every page, first-run and empty states, the till's edge cases, phone versions and how things respond. [Open it](https://claude.ai/artifact/Gmpsom9RijvZxzbmmZnVXP). Approved version: 12 Nov 2026 (`1794492702-7a02`); `1794494141-794d` only corrects the weekday to Thursday; `1794582269-0ffc` has the shorter text.
 
 Both are private to the owner. A change to either after sign-off is a new change, agreed before it's built.
 

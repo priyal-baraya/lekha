@@ -551,3 +551,29 @@ Written before the code, and failing first:
 
 1. **The Book list kept saying "Gitanjali · 0 in stock" after the delivery made it 4.** Streamlit keeps the chosen option's wording. **Fix:** the options show title and author; the line under the count says Lekha's current count. A test now checks the line shows the new count after saving.
 2. **That line repeated itself** ("Lekha has 4 in stock. That matches Lekha's count…"). **Fix:** one sentence: "Lekha has 4 in stock too, so there's nothing to record."
+## 2026-11-13: Less text (branch `redesign/less-text`)
+
+### Automated tests: **440 passed**
+
+Changed first, failing first: the welcome is "Welcome to Lekha!" with no date line; step headings without explanations; Overview's figures with nothing under them; Books without a description; the shorter Insights line. Three new component tests: a page header, summary header and step each work without their extra line. Four page tests that found the shop's name in the old date line now check which shop is open directly.
+
+### Browser check (throwaway data folder, port 8502)
+
+A trading shop's Overview shows three plain figures. A second shop created from the account menu opened on "Welcome to Lekha!", the three step headings and their buttons; its Books page shows the shorter "No books yet" card and no line under the title. The data folder was deleted afterwards.
+
+### Not yet visible
+
+- The shorter Insights line: the Insights page hasn't been rebuilt yet, so nothing shows it today.
+
+### Second round: **448 passed** (with Inventory's branch merged in)
+
+Tests changed first and failing first: no "Showing the last" or "The copies go back" on Sales, no advice under "no match", no line under the Sales title, Sign in's single note, no step labels, no lines under Overview's card headings, "5 matches." alone, Selling well's note only for sold-out books, Inventory without its explanatory lines. A new component test: a card heading works without a line under it. Browser check: Sign in, Overview, Sales (with no match) and Inventory read as intended.
+
+
+### Spacing after the cuts: **448 passed**
+
+CSS and layout only, so the counts don't change. Browser check on throwaway data at 1280px and 375px: the gap from every page title to the first card or tab row measured 32px on Overview, Books, Sales, Inventory, Get started and Switch shop. The new-shop steps are evenly spaced, with "Add a book" at the right edge (and lined up under its step on a phone). The phone Overview's "Reorder these" no longer has an empty 16px slot above its list. The changed canvas artboards were checked the same way. The data folder was deleted afterwards.
+
+### Third round: **452 passed**
+
+Changed first, failing first: the till shows no "Recorded as now" and its total row says Total; the sale message has no "Ready for the next customer"; `recorded_as` is empty for a sale made now; Insights shows the short profit and findings lines. Four new tests for the profit line: all books costed, some, a decimal share, none. Browser check on throwaway data: a one-copy sale showed "Total ₹450.00", then "Sale #52 recorded. 1 copy, ₹450.00."; Insights with no costs recorded said "No books have a cost recorded yet." The canvas artboards were checked the same way. The data folder was deleted afterwards.

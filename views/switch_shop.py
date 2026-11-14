@@ -12,7 +12,7 @@ from services import accounts
 from ui import components as ui
 from ui import session
 
-ui.page_header("Switch shop", "Choose the shop to work in. Each shop keeps its own books, sales and team.")
+ui.page_header("Switch shop")
 
 with connect_accounts() as acc:
     memberships = accounts.memberships(acc, session.user_id())

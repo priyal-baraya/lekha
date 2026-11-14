@@ -91,7 +91,6 @@ def render_find(conn) -> None:
     result = till_search(conn, looked_for)
     if result.total == 0:
         st.html(f'<p class="lekha-message lekha-message--info">No book matches “{ui.escape(looked_for)}”.</p>')
-        note("Check the spelling, try the author, or scan the barcode. If it's a new book, add it in Books first.")
         page_link("views/books.py", "Add it in Books", "add_books")
         return
     shown = f" The first {len(result.books)} are shown; type more to narrow it." if result.total > len(result.books) else ""
@@ -125,7 +124,7 @@ def render_last_sale(conn) -> None:
         return
     with st.container(horizontal=True, vertical_alignment="center", key="till_recorded"):
         st.html(f'<p class="lekha-message lekha-message--success"><strong>Sale #{last["sale_id"]} recorded.</strong> '
-                f'{copies(last["copies"])}, {format_rupees(last["total_paise"])}. Ready for the next customer.</p>')
+                f'{copies(last["copies"])}, {format_rupees(last["total_paise"])}.</p>')
         if st.button("Undo", key="till_undo", help="Cancel this sale and put its copies back in stock"):
             try:
                 cancel_sale(conn, last["sale_id"], UNDO_REASON, cancelled_by=session.user_id())
@@ -167,7 +166,7 @@ def render_basket(conn) -> None:
                     st.session_state.pop("till_message", None)
                     st.rerun()
 
-        st.html(f'<div class="lekha-till__total"><span>{copies(basket.copies)}</span>'
+        st.html(f'<div class="lekha-till__total"><span>Total</span>'
                 f'<span>{format_rupees(basket.total_paise)}</span></div>')
         render_when()
         if st.button(f"Record sale · {format_rupees(basket.total_paise)}", key="till_record", type="primary",
@@ -180,7 +179,8 @@ def render_when() -> None:
     entering receipts afterwards."""
     when = st.session_state.get("till_when")
     with st.container(horizontal=True, vertical_alignment="center"):
-        note(recorded_as(when, now))
+        if when:                       # a sale for now needs no line
+            note(recorded_as(when, now))
         with st.popover("Change date or time", type="tertiary"):
             day = st.date_input("Date", value=(when or now).date(), max_value=now.date(), key="till_day",
                                 format="DD/MM/YYYY")
@@ -232,12 +232,10 @@ def render_recent(conn) -> None:
              for row in rows],
             css_class="lekha-nowrap",
         ))
-        note(f"Showing the last {len(rows)} {'sale' if len(rows) == 1 else 'sales'}.")
 
     completed = {row["sale_id"]: row for row in rows if row["status"] == "completed"}
     with st.container(key="lekha_card_cancel"):
-        ui.card_heading("Cancel a sale",
-                        "The copies go back into stock and the sale stays in the record, marked as cancelled.")
+        ui.card_heading("Cancel a sale")
         if not completed:
             note("There are no completed sales here to cancel.")
             return
@@ -259,7 +257,7 @@ def render_recent(conn) -> None:
 
 # ------------------------------------------------------------------ page
 
-ui.page_header("Sales", "Find a book, add it, record the sale. A barcode scanner types the ISBN for you.")
+ui.page_header("Sales")
 ui.show_flash()
 
 with connect() as conn:

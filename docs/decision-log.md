@@ -778,3 +778,37 @@ The main choices, agreed on the canvas and signed off by the owner:
 - Changes use a real minus sign (−1), easier to read than a hyphen.
 
 **Departures from the canvas:** The Book list's options read "Godaan · Premchand" rather than "Godaan · 3 in stock", for the reason above. The note says it's required for "Other", where the canvas just said optional.
+## 2026-11-13: Less text
+
+**Decision:** Cut text that explains what's already clear, so pages read at a glance:
+- A brand-new shop's Overview says only **"Welcome to Lekha!"** at the top: no date or shop line.
+- "Three steps to get started" keeps its headings and buttons; the explanation under each step is gone.
+- Overview's three figures show just the amount: no "₹1,620 by this time last Thursday", "2 sales · 4 copies", "Monday to today" or percentage change under them.
+- Books has no line under its title, and "No books yet" says only "Look a book up by its ISBN, then add your price and stock."
+- Insights' too-little-history line is now "Trends appear after two weeks of sales."
+
+**Why:** The owner's review: every extra sentence made the dashboard look more complex than it is, and the labels already say what each figure means.
+
+**What it costs:** Overview no longer compares today with the same time last week, or the last 30 days with the 30 before. The comparison code stays (it's tested, and Insights can use it); bringing a short "▲ 12%" back is a one-line change if it's missed.
+
+**Second round (approved the same day):** the same rule across every rebuilt page:
+- No line under the titles of Sales, Inventory, Get started or Switch shop, and none under most card headings ("Reorder these", "Latest sales", "Low on stock", "Correct stock", "Cancel a sale", "Start a shop", "Join with a code").
+- Shorter messages: "Your shop is ready.", "Your books are in. Record your first sale.", "5 matches.", "No corrections yet.", and Sign in's note "Signs out after 60 minutes without activity."
+- "Selling well this week" says something only when a book sold out. The step labels "After your first book" and "After 2 weeks" are gone. No match at the till is the message and an "Add it in Books" link.
+- No "Showing the last 20 sales." or "The latest 20 changes…" lines; shorter hover help on the book form; the Open Library credit only on the Add tab, where its details come in.
+- The design canvas was updated to match (16 artboards).
+
+
+**Spacing after the cuts (same day):** taking the lines away left gaps sized for them. Closed them using the canvas's own spacing:
+- **Under page titles:** the header kept 40px below it, plus Streamlit's 16px gap: 56px, sized for a line that's gone. It's now 16px plus the gap, so the first card or tab row sits 32px under every title, as on the canvas (and as Books already was).
+- **New-shop steps:** each step is one row: the heading fills it, and its button sits at the right edge, as on the canvas. Before, the button floated in a narrow column, and steps without one kept an empty column, so on a phone the steps were unevenly spaced. On a phone the button wraps under its step, lined up with the step's words.
+- **Phone and desktop versions of a list:** the hidden version (the desktop table on a phone, the phone list on a desktop) still took one of Streamlit's 16px gaps. Its slot is now hidden too.
+- **Canvas:** card headings whose line was cut get back the canvas's own 12px spacer, instead of sitting on the table or field below. Fields in a column were set to grow 200px, which left holes in Get started, Settings, Team and Sign in. Side-by-side cards now hug their content, as in the app.
+
+**Third round (the till and Insights, same day):**
+- The till has no "Recorded as now…" line. It appears only when a sale is set to another time ("Recorded as Tuesday 10 Nov, 09:05."), so a receipt entered afterwards still can't be saved at the wrong time unnoticed. "Change date or time" stays.
+- The basket's total row says **Total**, not "3 copies".
+- After a sale, the message ends at the amount: no "Ready for the next customer."
+- On the canvas, the single search match no longer says "Press Enter to add one copy." (the Enter key label beside it already says it).
+- Estimated gross profit has one short line: "From the 92% of revenue with a cost recorded. Rent and wages aren't included." The first half shows only when some books have no cost; with none, it says "No books have a cost recorded yet." Gone: the note that today's cost per copy is used, and the line under the heading.
+- "What the numbers suggest" has a short line instead of two sentences: "Patterns in your sales, not proof of why."

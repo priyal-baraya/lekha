@@ -5,6 +5,8 @@ Every sentence is built from figures by fixed rules, so each case here
 names the figures and the exact words they must produce.
 """
 
+from decimal import Decimal
+
 import pytest
 
 from services.sentences import (
@@ -13,6 +15,7 @@ from services.sentences import (
     insights_sentence,
     low_stock_note,
     overview_sentence,
+    profit_note,
     showing,
 )
 
@@ -21,14 +24,13 @@ from services.sentences import (
 
 def test_overview_brand_new_shop():
     assert overview_sentence(total_books=0, has_sales=False, today_revenue_paise=0, low_stock=0) == (
-        "Welcome to Lekha. Add your books and record your sales, "
-        "and your shop's numbers will start to appear here."
+        "Welcome to Lekha!"
     )
 
 
 def test_overview_books_but_no_sales_yet():
     assert overview_sentence(total_books=12, has_sales=False, today_revenue_paise=0, low_stock=0) == (
-        "Your books are in. Record your first sale on the Sales page, and today's figures will appear here."
+        "Your books are in. Record your first sale."
     )
 
 
@@ -59,15 +61,14 @@ def test_insights_no_sales_in_period():
 def test_insights_too_little_history():
     assert insights_sentence(revenue_paise=184_900, previous_revenue_paise=0, sales=3, genres=GENRES,
                              history_days=3, before_label="the 30 days before") == (
-        "Insights need a little more history. You've recorded 3 sales so far; "
-        "trends appear after two weeks of sales."
+        "Trends appear after two weeks of sales."
     )
 
 
 def test_insights_one_sale_of_history():
     assert insights_sentence(revenue_paise=30_000, previous_revenue_paise=0, sales=1, genres=[],
-                             history_days=1, before_label="the 30 days before").startswith(
-        "Insights need a little more history. You've recorded 1 sale so far;"
+                             history_days=1, before_label="the 30 days before") == (
+        "Trends appear after two weeks of sales."
     )
 
 
@@ -144,3 +145,14 @@ def test_low_stock_note(count, text):
 def test_correction_hint(current, counted, text):
     assert correction_hint(current, counted) == text
 
+
+# ---------- Insights: the line under estimated gross profit ----------
+
+@pytest.mark.parametrize(("coverage", "expected"), [
+    (Decimal("100.0"), "Rent and wages aren't included."),
+    (Decimal("92.0"), "From the 92% of revenue with a cost recorded. Rent and wages aren't included."),
+    (Decimal("36.3"), "From the 36.3% of revenue with a cost recorded. Rent and wages aren't included."),
+    (Decimal("0.0"), "No books have a cost recorded yet."),
+])
+def test_profit_note(coverage, expected):
+    assert profit_note(coverage) == expected

@@ -14,6 +14,7 @@ from services import analytics
 from services.books import list_genres
 from services.inventory import low_stock_books
 from services.money import format_rupees, paise_to_rupees
+from services.sentences import profit_note
 from ui import charts
 from ui import components as ui
 from ui import session
@@ -187,7 +188,6 @@ def render_unsold_and_profit(conn, period, genre) -> None:
         ui.section_header(
             eyebrow="Estimate",
             title="Estimated gross profit",
-            description="Price paid minus each book's current cost per copy. An estimate, not accounts.",
         )
         profit = analytics.gross_profit(conn, period, genre)
         if profit["revenue_paise"] == 0:
@@ -197,21 +197,14 @@ def render_unsold_and_profit(conn, period, genre) -> None:
             ("Estimated gross profit", format_rupees(profit["estimated_gross_profit_paise"]),
              f"Estimated margin {profit['margin_percent']}%"),
         ])
-        st.markdown(
-            f"Calculated on **{format_rupees(profit['revenue_with_cost_paise'])}** of "
-            f"{format_rupees(profit['revenue_paise'])} revenue ({profit['coverage_percent']}%). "
-            "Books without a recorded cost are left out rather than counted as free. "
-            "It uses today's cost per copy, not what each copy actually cost, and leaves out "
-            "rent, wages and other running costs."
-        )
+        st.markdown(profit_note(profit["coverage_percent"]))
 
 
 def render_observations(conn, period, genre) -> None:
     ui.section_header(
         eyebrow="Observations",
         title="What the numbers suggest",
-        description="Plain-language findings from the figures above. Each shows its evidence "
-                    "and its limits. They describe recorded sales; they can't prove causes.",
+        description="Patterns in your sales, not proof of why.",
     )
     for item in analytics.observations(conn, period, genre, low_stock=low_stock_books(conn)):
         with st.container(border=True):

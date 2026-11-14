@@ -38,6 +38,26 @@ def test_page_header_has_one_h1_and_no_label_above():
     assert "eyebrow" not in html
 
 
+def test_page_header_without_a_description():
+    html = page_header_html("Books")
+    assert "lekha-pagehead__description" not in html
+
+
+def test_summary_header_without_a_date_line():
+    html = summary_header_html("", "Welcome to Lekha!")
+    assert "lekha-pagehead__meta" not in html and ">Welcome to Lekha!</h1>" in html
+
+
+def test_card_heading_without_a_description():
+    html = card_heading_html("Latest sales")
+    assert "lekha-cardhead__description" not in html and ">Latest sales</h2>" in html
+
+
+def test_step_without_an_explanation():
+    html = step_html(1, "Add your first book")
+    assert "lekha-step__text" not in html and "Add your first book" in html
+
+
 def test_summary_header_escapes_names():
     html = summary_header_html("Thursday 12 November · <Kitab & Ghar>", "₹1,250 in sales so far today.")
     assert "&lt;Kitab &amp; Ghar&gt;" in html
