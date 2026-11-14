@@ -16,7 +16,7 @@ Lekha helps a small bookstore owner answer everyday questions from their own rec
 |---|---|---|
 | **Books** | Look up a book by ISBN, search Open Library by title or author, or type it in; browse, search (by title, author or ISBN), filter and edit the catalogue, with covers and stock in words | Open Library answers pre-fill the form for checking; edition facts (publisher, year) saved only from an exact ISBN match; prices converted to paise exactly with `Decimal` |
 | **Sales** | A till: type or scan to find a book, adjust copies, record the sale (or Undo it), and cancel a past sale with a reason | Sale, lines and stock reduction in **one transaction**; stock checked and reduced in a single `UPDATE … WHERE stock >= n`; cancelling returns stock exactly once |
-| **Inventory** | Books at or below their reorder level; correct stock after a count, with a reason | Every correction recorded with before/after counts; refused if the stock changed since the page loaded |
+| **Inventory** | Books at or below their reorder level; correct stock after a count, seeing the change before saving, with a reason | Every correction recorded with before/after counts; refused if the stock changed since the page loaded |
 | **Insights** | Revenue over time, revenue by genre, best sellers, unsold books, estimated gross profit, plain-language observations, for any period and genre | Readable SQL files sharing one definition of "a completed sale in the period"; `RANK()` for ties; partial periods marked; every figure tested against hand calculations |
 | **Overview** | One sentence about today, three figures with fair comparisons, books to reorder, the latest sales and what's selling this week | Same analytics code as Insights; a shop with no sales sees the steps to get started |
 | **Sign in** | Username and password, or Google; start a shop or join one with a code; switch between shops | Passwords stored only as salted **scrypt** hashes; 5 wrong tries lock the account for 15 minutes; Google through Streamlit's built-in OpenID Connect sign-in |
@@ -52,7 +52,7 @@ Keeping SQL and network calls out of the pages means the rules are tested withou
 
 ## Quality
 
-- **437 automated tests** (pytest), run on every push and pull request by GitHub Actions: sign-in, lockout, invite codes and every role's limits, two shops that must never see each other's books, rules the database must refuse, transactions that must roll back, every analytics figure against numbers worked out by hand, Open Library lookups replayed from **real saved responses** (so the tests don't need the internet), a schema migration that must keep existing data, and the pages themselves via Streamlit's `AppTest`, including adding a real book by ISBN and a 2-copy sale that must reduce stock by exactly 2.
+- **444 automated tests** (pytest), run on every push and pull request by GitHub Actions: sign-in, lockout, invite codes and every role's limits, two shops that must never see each other's books, rules the database must refuse, transactions that must roll back, every analytics figure against numbers worked out by hand, Open Library lookups replayed from **real saved responses** (so the tests don't need the internet), a schema migration that must keep existing data, and the pages themselves via Streamlit's `AppTest`, including adding a real book by ISBN and a 2-copy sale that must reduce stock by exactly 2.
 - **Test data stays in the tests.** The analytics are checked against a small, hand-calculated fictional dataset (`data/sample_data.sql`). It is loaded only into temporary test databases, never into the app.
 - **Accessibility:** a contrast audit of every piece of text on every page went from 37 failures to 0 (WCAG 2.2 AA); visible keyboard focus; charts with alt text, tooltips, written summaries and table views; layouts checked at 1280px and 375px.
 - **Security** ([details](docs/security.md)): scrypt password hashes, lockout after 5 wrong passwords (also on the change-password form), limits on repeated sign-ins, sign-ups and invite codes, sign-out after 60 idle minutes or a password change elsewhere, roles checked in the services, names and Open Library text escaped so they can't inject formatting, links or pictures, Open Library answers checked before use, and only this computer can open the app by default. GitHub checks every package for known vulnerabilities (**pip-audit**) and scans the code (**bandit**) on every push and weekly; Dependabot proposes updates.
@@ -97,7 +97,7 @@ lekha/
 │   ├── analytics/          The analytics queries, one commented file each
 │   └── 01_first_queries.sql
 ├── data/sample_data.sql    The fictional, hand-checked dataset the tests use
-├── tests/                  437 pytest tests; fixtures/ holds real Open Library responses
+├── tests/                  444 pytest tests; fixtures/ holds real Open Library responses
 ├── scripts/                Screenshot capture (development only)
 ├── .github/workflows/      Runs the tests on GitHub
 └── docs/                   Case study, setup, schema, analytics, design, decisions, logs

@@ -124,7 +124,7 @@ See [docs/security.md](security.md) for everything Lekha protects and what it do
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-All 437 should pass. They use their own temporary folders, never your `data/` folder, and don't need the internet: Open Library lookups are replayed from real responses saved in `tests/fixtures/`.
+All 444 should pass. They use their own temporary folders, never your `data/` folder, and don't need the internet: Open Library lookups are replayed from real responses saved in `tests/fixtures/`.
 
 **Start again from nothing**
 

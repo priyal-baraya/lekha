@@ -526,3 +526,28 @@ Written before the code, and failing first:
 1. **The Open Library link was the browser's default blue.** **Fix:** links inside Lekha's own HTML take the theme's teal.
 2. **Long author names hid the price on a phone** ("Rabindranath Tagore · ₹30…"). **Fix:** the detail line wraps in phone lists.
 3. **A script edit was interrupted** when the session ended; I checked the page had been rewritten before carrying on.
+
+---
+
+## 2026-11-13: Inventory (branch `redesign/inventory`)
+
+### Automated tests: **444 passed**
+
+Written before the code, and failing first:
+
+| File | Tests | What it covers |
+|---|---|---|
+| `tests/test_sentences.py` | 32 (5 new) | The low-stock note ("1 book.", "All 6 shown, emptiest first."); the correction line for a loss (−1, with a real minus sign), a gain (+6) and a matching count |
+| `tests/test_pages.py` | 43 (2 new, 3 changed) | The correction line appears before saving and shows the new count after; a matching count leaves Save off; a shop with nothing low says "Nothing to reorder." and "No corrections yet."; staff see the low-stock card but neither correction card |
+
+### Browser check (throwaway data folder, port 8502)
+
+- **Desktop:** low-stock card matches the canvas. Chose Gitanjali (0 in stock): Save stayed off until the count changed. Typed 4 and chose "Delivery received": the line read "+4"; saving recorded it in Recent corrections, and Gitanjali left the low-stock list.
+- **Phone (375px):** the low-stock list, then the correction form; Recent corrections scrolls sideways.
+- **Keyboard:** the Book and Reason lists can be chosen by typing and Enter; Tab moves between the fields.
+- The data folder was deleted afterwards.
+
+### Issues found and fixed
+
+1. **The Book list kept saying "Gitanjali · 0 in stock" after the delivery made it 4.** Streamlit keeps the chosen option's wording. **Fix:** the options show title and author; the line under the count says Lekha's current count. A test now checks the line shows the new count after saving.
+2. **That line repeated itself** ("Lekha has 4 in stock. That matches Lekha's count…"). **Fix:** one sentence: "Lekha has 4 in stock too, so there's nothing to record."

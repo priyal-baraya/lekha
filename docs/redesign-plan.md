@@ -16,7 +16,7 @@ Both are private to the owner. A change to either after sign-off is a new change
 | 1. Design fixes on the canvas | First-run screens; a faster till (search, quantity buttons, Undo); Overview about today and Insights about trends; readable charts; rules for real data; phone versions; how things respond | Done, 12 Nov 2026 |
 | 2. Design review checkpoint | Critique re-run (25/40 → 33/40, no P1 issues), five smaller fixes, design system updated, owner sign-off | Done, 12 Nov 2026 |
 | 3. Foundations in code | Theme; shared components; the account menu in the navigation; fair comparisons and summary sentences, written test-first | Done |
-| 4. Pages, one at a time | Sign in and Get started → Overview → Sales (the till) → Books → Inventory → Insights → Team and Settings | In progress: Sign in, Get started and Overview done; Sales (PR #19); Books |
+| 4. Pages, one at a time | Sign in and Get started → Overview → Sales (the till) → Books → Inventory → Insights → Team and Settings | In progress: Sign in, Get started, Overview, Sales and Books done; Inventory |
 | 5. Polish, check and ship | Accessibility pass, automatic design scan, final critique, screenshots and docs | |
 
 ## The loop for every change (phases 3 and 4)
