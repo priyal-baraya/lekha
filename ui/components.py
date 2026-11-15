@@ -1,8 +1,7 @@
 """Reusable page pieces for Lekha.
 
 Each function writes one piece of the editorial layout as HTML using
-st.html. The matching styles live in ui/styles.css, and the ornament
-drawings live in ui/assets/.
+st.html. The matching styles live in ui/styles.css.
 
 Text passed into these functions is escaped with html.escape, so a book
 title containing "<" or "&" later on cannot break the page.
@@ -12,7 +11,6 @@ Markdown, so anything a person typed or Open Library sent goes through
 plain() first (see below).
 """
 
-import base64
 import re
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
@@ -26,7 +24,6 @@ from services.money import format_rupees_whole
 from services.sentences import showing
 
 UI_DIR = Path(__file__).parent
-ASSETS_DIR = UI_DIR / "assets"
 
 
 # Characters Markdown (and Streamlit's extras: $ for maths, :red[...] for
@@ -55,159 +52,13 @@ def plain(text) -> str:
 
 def _read(path: Path) -> str:
     """Read a text file. Read fresh on every page load so that edits to
-    styles.css or the SVG files show up without restarting Streamlit."""
+    styles.css show up without restarting Streamlit."""
     return path.read_text(encoding="utf-8")
-
-
-# Ornament name (used in CSS class names) -> SVG file in ui/assets/
-ORNAMENTS = {
-    "arch": "arch-botanical.svg",
-    "rosette": "divider-rosette.svg",
-}
-
-
-def _data_url(filename: str) -> str:
-    """Turn an SVG file into a "data URL": the whole image packed into one string."""
-    encoded = base64.b64encode(_read(ASSETS_DIR / filename).encode("utf-8")).decode("ascii")
-    return f"data:image/svg+xml;base64,{encoded}"
-
-
-def _ornament(name: str) -> str:
-    """An empty <span> that CSS paints with one of the SVG ornaments.
-
-    st.html cleans the HTML it is given and removes <svg> drawings and SVG
-    images. Stylesheets are not cleaned, so each ornament is drawn as a CSS
-    background image instead (see load_styles). Screen readers skip CSS
-    backgrounds, which is right for purely decorative drawings.
-    """
-    return f'<span class="lekha-ornament lekha-ornament--{name}"></span>'
 
 
 def load_styles() -> None:
     """Add Lekha's custom CSS to the page. Call once, before any content."""
-    ornament_rules = "".join(
-        f'.lekha-ornament--{name} {{ background-image: url("{_data_url(filename)}"); }}\n'
-        for name, filename in ORNAMENTS.items()
-    )
-    st.html(f"<style>{_read(UI_DIR / 'styles.css')}\n{ornament_rules}</style>")
-
-
-def hero(title: str, tagline: str, description: str, eyebrow: str) -> None:
-    """The brand introduction: a deep-wine panel with the arch motif."""
-    st.html(
-        f"""
-        <section class="lekha-hero" aria-label="Introduction">
-          <div class="lekha-hero__text">
-            <p class="lekha-hero__eyebrow">{escape(eyebrow)}</p>
-            <h1 class="lekha-hero__title">{escape(title)}</h1>
-            <p class="lekha-hero__tagline">{escape(tagline)}</p>
-            <p class="lekha-hero__description">{escape(description)}</p>
-          </div>
-          <div class="lekha-hero__motif" aria-hidden="true">{_ornament("arch")}</div>
-        </section>
-        """
-    )
-
-
-def divider() -> None:
-    """The ornamental divider used between major sections."""
-    st.html(
-        f"""
-        <div class="lekha-divider" aria-hidden="true">
-          <span class="lekha-divider__rule"></span>
-          {_ornament("rosette")}
-          <span class="lekha-divider__rule"></span>
-        </div>
-        """
-    )
-
-
-def _tag(text: str | None) -> str:
-    return f'<span class="lekha-tag">{escape(text)}</span>' if text else ""
-
-
-def section_header(
-    eyebrow: str,
-    title: str,
-    description: str | None = None,
-    tag: str | None = None,
-    page_title: bool = False,
-) -> None:
-    """A section introduction: small practical label, Lora title, short explanation.
-
-    page_title=True makes the title the page's main heading (h1) on pages
-    that have no hero. Otherwise it is a section heading (h2).
-    """
-    st.html(_section_header_html(eyebrow, title, description, tag, page_title))
-
-
-def _section_header_html(
-    eyebrow: str, title: str, description: str | None, tag: str | None, page_title: bool
-) -> str:
-    level, extra_class = ("h1", " lekha-page-title") if page_title else ("h2", "")
-    description_html = (
-        f'<p class="lekha-section__description">{escape(description)}</p>' if description else ""
-    )
-    return f"""
-        <header class="lekha-section">
-          <p class="lekha-section__eyebrow">{escape(eyebrow)}</p>
-          <div class="lekha-section__heading-row">
-            <{level} class="lekha-section__title{extra_class}">{escape(title)}</{level}>
-            {_tag(tag)}
-          </div>
-          {description_html}
-        </header>
-        """
-
-
-def page_intro(eyebrow: str, title: str, description: str) -> None:
-    """The opening of every page except Overview, always the same shape:
-    label, main title (h1), description, then a section-sized gap."""
-    st.html(
-        f'<div class="lekha-page-intro">'
-        f"{_section_header_html(eyebrow, title, description, None, page_title=True)}</div>"
-    )
-
-
-def metric_strip(metrics: list[tuple[str, str | None, str]]) -> None:
-    """A connected row of figures. Each metric is (label, value, note).
-
-    A value of None shows a dash, plus hidden text "No data yet" for
-    screen readers, so a missing figure never looks like a real result.
-    """
-    def value_html(value: str | None) -> str:
-        if value is None:
-            return '<span aria-hidden="true">—</span><span class="lekha-sr-only">No data yet</span>'
-        return escape(value)
-
-    cells = "".join(
-        f"""
-        <div class="lekha-metric">
-          <p class="lekha-metric__label">{escape(label)}</p>
-          <p class="lekha-metric__value">{value_html(value)}</p>
-          <p class="lekha-metric__note">{escape(note)}</p>
-        </div>
-        """
-        for label, value, note in metrics
-    )
-    # The strip is laid out for four figures; a single figure takes the full width.
-    style = ' style="grid-template-columns: 1fr"' if len(metrics) == 1 else ""
-    st.html(f'<div class="lekha-metrics"{style}>{cells}</div>')
-
-
-def empty_state(message: str, tag: str | None = None) -> None:
-    """A plain panel explaining what will appear here and when."""
-    st.html(
-        f"""
-        <div class="lekha-empty">
-          {_ornament("arch")}
-          <div>
-            <p class="lekha-empty__text">{escape(message)}</p>
-            {_tag(tag)}
-          </div>
-        </div>
-        """
-    )
+    st.html(f"<style>{_read(UI_DIR / 'styles.css')}</style>")
 
 
 # ------------------------------------------------------------ data pages

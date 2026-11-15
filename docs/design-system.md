@@ -1,180 +1,133 @@
 # Design system
 
-Lekha should feel like an antique illustrated manuscript translated into a contemporary, accessible product. The identity comes from typography, the crimson-and-teal palette, parchment surfaces and a few fine ornaments. Usability comes from clear hierarchy, rectangular composition and honest data.
+Lekha is a calm, light analytics tool for an independent bookshop. The identity comes from the manuscript palette (crimson on parchment), Lora headings and Indian number formats; usability comes from one job per page, plain words and very little text. Approved on the design canvas on 12 November 2026 and built page by page in Phase 4 (see [redesign-plan.md](redesign-plan.md)).
 
 **Where things live**
 
 | What | File |
 |---|---|
 | Theme (colours, fonts, radius, borders, chart colours) | `.streamlit/config.toml` |
-| Custom styles Streamlit has no setting for | `ui/styles.css` |
-| Functions that output the styled page pieces | `ui/components.py` |
-| Ornament drawings | `ui/assets/*.svg` |
+| Tokens and styles Streamlit has no setting for | `ui/styles.css` (`:root` holds every token) |
+| Functions that write the styled page pieces | `ui/components.py` |
+| The Insights chart | `ui/charts.py` |
+| The approved designs | The "Lekha redesign" canvas, one artboard per page and state |
+
+## Principles
+
+- **One job per page.** Overview is today and what to do; Sales is the till; Books is the catalogue; Inventory is stock; Insights is trends; Team and Settings are the shop's people and setup.
+- **Headings and numbers.** No line under page titles or card headings; no label above a heading. A line stays only when it says something the screen doesn't (for example "Shown once. Works once, for 7 days." under a new invite code).
+- **Say it in words.** Overview and Insights open with one sentence built from the figures by fixed rules (`services/sentences.py`), never invented. Status is a word ("Low", "Out of stock", "Doing well"), with colour only reinforcing it.
+- **Fair comparisons.** A figure is compared only with a like period, and the earlier figure is named ("12% more than ₹43,080"). With nothing fair to compare against, no change is shown.
+- **Nothing fake.** Real data only; empty states say what's missing instead of showing invented examples.
 
 ## Colour
 
-### Brand
-
 | Token | Hex | Use |
 |---|---|---|
-| Manuscript Crimson | `#791A24` | Primary brand colour, primary actions, selected states, section labels |
-| Deep Wine | `#4A111B` | Hero panel and occasional dark brand panels |
-| Persian Teal | `#263F3C` | Secondary colour, supporting actions, second chart series |
+| Manuscript Crimson `--lekha-crimson` | `#791A24` | Primary actions, selected states, the latest bar in a chart, focus outlines |
+| Crimson 50 `--lekha-crimson-50` | `#F6E8E4` | Selected backgrounds (the first step's number, the chosen option in a group of buttons) |
+| Persian Teal `--lekha-teal` | `#263F3C` | Links |
+| Manuscript Paper | `#F5EBDD` | Page background |
+| Porcelain Paper `--lekha-porcelain` | `#FBF7F0` | Cards and figure strips |
+| Field `--lekha-field` | `#FFFDF9` | Inside text fields; the invite code |
+| Aged Parchment `--lekha-parchment` | `#E3D1B2` | Card borders, row dividers, chart grid lines |
+| Border Taupe `--lekha-border` | `#8C7A68` | Field outlines and table header rules (they must reach 3:1, WCAG 1.4.11) |
+| Sepia Ink `--lekha-ink` | `#352821` | Text and headings |
+| Secondary Text `--lekha-ink-secondary` | `#67554A` | Labels, notes, axis text |
+| Earlier bars `--lekha-chart-past` | `#C4767E` | Earlier periods in the Insights chart; the quieter genres when one is chosen |
 
-### Surfaces
+**States** (always with a word, never colour alone):
 
-| Token | Hex | Use |
-|---|---|---|
-| Manuscript Paper | `#F5EBDD` | Main app background |
-| Porcelain Paper | `#FBF7F0` | Content surfaces: panels, inputs, tables, charts |
-| Aged Parchment | `#E3D1B2` | Table headers, light inner dividers |
-
-### Text
-
-| Token | Hex | Use |
-|---|---|---|
-| Sepia Ink | `#352821` | Primary text and headings |
-| Secondary Text | `#67554A` | Descriptions, labels, metadata |
-
-### Decorative accents (never for essential text on light backgrounds)
-
-| Token | Hex | Use |
-|---|---|---|
-| Antique Gold | `#B28A5C` | Ornament lines, hero frame, dividers. Allowed as small text on Deep Wine only |
-| Terracotta | `#A6543C` | Chart series, selected accents |
-| Botanical Olive | `#62633D` | Chart series, leaves in ornaments |
-| Faded Rose | `#C98F86` | Petals in ornaments only |
-
-### Functional addition
-
-| Token | Hex | Use | Why it exists |
+| State | Text | Background | Where |
 |---|---|---|---|
-| Border Taupe | `#8C7A68` | Outlines of inputs, panels and the metric strip | Input outlines must reach 3:1 against the background (WCAG 1.4.11). No palette colour meets that without looking heavy. See the decision log. |
+| Success | `#215C42` | `#E5F1E8` | "In stock", "Doing well", messages after saving |
+| Warning | `#704A0E` | `#F8EBCB` | "Low", "Worth a look", the remove-someone question |
+| Error | `#B42318` | `#FBE9E7` | "Out of stock", errors. Kept well apart from crimson, so an error never reads as branding |
+| Information | `#254D67` | `#E6EFF5` | "To keep in mind", the Owner tag |
+| Neutral | `#67554A` | `#EFE3D1` | The Staff tag |
 
-### Semantic states
+**Chart colours** (in `config.toml`): one series uses crimson; several use madder, peacock, turmeric and indigo, in that order, checked for colour-blind separation. A fifth series becomes "Other".
 
-Always paired with words or icons, never colour alone.
+### Measured contrast (WCAG 2.2 AA: 4.5:1 for text, 3:1 for large text and UI parts)
 
-| State | Text | Background | Streamlit element |
-|---|---|---|---|
-| Success | `#215C42` | `#E5F1E8` | `st.success` |
-| Warning | `#704A0E` | `#F8EBCB` | `st.warning` |
-| Critical / error | `#8B1E2D` | `#F8E5E5` | `st.error` |
-| Information | `#254D67` | `#E6EFF5` | `st.info`, the `.lekha-tag` status tags |
+| Pair | Ratio |
+|---|---|
+| Sepia Ink on Paper / on Porcelain | 12.06 / 13.32 |
+| Secondary Text on Paper / on Porcelain | 5.99 / 6.61 |
+| Crimson on Paper / on Porcelain / on Crimson 50 | 8.97 / 9.90 / 8.85 |
+| Teal on Paper / on Porcelain | 9.58 / 10.58 |
+| Border Taupe on Paper / on Porcelain (UI outline) | 3.49 / 3.86 |
+| Earlier bars on Porcelain (graphic) | 3.15 |
+| Success, warning, error, information, neutral tags | 6.76, 6.63, 5.61, 7.72, 5.57 |
 
-### Charts
-
-- **Categories** (in order): `#791A24`, `#263F3C`, `#A6543C`, `#62633D`, `#4A111B`
-- **Sequential** ("more" vs "less"), light to dark crimson: `#F3E4DC` → `#4A111B` in ten steps (listed in `config.toml`)
-
-### Measured contrast (WCAG 2.2 AA: 4.5:1 normal text, 3:1 large text and UI parts)
-
-| Pair | Ratio | Verdict |
-|---|---|---|
-| Sepia Ink on Manuscript Paper | 12.06 | Pass |
-| Secondary Text on Manuscript Paper | 5.99 | Pass |
-| Secondary Text on Aged Parchment | 4.72 | Pass |
-| Crimson on Manuscript Paper | 8.97 | Pass |
-| Teal on Manuscript Paper | 9.58 | Pass |
-| Terracotta on Manuscript Paper | 4.50 | Borderline: charts and large text only |
-| Olive on Manuscript Paper | 5.28 | Pass |
-| Gold on Manuscript Paper | 2.66 | **Fail**: decorative only |
-| Faded Rose on Manuscript Paper | 2.30 | **Fail**: decorative only |
-| Porcelain on Deep Wine | 14.18 | Pass |
-| Aged Parchment on Deep Wine | 10.11 | Pass |
-| Gold on Deep Wine | 4.82 | Pass (hero label) |
-| Border Taupe on Manuscript Paper | 3.49 | Pass for UI outlines |
-| Chart axis text (Secondary Text on Manuscript Paper) | 5.99 | Pass (was 3.15 with Streamlit's default chart text) |
-| Placeholder text (Secondary Text on Porcelain) | 6.61 | Pass (was 3.89 with Streamlit's default) |
-| All four semantic pairs | 6.63–7.72 | Pass |
+The Phase 5 browser check measured every piece of visible text on every page against its background: none fell below 4.5:1.
 
 ## Typography
 
-Both fonts load from Google Fonts through `config.toml` and fall back to system fonts if they cannot load.
+Both fonts load from Google Fonts through `config.toml`, with system fallbacks.
 
-| Font | Weights loaded | Used for |
+| Style | Size | Font |
 |---|---|---|
-| **Lora** (serif) | 500, 600 | Wordmark, hero tagline, page and section titles, metric values |
-| **Lato** (sans-serif) | 400, 700 | Navigation, body text, buttons, labels, tables, charts, status text |
+| Page title | 32px | Lora 600 |
+| Summary sentence (Overview, Insights) | 28px | Lora 500 |
+| Section title ("What the numbers suggest") | 24px | Lora 600 |
+| Card heading | 20px | Lora 600 |
+| Figure value | 30px (22px when it's words, "No sales yet") | Lora 500 |
+| Body | 15–16px | Lato 400 |
+| Labels, notes, table headers | 13–14px | Lato 400/700 |
+| Invite code | 20px, letter-spaced | Consolas (monospace, so 0 and O differ) |
 
-| Style | Size | Line height | Font |
-|---|---|---|---|
-| Display (hero wordmark) | 48px (40px on phones) | 1.15 | Lora 600 |
-| Page title | 32px | 1.25 | Lora 600 |
-| Section title | 28px | 1.25 | Lora 600 |
-| Hero tagline | 24px | 1.3 | Lora 500 |
-| Metric value | 32px | 1.2 | Lora 500 |
-| Body | 16px | 1.5 (24px) | Lato 400 |
-| Labels, notes, tags | 13–14px | 1.4 | Lato 400/700 |
-| Section label ("eyebrow") | 13px, uppercase, 0.12em spacing | — | Lato 700 |
-
-Streamlit headings written with `st.header` and similar use the `headingFontSizes` in `config.toml`: 44, 30, 22, 18, 16 and 14px for h1–h6.
-
-Long text is capped at about 42rem (roughly 70 characters per line).
+Amounts use Indian grouping (₹1,25,000), whole rupees in figures and sentences, paise in tables. The chart axis shortens them: ₹5k, ₹50k, ₹1L.
 
 ## Spacing
 
-Every margin, padding and gap uses one of six tokens, defined in `ui/styles.css`:
+Every gap uses one of six tokens in `ui/styles.css`: 4, 8, 16, 24, 40 and 64px (`--lekha-space-1` to `-6`). Streamlit adds 16px between elements, so:
 
-| Token | Size | Use |
-|---|---|---|
-| `--lekha-space-1` | 4px | Hairline details (metric value to its note) |
-| `--lekha-space-2` | 8px | Inside a group (label to title, title to description) |
-| `--lekha-space-3` | 16px | Between related items (description to notice) |
-| `--lekha-space-4` | 24px | Inside panels; after a section header |
-| `--lekha-space-5` | 40px | Between sections; after a page's opening |
-| `--lekha-space-6` | 64px | Hero breathing room |
-
-These map directly onto spacing variables in Figma.
-
-## Page opening
-
-Books, Sales, Inventory and Insights all open with `page_intro()`: section label, page title (the page's only h1), one-line description, then a 40px gap before the first section. Overview opens with the hero instead.
+- a page title sits **32px** above the first card or tab row (16px margin + 16px gap), as on the canvas;
+- cards have 24px padding and sit 16px apart;
+- a short hint under a field (such as "Used for new books") is pulled up to sit just under it;
+- side-by-side cards are as tall as their own content.
 
 ## Shape and layout
 
-- **Corners:** slightly rounded, one size everywhere: **6px** (`baseRadius` and `buttonRadius` in `config.toml`, `--lekha-radius` in `ui/styles.css` for the hero, summary strip and empty-shop panel). Tags use 4px (`--lekha-radius-small`) because they are small. Chart bars round only their outer end, by 3px, so the end on the baseline stays square and lengths still read accurately. *Changed on 2026-11-10 from square corners, at the owner's request: softer, without losing the editorial look.*
-- **Borders:** thin 1px lines. Border Taupe for outer edges, Aged Parchment for inner dividers, Antique Gold for ornamental rules.
-- **Composition:** full-width bands stacked vertically and separated by the ornamental divider, not a grid of floating cards.
-- **Responsive:** the metric strip goes from 4 columns to 2 (below 900px) to 1 (below 640px). Below 640px the hero hides its decorative strip so the text gets the full width.
-- **Focus:** links and buttons show a 2px crimson outline when reached by keyboard.
-- **Phones:** content that pairs labels with numbers (like the sales basket) is written as sentences rather than column grids, because Streamlit stacks columns on narrow screens. Tables put the columns you decide from (status, stock, copies, revenue) straight after the title, so they stay visible without scrolling sideways.
+- **Corners:** 6px everywhere (`baseRadius` in `config.toml`, `--lekha-radius`); tags 4px. Chart bars round only their top corners.
+- **Cards** are `st.container(key="lekha_card_…")`, styled by their key. Figures sit in one connected strip, not separate cards.
+- **Navigation** is at the top: the five daily pages, then the account menu (Team, Settings, Switch shop, Start or join a shop, Sign out).
+- **Phones (under 640px):** cards stack; tables with a phone version switch to a list (the reorder list, books, best sellers); other wide tables scroll sideways; Overview shows today, the last 30 days and what to reorder.
 
-## Ornaments
+## Accessibility
 
-Original SVG drawings inspired by the reference artwork, kept deliberately simple.
+- Every page has its own tab title ("Books · Lekha"), one h1 and headings in order.
+- Keyboard focus is always visible: a 2px crimson outline on links, buttons, text fields, number fields and dropdowns (Streamlit's own cue is a 1px border).
+- Every control has a name; every image has alt text (covers are decorative, `alt=""`); tables use real header cells.
+- Status is always a word. The chart's running period is a dashed outline, not just a lighter colour, and its numbers are available as a table.
+- Motion is limited to a slight press on buttons, switched off when the system asks for reduced motion.
 
-| Ornament | File | Where it appears |
-|---|---|---|
-| Rosette divider | `ui/assets/divider-rosette.svg` | Centre of the divider between major sections, between two double gold rules |
-| Botanical arch | `ui/assets/arch-botanical.svg` | Hero (140px) on a jaali-style lattice; empty states (44px) |
+## Charts (`ui/charts.py`)
 
-Rules:
-- Ornaments are CSS background images on empty `<span>` elements, so screen readers skip them and they never interrupt reading order or keyboard navigation.
-- Never behind charts, tables or essential text.
-- Used at section transitions, the brand introduction and empty states only.
-
-The jaali lattice in the hero is two repeating CSS gradients at 22% gold opacity. No image file is involved.
-
-## Charts (`ui/charts.py`, Altair)
-
-- **One series, one colour.** Revenue charts use Manuscript Crimson only and need no colour legend: the title and axis say what is shown.
-- **Bars, lightly rounded at the outer end.** Revenue over time uses vertical bars (discrete periods); revenue by genre uses horizontal bars sorted largest first, labelled `₹4,040.00 · 36.3%`. No pie charts: lengths are easier to compare than angles.
-- **Shape, not colour, for partial periods:** filled bar = complete, outlined bar = partial or in progress.
-- **Every chart has** a hover tooltip, alt text for screen readers (`st.altair_chart(alt=...)`), a written summary under it, and a "Show as a table" view.
-- **Value labels** use Secondary Text, never the bar colour.
-- Fonts, grid and background come from the Streamlit theme. The categorical palette in `config.toml` is reserved for future charts with several series.
+One chart, on Insights: revenue by day, week or month, chosen from the period's length.
+- One series, one hue. The latest finished bar is crimson; earlier bars are lighter; the bar still running is a dashed outline marked "so far".
+- Only the bars that matter are labelled: the best, the latest finished and the running one.
+- Every bar has a tooltip; the chart has alt text; "Show as a table" gives the numbers.
+- Revenue by genre is drawn as HTML bars (`genre_bars_html`), each with its amount and share written beside it.
 
 ## Components (`ui/components.py`)
 
 | Function | What it draws |
 |---|---|
-| `load_styles()` | Adds `styles.css` and the ornament images to the page. Called once in `app.py` |
-| `hero(...)` | Deep Wine brand panel with gold frame, wordmark, tagline and arch |
-| `divider()` | Ornamental section divider |
-| `section_header(...)` | Section label, Lora title, optional status tag and description |
-| `metric_strip(...)` | Connected row of figures. A missing value shows "—", and screen readers hear "No data yet" |
-| `flash(...)` / `show_flash()` | A success or warning message that survives the page reload after saving |
-| `show_errors(...)` | One error box listing every validation problem |
-| `empty_state(...)` | Porcelain panel with small arch, message and status tag |
-| `page_intro(...)` | The standard opening of every page except Overview |
+| `load_styles()` | Adds `styles.css` to the page. Called once in `app.py` |
+| `page_header(title)` | A page's title (its only h1) |
+| `summary_header(date_line, sentence)` | Overview's and Insights' opening: the dates, then the sentence as the h1 |
+| `card_heading(title, line="")` | A card's h2, and a line under it only when needed |
+| `figure_strip([Figure…])` | Connected figures; a missing value shows "—" and is read as "No data yet" |
+| `status_html(kind, text)` / `stock_status_html(...)` | A status in words: In stock, Low, Out of stock |
+| `data_table_html(...)` / `book_cell_html(...)` | Plain tables; a book's cover (or its letter) beside title and author |
+| `book_rows_html(...)` / `book_list_html(...)` | The phone versions of book tables |
+| `shelf_html(...)` | Overview's "Selling well" covers |
+| `step_html(...)` | A first-run step |
+| `genre_bars_html(...)` | Insights' revenue by genre |
+| `observation_html(...)` | A finding card: its tone in words, title, evidence and what to try |
+| `progress_html(...)` | Progress towards two weeks of sales, announced to screen readers |
+| `flash(...)` / `show_flash()` | A message that survives the reload after saving |
+| `show_errors(...)` | One box listing every problem with a form |
+| `wordmark(...)` / `or_divider()` | Sign in's wordmark, and the "or" between ways to sign in |
