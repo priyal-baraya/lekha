@@ -812,3 +812,24 @@ The main choices, agreed on the canvas and signed off by the owner:
 - On the canvas, the single search match no longer says "Press Enter to add one copy." (the Enter key label beside it already says it).
 - Estimated gross profit has one short line: "From the 92% of revenue with a cost recorded. Rent and wages aren't included." The first half shows only when some books have no cost; with none, it says "No books have a cost recorded yet." Gone: the note that today's cost per copy is used, and the line under the heading.
 - "What the numbers suggest" has a short line instead of two sentences: "Patterns in your sales, not proof of why."
+
+## 2026-11-15: Insights, as designed
+
+**Decision:** Rebuild Insights to the canvas (Insights and InsightsEmpty artboards):
+- **At the top:** the dates and what they're compared with ("17 Oct to 15 Nov 2026 · compared with the 30 days before"), one sentence that sums up the figures, and the genre and period filters beside them.
+- **Four figures** (Revenue, Copies sold, Sales, Average per sale), each compared with the period before ("48% more than ₹12,789"; the average is shown neutrally, "₹609 before"). These are the comparisons taken off Overview: Insights is the page for trends.
+- **Revenue by day, week or month,** chosen from the period's length (up to 14 days by day, up to about six months by week, then by month), so there's no "Group sales by" control. Every bar is a whole week (or day or month): the first bar starts on the Monday before the period. The latest finished bar is crimson, earlier ones lighter, and the one still running is a dashed outline ("₹8,596 so far"). A sentence above says how the latest compares with the best: "Last week brought in ₹450. The best week was 19 Oct, at ₹6,294." The numbers are also offered as a table.
+- **Revenue by genre** as labelled bars (always every genre; with a genre filter on, the others are drawn quieter), next to **estimated gross profit** (owners only).
+- **Most copies sold:** the top five, with covers.
+- **What the numbers suggest:** one card per finding, saying in words whether it's good news ("Doing well") or worth a look, with what to try beside it. When there's nothing to try, the side says what the finding can't tell you.
+- **Before two weeks of sales,** the page says "Trends appear after two weeks of sales.", shows how many of the 14 days there are so far, lists what's coming and gives the figures so far.
+
+**Why:** The old page stacked six sections with labels above every heading and long explanations. The canvas answers "how are sales trending?" in the first screen.
+
+**What changed from the old page:**
+- "No sales in this period" (the list of unsold books) is gone as its own section. Its useful part, books on the shelf that didn't sell, is a finding.
+- The small-sample warning is said once above the findings, not repeated in each.
+- Findings use whole rupees, like the rest of the page, and their suggestions lost the "Possible action:" label (the card says "Worth trying").
+- Each finding keeps its limits in the code (and its tests), but the card shows one of them only when there's nothing to try, as on the canvas.
+
+**Departures from the canvas:** The canvas chart showed nine weeks for "Last 30 days"; the app shows the weeks the period touches. The canvas had example findings (such as fewer books per sale) that Lekha doesn't calculate; the app shows only the findings it can back with figures. The waiting card's list says "Your best sellers" and "Findings in plain language", because unsold books are no longer a section and not every limit is shown.

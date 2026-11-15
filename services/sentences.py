@@ -139,3 +139,64 @@ def profit_note(coverage_percent: Decimal) -> str:
     covered = "" if coverage_percent >= 100 else (
         f"From the {float(coverage_percent):g}% of revenue with a cost recorded. ")
     return covered + "Rent and wages aren't included."
+
+
+# ---------------------------------------------------------------- Insights
+
+def span_text(start: date, end: date) -> str:
+    """A range of days, short: "13 Oct to 12 Nov 2026"."""
+    if start == end:
+        return f"{end.day} {end:%b %Y}"
+    first = f"{start.day} {start:%b}" if start.year == end.year else f"{start.day} {start:%b %Y}"
+    return f"{first} to {end.day} {end:%b %Y}"
+
+
+def _bucket_name(start: date, grain: str) -> str:
+    """How a bar is named in a sentence: "26 Oct" (a day, or the week
+    starting then) or "September"."""
+    return f"{start:%B}" if grain == "month" else f"{start.day} {start:%b}"
+
+
+def _previous_bucket(today: date, grain: str) -> date:
+    """The start of the day, week or month just before the one holding today."""
+    if grain == "day":
+        return today - timedelta(days=1)
+    if grain == "week":
+        return today - timedelta(days=today.weekday() + 7)
+    return (today.replace(day=1) - timedelta(days=1)).replace(day=1)
+
+
+def trend_note(buckets: list[tuple[date, int, bool]], grain: str, today: date) -> str:
+    """The sentence above the Insights chart: the latest finished day, week
+    or month, and the best one shown.
+
+    buckets: (start, revenue in paise, still running?) in date order.
+    Empty when no finished bar has any sales.
+    """
+    done = [(start, paise) for start, paise, running in buckets if not running]
+    if not done or not any(paise for _, paise in done):
+        return ""
+    latest_start, latest = done[-1]
+    best_start, best = max(reversed(done), key=lambda bucket: bucket[1])    # a tie goes to the later one
+    if latest_start == _previous_bucket(today, grain):
+        name = {"day": "Yesterday", "week": "Last week", "month": "Last month"}[grain]
+    elif grain == "week":
+        name = f"The week of {_bucket_name(latest_start, grain)}"
+    else:
+        name = _bucket_name(latest_start, grain)
+    if best_start == latest_start:
+        return f"{name} was the best, at {format_rupees_whole(latest)}."
+    said = f"{name} brought in {format_rupees_whole(latest)}." if latest else f"{name} had no sales."
+    return f"{said} The best {grain} was {_bucket_name(best_start, grain)}, at {format_rupees_whole(best)}."
+
+
+def small_sample_note(sales: int, enough: int = 30) -> str:
+    """Said once above the findings when there are few sales to go on."""
+    if sales >= enough:
+        return ""
+    return f"Only {_plural(sales, 'sale', 'sales')} in this period, so treat these as hints, not patterns."
+
+
+def first_days_text(days: int) -> str:
+    """The date line while Insights waits for two weeks: "your first 3 days"."""
+    return "your first day" if days == 1 else f"your first {days} days"

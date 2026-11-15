@@ -1,243 +1,232 @@
-"""Insights: what the recorded sales say, for a chosen period and genre.
+"""Insights: how sales are trending, for a chosen period and genre.
 
-Every number comes from services/analytics.py, which is tested against
-hand calculations. This page only arranges and explains them.
+Laid out as on the design canvas (Insights and InsightsEmpty artboards):
+a date line and one sentence that sums up the figures, the genre and
+period filters beside them, four figures compared with the period
+before, revenue by day, week or month, revenue by genre next to the
+estimated gross profit (owners only), the best sellers, and findings in
+plain language.
+
+Until the shop has two weeks of sales, the page says so instead, with
+what it has so far: a trend from a few days would mean nothing.
+
+Every number comes from services/analytics.py, tested against hand
+calculations; every sentence from services/sentences.py. This page only
+arranges them.
 """
 
-from datetime import date, timedelta
+from datetime import timedelta
+from decimal import ROUND_HALF_UP, Decimal
 
-import pandas as pd
 import streamlit as st
 
 from database import connect
-from services import analytics
+from services import analytics, clock
 from services.books import list_genres
+from services.comparisons import before_money, compare_count, compare_money
 from services.inventory import low_stock_books
-from services.money import format_rupees, paise_to_rupees
-from services.sentences import profit_note
+from services.money import format_rupees, format_rupees_whole
+from services.openlibrary import cover_url
+from services.sentences import (
+    MIN_HISTORY_DAYS,
+    first_days_text,
+    insights_sentence,
+    profit_note,
+    small_sample_note,
+    span_text,
+    trend_note,
+)
 from ui import charts
 from ui import components as ui
 from ui import session
 
 ALL_GENRES = "All genres"
-GRAIN_LABELS = {"day": "Day", "week": "Week", "month": "Month"}
+TOP_BOOKS = 5
+PERIODS = ["last_7", "last_30", "this_month", "last_month", "all_time", "custom"]
+
+now = clock.now()
+today = now.date()
 
 
-def copies(n: int) -> str:
-    return f"{n} {'copy' if n == 1 else 'copies'}"
+def whole(share) -> int:
+    """A share as a whole percentage, half up (90.5 -> 91), like every other figure."""
+    return int(Decimal(str(share)).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
-def render_filters(conn) -> tuple[analytics.Period, str | None, str]:
-    today = date.today()
-    period_col, genre_col, grain_col = st.columns([1.4, 1.2, 1])
-    choice = period_col.selectbox(
-        "Period", list(analytics.PERIOD_LABELS), index=1,     # default: last 30 days
-        format_func=analytics.PERIOD_LABELS.get, key="insights_period",
-    )
-    genre_choice = genre_col.selectbox("Genre", [ALL_GENRES, *list_genres(conn)], key="insights_genre")
-    grain = grain_col.selectbox(
-        "Group sales by", list(GRAIN_LABELS), index=1, format_func=GRAIN_LABELS.get, key="insights_grain",
-    )
+# ---------------------------------------------------------------- header
+
+def render_header(conn):
+    """The date line and sentence on the left, the filters on the right.
+    The sentence depends on the filters, so its place is kept and filled
+    in once the figures are known."""
+    with st.container(horizontal=True, vertical_alignment="bottom", key="insights_header"):
+        heading = st.container(key="insights_heading")
+        with st.container(horizontal=True, width="content", key="insights_filters"):
+            genre_choice = st.selectbox("Genre", [ALL_GENRES, *list_genres(conn)], key="insights_genre",
+                                        label_visibility="collapsed", width=190)
+            choice = st.selectbox("Period", PERIODS, index=PERIODS.index("last_30"),
+                                  format_func=analytics.PERIOD_LABELS.get, key="insights_period",
+                                  label_visibility="collapsed", width=170)
     custom = None
     if choice == "custom":
-        picked = st.date_input(
-            "From and to (both days included)", value=(today - timedelta(days=29), today),
-            max_value=today, key="insights_custom",
-        )
+        picked = st.date_input("From and to", value=(today - timedelta(days=29), today), max_value=today,
+                               key="insights_custom", format="DD/MM/YYYY", width=260)
         if not isinstance(picked, tuple) or len(picked) != 2:
-            st.info("Choose both a start date and an end date.")
+            st.html('<p class="lekha-note">Choose a start and an end date.</p>')
             st.stop()
         custom = picked
     period = analytics.period_for(conn, choice, today, custom)
-    genre = None if genre_choice == ALL_GENRES else genre_choice
-    return period, genre, grain
+    return period, None if genre_choice == ALL_GENRES else genre_choice, heading
 
 
-def render_headline(conn, period, genre) -> dict:
-    totals = analytics.summary(conn, period, genre)
-    average_note = (f"{genre} revenue ÷ sales that included it" if genre else "Revenue ÷ transactions")
-    ui.metric_strip([
-        ("Revenue", format_rupees(totals["revenue_paise"]), "Completed sales only"),
-        ("Copies sold", str(totals["copies"]), "Books, not sales"),
-        ("Transactions", str(totals["transactions"]), "Sales recorded"),
-        ("Average sale", format_rupees(totals["average_sale_paise"]) if totals["transactions"] else None,
-         average_note if totals["transactions"] else "No sales to average"),
+# --------------------------------------------------------------- figures
+
+def render_figures(totals: dict, before: dict) -> None:
+    sold = totals["transactions"]
+    ui.figure_strip([
+        ui.Figure("Revenue", format_rupees_whole(totals["revenue_paise"]),
+                  compare_money(totals["revenue_paise"], before["revenue_paise"])),
+        ui.Figure("Copies sold", str(totals["copies"]), compare_count(totals["copies"], before["copies"])),
+        ui.Figure("Sales", str(sold), compare_count(sold, before["transactions"], by="difference")),
+        ui.Figure("Average per sale", format_rupees_whole(totals["average_sale_paise"]) if sold else None,
+                  before_money(before["average_sale_paise"]) if sold else None),
     ])
-    return totals
 
 
-def render_trend(conn, period, genre, grain) -> None:
-    ui.section_header(
-        eyebrow="Over time",
-        title="Revenue over time",
-        description="Outlined bars are partial periods: they start before the chosen dates, "
-                    "end after them, or haven't finished yet, so they can look lower than they are.",
-    )
-    table = analytics.revenue_over_time(conn, period, grain, genre)
-    if table["revenue_paise"].sum() == 0:
-        ui.empty_state("No completed sales in this period, so there is nothing to chart.")
-        return
-    best = table.loc[table["revenue_paise"].idxmax()]
-    unit = {"day": "day", "week": "week", "month": "month"}[grain]
-    empty = int((table["revenue_paise"] == 0).sum())
-    partial = int(table["partial"].sum())
-    summary = (
-        f"Highest {unit}: {unit_name(best['bucket_start'], grain)}, {format_rupees(int(best['revenue_paise']))}. "
-        f"{len(table)} {unit}s shown"
-        + (f", {empty} with no sales" if empty else "")
-        + (f", {partial} partial" if partial else "")
-        + "."
-    )
-    st.altair_chart(charts.revenue_over_time(table, grain), width="stretch", alt=summary)
-    st.markdown(summary)
-    with st.expander("Show as a table"):
-        shown = table.assign(
-            period=table["bucket_start"].map(lambda d: unit_name(d, grain)),
-            revenue=table["revenue_paise"].map(format_rupees),
-            status=table["partial"].map({True: "Partial", False: "Complete"}),
-        )
-        st.dataframe(
-            shown[["period", "revenue", "copies", "transactions", "status"]], hide_index=True,
-            column_config={"period": "Period", "revenue": "Revenue", "copies": "Copies",
-                           "transactions": "Sales", "status": "Period status"},
-        )
+# ----------------------------------------------------------------- chart
+
+def render_trend(conn, period, genre) -> None:
+    grain = analytics.chart_grain(period)
+    table = analytics.revenue_over_time(conn, analytics.chart_period(period, grain, today), grain, genre, today)
+    note = trend_note(list(zip(table["bucket_start"], table["revenue_paise"], table["partial"])), grain, today)
+    with st.container(key="lekha_card_trend"):
+        ui.card_heading(f"Revenue by {grain}", note)
+        st.altair_chart(charts.revenue_trend(table, grain), width="stretch", alt=note or f"Revenue by {grain}")
+        if table["partial"].any():
+            running = {"day": "today", "week": "this week", "month": "this month"}[grain]
+            st.html(f'<p class="lekha-note">Dashed bar: {running} so far.</p>')
+        with st.expander("Show as a table"):
+            st.html(ui.data_table_html(
+                [(charts.BUCKET_NAMES[grain], "left"), ("Revenue", "right"), ("Copies", "right"),
+                 ("Sales", "right"), ("", "left")],
+                [[charts.bar_label(row.bucket_start, grain), format_rupees(int(row.revenue_paise)),
+                  int(row.copies), int(row.transactions), "So far" if row.partial else ""]
+                 for row in table.itertuples()],
+            ))
 
 
-def unit_name(day: date, grain: str) -> str:
-    if grain == "month":
-        return f"{day:%B %Y}"
-    if grain == "week":
-        return f"week of {day:%d %b %Y}"
-    return f"{day:%d %b %Y}"
-
+# ------------------------------------------------- genres, and profit
 
 def render_genres(conn, period, genre) -> None:
-    ui.section_header(
-        eyebrow="By genre",
-        title="Revenue by genre",
-        description="Always shows every genre, so they can be compared"
-                    + (f". The genre filter ({genre}) doesn't apply here." if genre else "."),
-    )
-    rows = analytics.revenue_by_genre(conn, period)
-    if not rows:
-        ui.empty_state("No completed sales in this period.")
-        return
-    total = sum(row["revenue_paise"] for row in rows)
-    summary = "; ".join(f"{row['genre']} {format_rupees(row['revenue_paise'])} ({row['share_percent']}%)" for row in rows)
-    st.altair_chart(charts.revenue_by_genre(rows), width="stretch", alt="Revenue by genre: " + summary)
-    shares = sum(row["share_percent"] for row in rows)
-    note = f"Total {format_rupees(total)}."
-    if shares != 100:
-        note += f" Percentages are rounded to one decimal place, so they add up to {shares}%."
-    st.markdown(note)
-    with st.expander("Show as a table"):
-        st.dataframe(
-            pd.DataFrame([{"Genre": row["genre"], "Revenue": format_rupees(row["revenue_paise"]),
-                           "Share": f"{row['share_percent']}%", "Copies": row["copies"]} for row in rows]),
-            hide_index=True,
-        )
+    rows = analytics.revenue_by_genre(conn, period)       # always every genre, to compare
+    with st.container(key="lekha_card_genres"):
+        if not rows:
+            ui.card_heading("Revenue by genre", "No completed sales in this period.")
+            return
+        named = next((row for row in rows if row["genre"] == genre), rows[0]) if genre else rows[0]
+        ui.card_heading("Revenue by genre", f"{named['genre']} brought in {whole(named['share_percent'])}%.")
+        st.html(ui.genre_bars_html([(row["genre"], row["revenue_paise"], row["share_percent"]) for row in rows],
+                                   highlight=genre))
 
+
+def render_profit(conn, period, genre) -> None:
+    profit = analytics.gross_profit(conn, period, genre)
+    with st.container(key="lekha_card_profit"):
+        ui.card_heading("Estimated gross profit")
+        if profit["revenue_with_cost_paise"] > 0:
+            share = whole(profit["estimated_gross_profit_paise"] * 100 / profit["revenue_with_cost_paise"])
+            st.html(f'<p class="lekha-figure__value">{format_rupees_whole(profit["estimated_gross_profit_paise"])}</p>'
+                    f'<p class="lekha-profit__share">About {share}% of revenue · owners only</p>')
+        st.html(f'<p class="lekha-card-note">{ui.escape(profit_note(profit["coverage_percent"]))}</p>')
+
+
+# ------------------------------------------------------------ best sellers
 
 def render_best_sellers(conn, period, genre) -> None:
-    ui.section_header(
-        eyebrow="Best sellers",
-        title="Most copies sold",
-        description="Ranked by copies. Books with the same number of copies share a rank.",
-    )
     rows = analytics.best_sellers(conn, period, genre)
-    if not rows:
-        ui.empty_state("No books sold in this period.")
-        return
-    table = pd.DataFrame(rows[:10])
-    table["revenue"] = table["revenue_paise"].map(lambda paise: float(paise_to_rupees(paise)))
-    st.dataframe(
-        table[["copies_rank", "title", "copies", "revenue", "author", "genre"]],
-        hide_index=True,
-        column_config={
-            "copies_rank": st.column_config.NumberColumn("Rank", format="%d"),
-            "title": "Title", "author": "Author", "genre": "Genre",
-            "copies": st.column_config.NumberColumn("Copies"),
-            "revenue": st.column_config.NumberColumn("Revenue", format="₹%.2f"),
-        },
-    )
-    if len(rows) > 10:
-        st.markdown(f"Showing the top 10 of {len(rows)} books that sold.")
+    top = analytics.add_covers(conn, rows[:TOP_BOOKS])
+    with st.container(key="lekha_card_best"):
+        ui.card_heading("Most copies sold")
+        st.html(ui.data_table_html(
+            [("#", "left"), ("Book", "left"), ("Genre", "left"), ("Copies", "right"), ("Revenue", "right")],
+            [[row["copies_rank"], ui.book_cell_html(row["title"], row["author"], cover_url(row["cover_id"], "S")),
+              row["genre"], row["copies"], format_rupees(row["revenue_paise"])] for row in top],
+            css_class="lekha-wide-only",
+        ))
+        st.html('<div class="lekha-narrow-only">' + ui.book_rows_html([
+            ui.BookRow(row["title"], cover_url(row["cover_id"], "S"),
+                       f"{row['copies']} {'copy' if row['copies'] == 1 else 'copies'} · "
+                       f"{format_rupees(row['revenue_paise'])}")
+            for row in top]) + "</div>")
+        ui.showing_note(len(top), len(rows))
 
 
-def render_unsold_and_profit(conn, period, genre) -> None:
-    unsold_col, profit_col = st.columns(2, gap="large")
-    with unsold_col:
-        ui.section_header(
-            eyebrow="Not moving",
-            title="No sales in this period",
-            description="Books with no completed sales in these dates. That isn't the same as "
-                        "slow-selling: Lekha doesn't record when each book arrived.",
-        )
-        rows = analytics.unsold_books(conn, period, genre)
-        if rows:
-            st.dataframe(
-                pd.DataFrame(rows)[["title", "stock_quantity", "genre"]], hide_index=True,
-                column_config={"title": "Title", "genre": "Genre",
-                               "stock_quantity": st.column_config.NumberColumn("In stock")},
-            )
-        else:
-            ui.empty_state(f"Every {genre + ' ' if genre else ''}book had at least one sale in this period.")
-    with profit_col:
-        if not session.can_do("view_profit"):     # owners only
-            return
-        ui.section_header(
-            eyebrow="Estimate",
-            title="Estimated gross profit",
-        )
-        profit = analytics.gross_profit(conn, period, genre)
-        if profit["revenue_paise"] == 0:
-            ui.empty_state("No completed sales in this period.")
-            return
-        ui.metric_strip([
-            ("Estimated gross profit", format_rupees(profit["estimated_gross_profit_paise"]),
-             f"Estimated margin {profit['margin_percent']}%"),
-        ])
-        st.markdown(profit_note(profit["coverage_percent"]))
+# --------------------------------------------------------------- findings
 
-
-def render_observations(conn, period, genre) -> None:
-    ui.section_header(
-        eyebrow="Observations",
-        title="What the numbers suggest",
-        description="Patterns in your sales, not proof of why.",
-    )
+def render_findings(conn, period, genre, sales: int) -> None:
+    intro = "Patterns in your sales, not proof of why."
+    small = small_sample_note(sales, analytics.MIN_SALES_FOR_PATTERN)
+    st.html(f'<h2 class="lekha-section-title">What the numbers suggest</h2>'
+            f'<p class="lekha-section-text">{intro}{" " + ui.escape(small) if small else ""}</p>')
     for item in analytics.observations(conn, period, genre, low_stock=low_stock_books(conn)):
-        with st.container(border=True):
-            # Observations quote titles and genres, so they are escaped.
-            st.markdown(f"**{ui.plain(item.title)}**")
-            st.markdown(ui.plain(item.evidence))
-            if item.action:
-                st.markdown(f"*{ui.plain(item.action)}*")
-            for limit in item.limits:
-                # Normal text, not st.caption: caption text is faded and
-                # these limits matter as much as the finding.
-                st.markdown(f"Limit: {ui.plain(limit)}")
+        side = ("Worth trying", item.action) if item.action else ("What this can't tell you", item.limits[0])
+        st.html(ui.observation_html(item.tone, item.title, item.evidence, *side))
+
+
+# ------------------------------------------- before two weeks of sales
+
+def render_waiting(conn, history: int) -> None:
+    first = analytics.earliest_sale_date(conn)
+    date_line = f"{span_text(first, today)} · {first_days_text(history)}" if first else ""
+    ui.summary_header(date_line, "Trends appear after two weeks of sales.")
+    with st.container(key="lekha_card_waiting"):
+        ui.card_heading("What you'll see here", "Lekha waits for enough sales so that a trend means "
+                                                "something, instead of guessing from a few days.")
+        st.html(ui.progress_html(history, MIN_HISTORY_DAYS, "Days of sales recorded")
+                + '<ul class="lekha-list">'
+                  "<li>Revenue by week, with your best and latest weeks labelled</li>"
+                  "<li>Which genres earn the most</li>"
+                  "<li>Your best sellers</li>"
+                  "<li>Findings in plain language</li></ul>")
+    if first:
+        so_far = analytics.summary(conn, analytics.Period(first, today))
+        ui.figure_strip([
+            ui.Figure("Revenue so far", format_rupees_whole(so_far["revenue_paise"])),
+            ui.Figure("Copies sold", str(so_far["copies"])),
+            ui.Figure("Sales", str(so_far["transactions"])),
+        ])
 
 
 # ------------------------------------------------------------------ page
 
-ui.page_intro(
-    eyebrow="Reading between the numbers",
-    title="Insights",
-    description="What recorded sales show about revenue, genres and best sellers.",
-)
-
 with connect() as conn:
-    period, genre, grain = render_filters(conn)
-    st.markdown(f"Completed sales · **{period.describe()}** · {ui.plain(genre) if genre else 'all genres'}")
-    render_headline(conn, period, genre)
-    ui.divider()
-    render_trend(conn, period, genre, grain)
-    ui.divider()
-    render_genres(conn, period, genre)
-    ui.divider()
-    render_best_sellers(conn, period, genre)
-    ui.divider()
-    render_unsold_and_profit(conn, period, genre)
-    ui.divider()
-    render_observations(conn, period, genre)
+    history = analytics.days_of_history(conn, today)
+    if history < MIN_HISTORY_DAYS:
+        render_waiting(conn, history)
+    else:
+        period, genre, heading = render_header(conn)
+        previous = analytics.previous_period(period)
+        totals = analytics.summary(conn, period, genre)
+        before = analytics.summary(conn, previous, genre)
+        genres = [] if genre else [(row["genre"], row["share_percent"])
+                                   for row in analytics.revenue_by_genre(conn, period)]
+        span = span_text(period.start, period.end)
+        with heading:
+            ui.summary_header(
+                f"{span} · compared with {previous.label}" if before["transactions"] else span,
+                insights_sentence(totals["revenue_paise"], before["revenue_paise"], totals["transactions"],
+                                  genres, history, previous.label),
+            )
+        render_figures(totals, before)
+        if totals["transactions"]:
+            render_trend(conn, period, genre)
+            if session.can_do("view_profit"):                  # owners only
+                genre_col, profit_col = st.columns(2)
+                with genre_col:
+                    render_genres(conn, period, genre)
+                with profit_col:
+                    render_profit(conn, period, genre)
+            else:
+                render_genres(conn, period, genre)
+            render_best_sellers(conn, period, genre)
+            render_findings(conn, period, genre, totals["transactions"])

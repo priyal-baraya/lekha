@@ -952,3 +952,189 @@ ul.lekha-booklist {
 .lekha-booklist__item .lekha-book__author {
   white-space: normal;
 }
+
+/* ---------- Insights ---------- */
+/* The date line and sentence on the left, the two filters on the right;
+   on a phone the filters wrap under the sentence. */
+.st-key-insights_header .lekha-pagehead {
+  margin-bottom: 0;
+}
+.st-key-insights_header {
+  margin-bottom: var(--lekha-space-3);
+}
+/* Best sellers: the rank column only as wide as its number */
+.st-key-lekha_card_best th:first-child {
+  width: 2rem;
+}
+/* One short line under a card heading: what the card shows, in words */
+.lekha-card-note {
+  font-family: var(--lekha-sans);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--lekha-ink-secondary);
+  margin: var(--lekha-space-1) 0 0;
+}
+/* Revenue by genre: name, bar to scale, amount and share */
+.lekha-genres {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: var(--lekha-space-2);
+  font-size: 0.875rem;
+}
+.lekha-genre {
+  display: grid;
+  grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) 8rem;
+  gap: 0.75rem;
+  align-items: center;
+}
+.lekha-genre__name {
+  overflow-wrap: anywhere;
+}
+.lekha-genre__track {
+  display: block;
+}
+.lekha-genre__bar {
+  display: block;
+  height: 12px;
+  min-width: 2px;
+  background: var(--lekha-crimson);
+  border-radius: 0 3px 3px 0;
+}
+.lekha-genre__value {
+  text-align: right;
+  font-variant-numeric: lining-nums tabular-nums;
+  white-space: nowrap;
+}
+.lekha-genre--muted .lekha-genre__bar {
+  background: var(--lekha-chart-past);
+}
+.lekha-genre--muted .lekha-genre__name,
+.lekha-genre--muted .lekha-genre__value {
+  color: var(--lekha-ink-secondary);
+}
+.lekha-profit__share {
+  font-family: var(--lekha-sans);
+  font-size: 0.875rem;
+  color: var(--lekha-ink-secondary);
+  margin: var(--lekha-space-1) 0 0;
+}
+/* "What the numbers suggest": a section heading, then one card per finding */
+.lekha-section-title {
+  font-family: var(--lekha-serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.33;
+  color: var(--lekha-ink);
+  margin: var(--lekha-space-4) 0 0;
+  padding: 0;
+}
+.lekha-section-text {
+  font-family: var(--lekha-sans);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--lekha-ink-secondary);
+  max-width: 40rem;
+  margin: var(--lekha-space-1) 0 0;
+}
+.lekha-finding {
+  display: flex;
+  gap: var(--lekha-space-4);
+  background: var(--lekha-porcelain);
+  border: 1px solid var(--lekha-parchment);
+  border-radius: var(--lekha-radius);
+  padding: var(--lekha-space-4);
+}
+.lekha-finding__main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.lekha-finding__title {
+  font-family: var(--lekha-serif);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--lekha-ink);
+  margin: var(--lekha-space-2) 0 0;
+  padding: 0;
+}
+.lekha-finding__evidence {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--lekha-ink);
+  margin: var(--lekha-space-1) 0 0;
+  max-width: 40rem;
+}
+.lekha-finding__side {
+  flex: 0 0 16rem;
+  border-left: 1px solid var(--lekha-parchment);
+  padding-left: var(--lekha-space-4);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.lekha-finding__label {
+  font-weight: 700;
+  color: var(--lekha-ink-secondary);
+  margin: 0;
+}
+.lekha-finding__text {
+  color: var(--lekha-ink);
+  margin: var(--lekha-space-1) 0 0;
+}
+/* Before two weeks of sales: how far along, and what's coming */
+.lekha-progress {
+  margin: 0;
+  max-width: 24rem;
+}
+.lekha-progress__track {
+  height: 8px;
+  background: var(--lekha-parchment);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.lekha-progress__fill {
+  height: 100%;
+  background: var(--lekha-crimson);
+}
+.lekha-progress__text {
+  font-size: 0.8125rem;
+  color: var(--lekha-ink-secondary);
+  margin: var(--lekha-space-1) 0 0;
+}
+ul.lekha-list {
+  margin: var(--lekha-space-3) 0 0;
+  padding-left: 1.25rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+@media (max-width: 640px) {
+  /* The two filters share one row under the sentence */
+  .st-key-insights_filters {
+    width: 100%;
+    flex-wrap: nowrap;
+  }
+  .st-key-insights_filters > .stElementContainer {
+    flex: 1 1 0;
+    width: auto !important;
+    min-width: 0;
+  }
+  /* Genre: name and amount on one line, the bar under them */
+  .lekha-genre {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 0.25rem;
+  }
+  .lekha-genre__track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  /* A finding: what to try goes under the evidence */
+  .lekha-finding {
+    flex-direction: column;
+    gap: var(--lekha-space-3);
+  }
+  .lekha-finding__side {
+    flex: none;
+    border-left: none;
+    border-top: 1px solid var(--lekha-parchment);
+    padding: var(--lekha-space-3) 0 0;
+  }
+}

@@ -577,3 +577,29 @@ CSS and layout only, so the counts don't change. Browser check on throwaway data
 ### Third round: **452 passed**
 
 Changed first, failing first: the till shows no "Recorded as now" and its total row says Total; the sale message has no "Ready for the next customer"; `recorded_as` is empty for a sale made now; Insights shows the short profit and findings lines. Four new tests for the profit line: all books costed, some, a decimal share, none. Browser check on throwaway data: a one-copy sale showed "Total ₹450.00", then "Sale #52 recorded. 1 copy, ₹450.00."; Insights with no costs recorded said "No books have a cost recorded yet." The canvas artboards were checked the same way. The data folder was deleted afterwards.
+
+## 2026-11-15: Insights (branch `redesign/insights`)
+
+### Automated tests: **484 passed**
+
+Written first and failing first:
+- **Services (12):** the chart's grouping for seven period lengths; the chart's days for a 30-day period, a finished month and a year; only the running week marked partial; covers added to best sellers; findings' tones and suggestions.
+- **Sentences (10):** date spans (same year, across years, one day); the sentence above the chart (latest and best, latest is best, an earlier period, by day and by month, no sales in the latest week, nothing finished); the small-sample note.
+- **Components (4):** genre bars to scale with amount and share, the chosen genre standing out, a finding card's tone in words, the progress bar's announced value.
+- **Pages (6, plus 2 updated):** all-time figures against hand calculations (₹11,144, ₹796, ₹3,992) and the sentence; the chart grouped by day for 7 days, with no grouping control; comparisons with the 7 days before; the top five best sellers; the genre filter; a shop with three days of sales; a period with no sales. Staff still see no profit.
+
+### Browser check (throwaway data folder, port 8502)
+
+- **Desktop (1280px):** the sentence and filters share the top row; four figures with comparisons; the chart's latest week crimson, earlier weeks lighter, this week dashed with "so far"; genre bars beside "No books have a cost recorded yet."; the top four best sellers (all that sold); four finding cards.
+- **Phone (375px):** the filters share one row under the sentence; the figures stack; the chart stays readable; each genre's bar sits under its name; a finding's suggestion moves under its evidence.
+- **A new shop:** "Trends appear after two weeks of sales.", "0 of 14 days" and the list of what's coming.
+- The data folder was deleted afterwards.
+
+### Issues found and fixed
+
+1. **A big empty space in the header:** a rule meant to give the sentence room was applied to a column, so it grew 448px tall. Removed; Streamlit already gives the sentence the free width.
+2. **The chart had a paper-coloured box** inside its white card. Its background is now transparent.
+3. **"Fiction brought in 90%" next to a bar saying 91%:** Python's round() rounds 90.5 to the even number. Shares now round half up everywhere.
+4. **Lines under card headings sat 20px below them,** as separate blocks. They're now part of the heading, 4px under it.
+5. **The rank column took a fifth of the table.** It's now only as wide as its number.
+6. **On a phone the two filters stacked** on separate lines. They now share one row.

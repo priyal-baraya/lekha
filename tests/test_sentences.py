@@ -5,6 +5,7 @@ Every sentence is built from figures by fixed rules, so each case here
 names the figures and the exact words they must produce.
 """
 
+from datetime import date
 from decimal import Decimal
 
 import pytest
@@ -17,6 +18,9 @@ from services.sentences import (
     overview_sentence,
     profit_note,
     showing,
+    small_sample_note,
+    span_text,
+    trend_note,
 )
 
 
@@ -156,3 +160,59 @@ def test_correction_hint(current, counted, text):
 ])
 def test_profit_note(coverage, expected):
     assert profit_note(coverage) == expected
+
+
+# ---------- Insights: dates, the chart's sentence, small samples ----------
+
+@pytest.mark.parametrize(("start", "end", "expected"), [
+    (date(2026, 10, 13), date(2026, 11, 12), "13 Oct to 12 Nov 2026"),
+    (date(2025, 12, 20), date(2026, 1, 5), "20 Dec 2025 to 5 Jan 2026"),
+    (date(2026, 11, 12), date(2026, 11, 12), "12 Nov 2026"),
+])
+def test_span_text(start, end, expected):
+    assert span_text(start, end) == expected
+
+
+WEEKS = [(date(2026, 10, 19), 1_120_000, False), (date(2026, 10, 26), 1_560_000, False),
+         (date(2026, 11, 2), 1_345_000, False), (date(2026, 11, 9), 620_000, True)]
+FRIDAY = date(2026, 11, 13)
+
+
+def test_trend_note_latest_and_best_week():
+    assert trend_note(WEEKS, "week", FRIDAY) == "Last week brought in ₹13,450. The best week was 26 Oct, at ₹15,600."
+
+
+def test_trend_note_when_the_latest_is_the_best():
+    weeks = [(date(2026, 10, 26), 900_000, False), (date(2026, 11, 2), 1_345_000, False)]
+    assert trend_note(weeks, "week", FRIDAY) == "Last week was the best, at ₹13,450."
+
+
+def test_trend_note_for_an_earlier_period_names_the_week():
+    # Last month seen in mid-November: its latest week isn't "last week".
+    weeks = [(date(2026, 10, 19), 1_120_000, False), (date(2026, 10, 26), 1_560_000, False)]
+    assert trend_note(weeks, "week", FRIDAY) == "The week of 26 Oct was the best, at ₹15,600."
+
+
+def test_trend_note_by_day_and_by_month():
+    days = [(date(2026, 11, 11), 50_000, False), (date(2026, 11, 12), 30_000, False), (FRIDAY, 10_000, True)]
+    assert trend_note(days, "day", FRIDAY) == "Yesterday brought in ₹300. The best day was 11 Nov, at ₹500."
+    months = [(date(2026, 9, 1), 4_000_000, False), (date(2026, 10, 1), 3_000_000, False),
+              (date(2026, 11, 1), 900_000, True)]
+    assert trend_note(months, "month", FRIDAY) == (
+        "Last month brought in ₹30,000. The best month was September, at ₹40,000.")
+
+
+def test_trend_note_with_no_sales_in_the_latest_week():
+    weeks = [(date(2026, 10, 26), 1_560_000, False), (date(2026, 11, 2), 0, False)]
+    assert trend_note(weeks, "week", FRIDAY) == "Last week had no sales. The best week was 26 Oct, at ₹15,600."
+
+
+def test_trend_note_says_nothing_without_a_finished_period():
+    assert trend_note([(date(2026, 11, 9), 620_000, True)], "week", FRIDAY) == ""
+    assert trend_note([(date(2026, 11, 2), 0, False)], "week", FRIDAY) == ""
+
+
+def test_small_sample_note():
+    assert small_sample_note(14) == "Only 14 sales in this period, so treat these as hints, not patterns."
+    assert small_sample_note(1) == "Only 1 sale in this period, so treat these as hints, not patterns."
+    assert small_sample_note(30) == ""

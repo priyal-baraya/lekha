@@ -108,7 +108,7 @@ Built only from the figures above, each with evidence and limits:
 | On the shelf, no sales | Unsold books with stock | Not the same as slow-selling; arrival dates unknown |
 | No completed sales | No sales at all | Nothing can be concluded |
 
-With fewer than **30** sales in the period, each observation adds: "Only N sales in this period, so treat this as a hint, not a pattern." The threshold is a judgement call, not a statistical test. It's a plain-language guard against over-reading a small sample.
+With fewer than **30** sales in the period, the Insights page says so once, above the findings: "Only N sales in this period, so treat these as hints, not patterns." The threshold is a judgement call, not a statistical test. It's a plain-language guard against over-reading a small sample.
 
 ## Periods
 

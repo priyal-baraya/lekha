@@ -16,7 +16,7 @@ import json
 import re
 import time
 import urllib.parse
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 import pytest
@@ -24,7 +24,8 @@ import streamlit as st
 from streamlit.testing.v1 import AppTest
 
 from database import connect, connect_accounts, ensure_shop_database, get_connection, reset_empty, reset_with_sample_data
-from services import accounts, clock, limits, openlibrary
+from services import accounts, analytics, clock, limits, openlibrary
+from services.comparisons import compare_count, compare_money
 from services.books import BookInput, add_book
 from services.sales import SaleLine, record_sale
 from ui import session
@@ -352,15 +353,86 @@ def test_inventory_with_nothing_to_reorder(empty_shop):
         assert extra not in text
 
 
-def test_insights_all_time_figures_match_hand_calculations(sample_file):
-    app = run_page("insights")
-    app.selectbox(key="insights_period").set_value("all_time").run()
-    text = all_text(app)
-    for figure in ("₹11,144.00", "₹796.00", "₹3,992.00", "Fiction brought in the most revenue"):
+INSIGHTS_NOW = datetime(2026, 10, 26, 18, 0)      # Monday, the last day of the sample sales
+
+
+@pytest.fixture
+def insights_clock(monkeypatch):
+    monkeypatch.setattr(clock, "now", lambda: INSIGHTS_NOW)
+
+
+def insights(period: str = "all_time", role: str = "owner") -> AppTest:
+    app = run_page("insights", role=role)
+    app.selectbox(key="insights_period").set_value(period).run()
+    assert not app.exception, app.exception
+    return app
+
+
+def test_insights_all_time_figures_match_hand_calculations(sample_file, insights_clock):
+    text = all_text(insights())
+    for figure in ("₹11,144", "₹796", "₹3,992", "₹11,144 in revenue, and Fiction brought in 36% of it."):
         assert figure in text, figure
-    # Short explanations: what profit leaves out, and what the findings are
-    assert "Rent and wages aren't included." in text and "Calculated on" not in text
-    assert "Patterns in your sales, not proof of why." in text and "Plain-language findings" not in text
+    assert "1 Oct to 26 Oct 2026" in text and "compared with" not in text     # nothing before the first sale
+    assert "Revenue by week" in text
+    assert "Patterns in your sales, not proof of why." in text
+    assert "Only 14 sales in this period, so treat these as hints, not patterns." in text
+    assert "Rent and wages aren't included." in text
+    assert "Reading between the numbers" not in text                         # no label above the heading
+
+
+def test_insights_chooses_how_to_group_the_chart(sample_file, insights_clock):
+    app = insights("last_7")
+    assert "Revenue by day" in all_text(app)
+    assert "insights_grain" not in [box.key for box in app.selectbox]       # no "Group sales by" control
+
+
+def test_insights_compares_with_the_period_before(sample_file, insights_clock):
+    text = all_text(insights("last_7"))
+    with connect(sample_file) as conn:
+        current = analytics.summary(conn, analytics.Period(date(2026, 10, 20), date(2026, 10, 26)))
+        before = analytics.summary(conn, analytics.Period(date(2026, 10, 13), date(2026, 10, 19)))
+    assert "20 Oct to 26 Oct 2026 · compared with the 7 days before" in text
+    assert compare_money(current["revenue_paise"], before["revenue_paise"]).text in text
+    assert compare_count(current["transactions"], before["transactions"], by="difference").text in text
+
+
+def test_insights_best_sellers_show_the_top_five(sample_file, insights_clock):
+    app = insights()
+    with connect(sample_file) as conn:
+        sold = len(analytics.best_sellers(conn, analytics.Period(date(2026, 10, 1), date(2026, 10, 26))))
+    bodies = html_bodies(app)
+    assert "Most copies sold" in bodies and "The Monsoon Ledger" in bodies
+    assert f"Showing 5 of {sold}." in bodies
+
+
+def test_insights_genre_filter_keeps_every_genre_for_comparison(sample_file, insights_clock):
+    app = insights()
+    app.selectbox(key="insights_genre").set_value("Children").run()
+    bodies = html_bodies(app)
+    assert "lekha-genre--muted" in bodies and "Fiction" in bodies            # every genre, Children stands out
+    assert "The Clockmaker&#x27;s Cat" in bodies or "The Clockmaker's Cat" in bodies
+    assert "The Monsoon Ledger" not in bodies                                # not a Children's book
+
+
+def test_insights_waits_for_two_weeks_of_history(empty_shop, monkeypatch):
+    monkeypatch.setattr(clock, "now", lambda: datetime(2026, 11, 12, 18, 0))
+    with connect(empty_shop) as conn:
+        book = add_book(conn, BookInput(title="Gitanjali", author="Rabindranath Tagore", genre="Poetry",
+                                        selling_price="300", stock_quantity=9, reorder_level=2))
+        for day in (10, 11, 12):
+            record_sale(conn, [SaleLine(book, 1, 30_000)], sale_datetime=datetime(2026, 11, day, 11, 0))
+    text = all_text(run_page("insights"))
+    assert "Trends appear after two weeks of sales." in text
+    assert "10 Nov to 12 Nov 2026 · your first 3 days" in text and "3 of 14 days" in text
+    assert "Revenue so far" in text and "₹900" in text
+    assert ">Revenue by week<" not in text and "Most copies sold" not in text     # no chart yet
+
+
+def test_insights_with_no_sales_in_the_period(sample_file, monkeypatch):
+    monkeypatch.setattr(clock, "now", lambda: datetime(2026, 12, 20, 12, 0))
+    text = all_text(insights("last_7"))
+    assert "No completed sales in this period. Try a longer one." in text
+    assert "Revenue by" not in text and "What the numbers suggest" not in text
 
 
 # ---------- What staff can and can't see ----------
@@ -377,12 +449,10 @@ def test_staff_cannot_correct_stock(sample_file):
     assert "Correct stock" not in text and "Recent corrections" not in text
 
 
-def test_staff_do_not_see_profit(sample_file):
-    app = run_page("insights", role="staff")
-    app.selectbox(key="insights_period").set_value("all_time").run()
-    text = all_text(app)
-    assert "₹11,144.00" in text                                # revenue yes
-    assert "Estimated gross profit" not in text and "₹3,992.00" not in text
+def test_staff_do_not_see_profit(sample_file, insights_clock):
+    text = all_text(insights(role="staff"))
+    assert "₹11,144" in text                                   # revenue yes
+    assert "Estimated gross profit" not in text and "₹3,992" not in text
 
 
 def test_staff_cannot_open_the_team_page(sample_file):
