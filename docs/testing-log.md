@@ -623,3 +623,7 @@ Six new page tests, written first and failing first: Team lists each person with
 ### Issue found and fixed
 
 1. **"Used for new books" sat a full gap below its field,** reading as a separate line. It's now tucked under the field.
+
+### Text cuts after review: **490 passed**
+
+The Settings test now also checks both lines are gone, and failed first. The changed canvas artboards (Team and Settings) were checked in the browser.

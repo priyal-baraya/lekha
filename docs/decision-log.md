@@ -847,3 +847,5 @@ The main choices, agreed on the canvas and signed off by the owner:
 **Why:** The old pages had a label above each heading, a sentence under each, and Team's role change behind a tick box for every change.
 
 **Departures from the canvas:** The canvas has no list of unused codes; the app keeps it, so an owner can cancel a code that was never handed over. Staff don't see the Shop card at all (the old page showed them the reorder level and said only owners could change it). A password change now says just "Password changed.", since the card already says other tabs will be signed out.
+
+**Cut after review (same day):** "Other tabs signed in with the old password will be signed out." under Change password, and "Run another bookshop, or help at a friend's?" under More shops (the link says it). Other tabs are still signed out; the page just doesn't say so. The canvas was updated to match, including the lines under the Team and Settings titles, which the app already left out.

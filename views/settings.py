@@ -63,7 +63,7 @@ def render_account() -> None:
 
 def render_password() -> None:
     with st.container(key="lekha_card_password"):
-        ui.card_heading("Change password", "Other tabs signed in with the old password will be signed out.")
+        ui.card_heading("Change password")
         limit = accounts.MAX_PASSWORD_LENGTH
         with st.form("change_password", border=False, clear_on_submit=True):
             current = st.text_input("Current password", type="password", autocomplete="current-password",
@@ -90,7 +90,7 @@ def render_password() -> None:
 
 def render_more_shops() -> None:
     with st.container(key="lekha_card_more_shops"):
-        ui.card_heading("More shops", "Run another bookshop, or help at a friend's?")
+        ui.card_heading("More shops")
         st.page_link("views/get_started.py", label="Start or join a shop")
 
 

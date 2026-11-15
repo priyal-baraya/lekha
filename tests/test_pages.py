@@ -515,6 +515,8 @@ def test_settings_owner_saves_the_shop_and_their_name(data_dir):
     text = all_text(app)
     assert "Your shop and your own account." not in text and "Configuration" not in text
     assert "Used for new books" in text
+    for extra in ("Other tabs signed in with the old password", "Run another bookshop"):    # cut in review
+        assert extra not in text, extra
 
     app.text_input(key="settings_shop_name").set_value("Kitab Ghar Books")
     app.number_input(key="settings_reorder").set_value(5)
