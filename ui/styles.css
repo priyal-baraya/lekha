@@ -1132,3 +1132,22 @@ ul.lekha-booklist {
     padding: var(--lekha-space-3) 0 0;
   }
 }
+
+/* ---------- Team ---------- */
+/* A new invite code, shown once: monospace so 0 and O, 1 and I differ */
+.lekha-code {
+  display: inline-block;
+  margin: 0 0 var(--lekha-space-1);
+  padding: 10px 14px;
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 1.25rem;
+  letter-spacing: 0.08em;
+  color: var(--lekha-ink);
+  background: var(--lekha-field);
+  border: 1px dashed var(--lekha-border);
+  border-radius: var(--lekha-radius);
+}
+/* A short hint under a field: tucked under it, not a full gap away */
+.stElementContainer:has(> .stHtml > .lekha-field-note) {
+  margin-top: -0.75rem;
+}

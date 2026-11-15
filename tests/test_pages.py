@@ -440,6 +440,113 @@ def test_insights_with_no_sales_in_the_period(sample_file, monkeypatch):
     assert "Revenue by" not in text and "What the numbers suggest" not in text
 
 
+# ---------- Team and Settings ----------
+
+def team_shop() -> tuple[int, int, int]:
+    """Asha owns Kitab Ghar; Vikram joined it as staff with an invite code."""
+    asha, shop = person_with_shop("asha", "Kitab Ghar")
+    with connect_accounts() as acc:
+        vikram = accounts.create_user(acc, "vikram", "Vikram", PASSWORD)
+        code = accounts.create_invitation(acc, asha, shop, "staff")
+        accounts.redeem_invitation(acc, vikram, code)
+    return asha, vikram, shop
+
+
+def open_page(user_id: int, page: str) -> AppTest:
+    app = run_app(user_id)
+    app.switch_page(f"views/{page}.py").run()
+    assert not app.exception, app.exception
+    return app
+
+
+def role(user_id: int, shop: int) -> str | None:
+    with connect_accounts() as acc:
+        return accounts.role_in(acc, user_id, shop)
+
+
+def test_team_lists_people_with_their_role_in_words(data_dir):
+    asha, _, _ = team_shop()
+    app = open_page(asha, "team")
+    bodies = html_bodies(app)
+    assert "Asha (you)" in bodies and "Vikram" in bodies
+    assert ">Owner<" in bodies and ">Staff<" in bodies and bodies.count(">Password<") == 2
+    text = all_text(app)
+    assert "Who can use this shop" not in text and "The shop's people" not in text   # no extra lines
+
+
+def test_team_changes_a_role_and_asks_before_removing(data_dir):
+    asha, vikram, shop = team_shop()
+    app = open_page(asha, "team")
+    assert app.button(key="team_apply").disabled                     # nothing chosen yet
+    app.segmented_control(key="team_change").set_value("Make owner").run()
+    app.button(key="team_apply").click().run()
+    assert role(vikram, shop) == "owner" and "Made Vikram an owner." in all_text(app)
+
+    app.segmented_control(key="team_change").set_value("Remove from shop").run()
+    app.button(key="team_apply").click().run()
+    assert role(vikram, shop) == "owner"                             # not yet: it asks first
+    assert "Remove Vikram from Kitab Ghar?" in all_text(app)
+    app.button(key="team_remove_yes").click().run()
+    assert role(vikram, shop) is None and "Removed Vikram." in all_text(app)
+
+
+def test_team_invite_code_is_shown_once_and_can_be_cancelled(data_dir):
+    asha, _, shop = team_shop()
+    app = open_page(asha, "team")
+    app.segmented_control(key="team_invite_role").set_value("Owner").run()
+    app.button(key="team_invite").click().run()
+    bodies = html_bodies(app)
+    code = re.search(r'class="lekha-code">([A-Z0-9-]+)<', bodies).group(1)
+    assert "Shown once. Works once, for 7 days." in bodies
+    with connect_accounts() as acc:
+        waiting = accounts.team(acc, asha, shop)["invitations"]
+    assert [invite["role"] for invite in waiting] == ["owner"]
+
+    app.run()                                                        # any later visit: the code is gone
+    assert code not in html_bodies(app)
+    app.button(key=f"revoke_{waiting[0]['invitation_id']}").click().run()
+    with connect_accounts() as acc:
+        assert accounts.team(acc, asha, shop)["invitations"] == []
+
+
+def test_settings_owner_saves_the_shop_and_their_name(data_dir):
+    asha, _, shop = team_shop()
+    app = open_page(asha, "settings")
+    text = all_text(app)
+    assert "Your shop and your own account." not in text and "Configuration" not in text
+    assert "Used for new books" in text
+
+    app.text_input(key="settings_shop_name").set_value("Kitab Ghar Books")
+    app.number_input(key="settings_reorder").set_value(5)
+    app.button(key="FormSubmitter:shop_settings-Save shop settings").click().run()
+    app.text_input(key="settings_display_name").set_value("Asha R.")
+    app.button(key="FormSubmitter:display_name-Save name").click().run()
+    with connect_accounts() as acc:
+        saved = accounts.get_shop(acc, shop)
+        assert (saved["name"], saved["default_reorder_level"]) == ("Kitab Ghar Books", 5)
+        assert accounts.get_user(acc, asha)["display_name"] == "Asha R."
+
+
+def test_settings_password_change(data_dir):
+    asha, _, _ = team_shop()
+    app = open_page(asha, "settings")
+    app.text_input(key="settings_current").set_value(PASSWORD)
+    app.text_input(key="settings_new").set_value("a brand new passphrase")
+    app.text_input(key="settings_repeat").set_value("a brand new passphrase")
+    app.button(key="FormSubmitter:change_password-Change password").click().run()
+    assert "Password changed." in all_text(app)
+    with connect_accounts() as acc:
+        assert accounts.authenticate(acc, "asha", "a brand new passphrase") == asha
+
+
+def test_settings_for_staff_has_no_shop_card(data_dir):
+    _, vikram, _ = team_shop()
+    text = all_text(open_page(vikram, "settings"))
+    assert "Save shop settings" not in text and "Default reorder level" not in text
+    for card in ("Your account", "Change password", "More shops"):
+        assert card in text
+
+
 # ---------- What staff can and can't see ----------
 
 def test_staff_cannot_edit_books(sample_file):

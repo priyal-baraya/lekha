@@ -607,3 +607,19 @@ Written first and failing first:
 ### Text cuts after review: **484 passed**
 
 Tests changed first and failing first: no "owners only", genre line or "Dashed bar" on the all-time page; the waiting card is headed "Two weeks of sales" without the explanation or the list. Browser check: the genre and profit cards and the chart without those lines. The canvas artboards were checked the same way. The data folder was deleted afterwards.
+
+## 2026-11-15: Team and Settings (branch `redesign/team-settings`)
+
+### Automated tests: **490 passed**
+
+Six new page tests, written first and failing first: Team lists each person with their role in words and how they sign in, with no lines under the title; a role change, and removal only after "Yes, remove"; an invite code shown once, gone on the next visit, and cancellable; Settings saving the shop's name and reorder level and the owner's name; a password change; staff seeing no Shop card.
+
+### Browser check (throwaway data folder, port 8502)
+
+- **Desktop:** Team as on the canvas; Remove from shop asked "Remove Vikram from Kitab Ghar?" and Keep left him in; a new code showed once with the unused code listed under it. Settings' four cards, two by two.
+- **Phone:** both pages' cards stack; Team's table scrolls sideways, like the other wide tables.
+- The data folder was deleted afterwards.
+
+### Issue found and fixed
+
+1. **"Used for new books" sat a full gap below its field,** reading as a separate line. It's now tucked under the field.
