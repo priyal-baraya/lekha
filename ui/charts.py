@@ -30,6 +30,13 @@ BUCKET_NAMES = {"day": "Day", "week": "Week starting", "month": "Month"}
 # 3.15:1 against the paper (below 4.5:1). Secondary Text measures about 6:1.
 AXIS_TEXT = {"labelColor": INK_SECONDARY, "titleColor": INK_SECONDARY, "labelFontSize": 12}
 
+# Axis amounts, short, in the Indian way: ₹500, ₹5k, ₹50k, ₹1L, ₹1.5L.
+# (Vega's own number format groups in thousands, ₹1,00,000 would come out
+# as ₹100,000, unlike every other amount in Lekha.)
+AXIS_RUPEES = ("datum.value >= 100000 ? '₹' + format(datum.value / 100000, '.2~f') + 'L'"
+               " : datum.value >= 1000 ? '₹' + format(datum.value / 1000, '~f') + 'k'"
+               " : '₹' + format(datum.value, '~f')")
+
 
 def bar_label(start, grain: str) -> str:
     """How a bar is named on the axis: "26 Oct", or "Oct 2026" by month."""
@@ -67,7 +74,7 @@ def revenue_trend(table: pd.DataFrame, grain: str) -> alt.LayerChart:
                 axis=alt.Axis(labelAngle=0 if len(order) <= 12 else -45, ticks=False,
                               domainColor="#8C7A68", **AXIS_TEXT)),
         y=alt.Y("rupees:Q", title=None,
-                axis=alt.Axis(labelExpr="'₹' + format(datum.value, ',.0f')", tickCount=4, domain=False,
+                axis=alt.Axis(labelExpr=AXIS_RUPEES, tickCount=4, domain=False,
                               ticks=False, gridColor=GRID, **AXIS_TEXT)),
         tooltip=[
             alt.Tooltip("label:N", title=BUCKET_NAMES[grain]),

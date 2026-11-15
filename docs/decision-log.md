@@ -849,3 +849,11 @@ The main choices, agreed on the canvas and signed off by the owner:
 **Departures from the canvas:** The canvas has no list of unused codes; the app keeps it, so an owner can cancel a code that was never handed over. Staff don't see the Shop card at all (the old page showed them the reorder level and said only owners could change it). A password change now says just "Password changed.", since the card already says other tabs will be signed out.
 
 **Cut after review (same day):** "Other tabs signed in with the old password will be signed out." under Change password, and "Run another bookshop, or help at a friend's?" under More shops (the link says it). Other tabs are still signed out; the page just doesn't say so. The canvas was updated to match, including the lines under the Team and Settings titles, which the app already left out.
+
+## 2026-11-15: Polish (Phase 5)
+
+**Decision:** Fix what the accessibility pass and the worst-case data check found (page titles, field focus, a hint covering numbers, the chart axis's number format), remove the first design's unused pieces, and rewrite [design-system.md](design-system.md) to describe the design as built.
+
+**Why:** The pages were each checked as they were built, but not together, and not against the accessibility rules as a set.
+
+**Not done here:** the automatic design scan needs the Impeccable engine, which hasn't been downloaded (the owner hasn't approved the download), so the final critique was a review by eye against the same heuristics as before. The README's screenshots still show the first design: `scripts/capture_screenshots.py` signs in as the owner, so the owner runs it.

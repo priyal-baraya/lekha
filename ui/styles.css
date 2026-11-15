@@ -67,229 +67,6 @@
   white-space: nowrap;
 }
 
-/* ---------- Ornaments ----------
-   Each ornament is an empty span painted with an SVG background.
-   The background-image rules are added by load_styles() in
-   ui/components.py, which reads the drawings from ui/assets/.
-   Default shape is the arch (120 wide x 180 tall). */
-.lekha-ornament {
-  display: block;
-  flex: none;
-  aspect-ratio: 120 / 180;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
-}
-
-/* ---------- Brand introduction (hero) ---------- */
-.lekha-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 220px;
-  background: var(--lekha-wine);
-  color: var(--lekha-porcelain);
-  border-radius: var(--lekha-radius);
-  overflow: hidden;                  /* keep the motif panel inside the rounded corners */
-  /* Fine double frame: a 10px wine gap, then a 1px gold line */
-  box-shadow: inset 0 0 0 10px var(--lekha-wine), inset 0 0 0 11px var(--lekha-gold);
-}
-.lekha-hero__text {
-  padding: var(--lekha-space-6) var(--lekha-space-5) var(--lekha-space-5);
-}
-.lekha-hero__eyebrow {
-  font-family: var(--lekha-sans);
-  font-size: 0.8125rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--lekha-gold);          /* 4.8:1 on wine */
-  margin: 0 0 var(--lekha-space-3);
-}
-.lekha-hero__title {
-  font-family: var(--lekha-serif);
-  font-size: 3rem;                   /* 48px display */
-  font-weight: 600;
-  line-height: 1.15;
-  color: var(--lekha-porcelain);
-  margin: 0;
-  padding: 0;
-}
-.lekha-hero__tagline {
-  font-family: var(--lekha-serif);
-  font-size: 1.5rem;
-  font-weight: 500;
-  line-height: 1.3;
-  color: var(--lekha-parchment);     /* 10.1:1 on wine */
-  margin: var(--lekha-space-2) 0 0;
-}
-.lekha-hero__description {
-  font-family: var(--lekha-sans);
-  font-size: 1rem;
-  line-height: 1.5;
-  color: var(--lekha-porcelain);
-  max-width: 34rem;
-  margin: var(--lekha-space-4) 0 0;
-  padding-top: var(--lekha-space-4);
-  border-top: 1px solid var(--lekha-gold);
-}
-/* Right-hand strip: jaali-style lattice behind the arch, never behind text */
-.lekha-hero__motif {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: var(--lekha-space-5) var(--lekha-space-4) 0;
-  margin: 11px 11px 11px 0;          /* sits just inside the gold frame */
-  background-color: var(--lekha-wine);
-  background-image:
-    repeating-linear-gradient(45deg, rgba(178, 138, 92, 0.22) 0 1px, transparent 1px 16px),
-    repeating-linear-gradient(-45deg, rgba(178, 138, 92, 0.22) 0 1px, transparent 1px 16px);
-  border-left: 1px solid var(--lekha-gold);
-}
-.lekha-hero__motif .lekha-ornament {
-  width: 140px;
-}
-
-/* ---------- Ornamental divider ---------- */
-.lekha-divider {
-  display: flex;
-  align-items: center;
-  gap: var(--lekha-space-2);
-  margin: var(--lekha-space-5) 0 var(--lekha-space-4);
-}
-.lekha-divider__rule {
-  flex: 1;
-  height: 4px;                       /* two 1px gold lines with a 2px gap */
-  border-top: 1px solid var(--lekha-gold);
-  border-bottom: 1px solid var(--lekha-gold);
-}
-.lekha-divider .lekha-ornament {
-  width: 120px;
-  aspect-ratio: 120 / 24;
-}
-
-/* ---------- Page opening ----------
-   Every page except Overview starts the same way: label, title,
-   description, then a section-sized gap. */
-.lekha-page-intro {
-  margin: 0 0 var(--lekha-space-5);
-}
-.lekha-page-intro .lekha-section {
-  margin: 0;
-}
-
-/* ---------- Section header ---------- */
-.lekha-section {
-  margin: 0 0 var(--lekha-space-4);
-}
-.lekha-section__eyebrow {
-  font-family: var(--lekha-sans);
-  font-size: 0.8125rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--lekha-crimson);
-  margin: 0 0 var(--lekha-space-2);
-}
-.lekha-section__title {
-  font-family: var(--lekha-serif);
-  font-size: 1.75rem;                /* 28px section title */
-  font-weight: 600;
-  line-height: 1.25;
-  color: var(--lekha-ink);
-  margin: 0;
-  padding: 0;
-}
-.lekha-page-title {
-  font-size: 2rem;                   /* 32px page title */
-}
-.lekha-section__description {
-  font-family: var(--lekha-sans);
-  font-size: 1rem;
-  line-height: 1.5;
-  color: var(--lekha-ink-secondary);
-  max-width: 42rem;                  /* keeps lines near 70 characters */
-  margin: var(--lekha-space-2) 0 0;
-}
-.lekha-section__heading-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--lekha-space-2) var(--lekha-space-3);
-}
-
-/* Status tag: text always says what the status is */
-.lekha-tag {
-  border-radius: var(--lekha-radius-small);
-  display: inline-block;
-  font-family: var(--lekha-sans);
-  font-size: 0.8125rem;
-  font-weight: 700;
-  line-height: 1.4;
-  padding: 2px var(--lekha-space-2);
-  border: 1px solid var(--lekha-info-fg);
-  color: var(--lekha-info-fg);       /* 7.7:1 */
-  background: var(--lekha-info-bg);
-}
-
-/* ---------- Summary strip (the daily read) ---------- */
-.lekha-metrics {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  background: var(--lekha-porcelain);
-  border: 1px solid var(--lekha-border);
-  border-radius: var(--lekha-radius);
-}
-.lekha-metric {
-  padding: var(--lekha-space-4);
-  border-left: 1px solid var(--lekha-parchment);
-}
-.lekha-metric:first-child {
-  border-left: none;
-}
-.lekha-metric__label {
-  font-family: var(--lekha-sans);
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--lekha-ink-secondary);
-  margin: 0;
-}
-.lekha-metric__value {
-  font-family: var(--lekha-serif);
-  font-size: 2rem;
-  font-weight: 500;
-  line-height: 1.2;
-  color: var(--lekha-ink);
-  margin: var(--lekha-space-2) 0 var(--lekha-space-1);
-}
-.lekha-metric__note {
-  font-family: var(--lekha-sans);
-  font-size: 0.875rem;
-  line-height: 1.4;
-  color: var(--lekha-ink-secondary);
-  margin: 0;
-}
-
-/* ---------- Empty state ---------- */
-.lekha-empty {
-  display: flex;
-  align-items: center;
-  gap: var(--lekha-space-4);
-  padding: var(--lekha-space-4);
-  background: var(--lekha-porcelain);
-  border: 1px solid var(--lekha-border);
-  border-radius: var(--lekha-radius);
-}
-.lekha-empty .lekha-ornament {
-  width: 44px;
-}
-.lekha-empty__text {
-  font-family: var(--lekha-sans);
-  font-size: 1rem;
-  line-height: 1.5;
-  color: var(--lekha-ink);
-  max-width: 40rem;
-  margin: 0 0 var(--lekha-space-2);
-}
-
 /* ---------- Keyboard focus ----------
    Streamlit removes the outline from its navigation links, so keyboard
    users could not see where they were (WCAG 2.4.7). These plain element
@@ -300,6 +77,24 @@ button:focus-visible,
 [role="button"]:focus-visible {
   outline: 2px solid var(--lekha-crimson) !important;
   outline-offset: 2px !important;
+}
+/* Typing fields and dropdowns: Streamlit only turns their 1px border
+   crimson, which is easy to miss. The box around the field gets the
+   same 2px outline as buttons and links. */
+[data-testid="stTextInputRootElement"]:focus-within,
+[data-testid="stNumberInputContainer"]:focus-within,
+[data-testid="stSelectbox"] div:has(> input):focus-within,
+[data-testid="stDateInput"] div:has(> input):focus-within,
+[data-testid="stTextArea"] div:has(> textarea):focus-within {
+  outline: 2px solid var(--lekha-crimson);
+  outline-offset: 1px;
+}
+/* Streamlit lets the keyboard focus the page area (to scroll it) and a
+   tab's panel; show where focus is there too. */
+[data-testid="stMain"]:focus-visible,
+[data-testid="stTab"]:focus-visible {
+  outline: 2px solid var(--lekha-crimson);
+  outline-offset: -2px;
 }
 
 /* ---------- Placeholder text ----------
@@ -313,45 +108,8 @@ textarea::placeholder {
   opacity: 1 !important;
 }
 
-/* ---------- Narrow screens ---------- */
-@media (max-width: 900px) {
-  .lekha-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .lekha-metric:nth-child(3) {
-    border-left: none;
-  }
-  .lekha-metric:nth-child(n + 3) {
-    border-top: 1px solid var(--lekha-parchment);
-  }
-}
-@media (max-width: 640px) {
-  .lekha-hero {
-    grid-template-columns: 1fr;
-  }
-  .lekha-hero__motif {
-    display: none;                   /* decoration gives way to content */
-  }
-  .lekha-hero__text {
-    padding: var(--lekha-space-5) var(--lekha-space-4);
-  }
-  .lekha-hero__title {
-    font-size: 2.5rem;
-  }
-  .lekha-metrics {
-    grid-template-columns: 1fr;
-  }
-  .lekha-metric {
-    border-left: none;
-  }
-  .lekha-metric + .lekha-metric {
-    border-top: 1px solid var(--lekha-parchment);
-  }
-}
-
 /* =================================================================
-   Redesign building blocks (Lekha Design System, 12 Nov 2026).
-   Pages move onto these in phase 4; the classes above stay until then.
+   Building blocks (Lekha Design System, 12 Nov 2026).
    ================================================================= */
 
 /* ---------- Page header: a title, sometimes one line, no label above ----------
@@ -893,6 +651,11 @@ ul.lekha-booklist {
 /* The till's search box: Streamlit's "Press Enter to submit form · 0/100"
    ran over the placeholder on a phone. The label and placeholder say it. */
 .st-key-till_query [data-testid="InputInstructions"] {
+  display: none;
+}
+/* Number fields are narrow and have − and + inside, so the same hint
+   ran over the number itself. Enter still saves; the button says how. */
+[data-testid="stNumberInput"] [data-testid="InputInstructions"] {
   display: none;
 }
 /* Recent sales: one line per sale; on a phone the table scrolls sideways */

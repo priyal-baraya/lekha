@@ -133,10 +133,13 @@ An earlier version used a larger *generated* dataset for screenshots. It was rem
 
 ## 8. Interface and design decisions
 
-- **Identity:** antique Indian manuscript art translated into a calm product: Manuscript Crimson and Persian Teal on parchment, Lora headings, Lato body, slightly rounded corners (6px), two original SVG ornaments (an arch and a rosette divider), used sparingly.
-- **Practical navigation:** Overview, Books, Sales, Inventory, Insights, each role sees only the pages it can use. Team, Settings, switching shops and Sign out sit in an account menu at the end of the navigation bar, labelled with the person and the shop. Literary names ("The daily read", "Shelf check") appear only in section introductions.
-- **Honest charts:** one series, one colour; partial periods drawn as outlines (shape, not colour); empty weeks shown as zero; bars instead of pies.
-- **Phones:** a five-column basket grid fell apart when Streamlit stacked it, so basket lines became sentences ("1 copy × ₹399.00 = ₹399.00"); tables put decision columns straight after the title.
+- **A redesign, reviewed and rebuilt page by page.** A design review scored the first, decorative version 25/40 (no first-run states, a slow till, a generic metric-card template). The redesign was drawn on a canvas, reviewed again (33/40), signed off, then built one page per pull request, each test-first and checked in a browser against its artboard.
+- **Identity:** a calm, light dashboard: Manuscript Crimson on parchment, Lora headings, Lato body, 6px corners, Indian number formats (₹1,25,000). The decorative hero, ornaments and uppercase labels of the first version are gone.
+- **Less text:** in review the owner asked for pages that read at a glance, so lines under titles and headings were cut across every page; a line stays only when it says something the screen doesn't.
+- **One job per page:** Overview is today and what to do, Insights is trends, Sales is the till. Each role sees only the pages it can use; Team, Settings, switching shops and Sign out sit in an account menu.
+- **Honest charts:** one series, one hue; the period still running is a dashed outline marked "so far"; the latest finished bar is the one in full colour; every chart can be read as a table.
+- **Phones:** cards stack, book tables become lists, and a hidden desktop or phone version takes no space.
+- **Accessibility:** each page has its own tab title, one h1, a visible 2px focus outline on every control, status in words, and text measured at 4.5:1 or more on every page.
 - **Tokens:** colours and a six-step spacing scale live in `.streamlit/config.toml` and `ui/styles.css`, ready to map onto Figma variables.
 
 ## 9. Testing

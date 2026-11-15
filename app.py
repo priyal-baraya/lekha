@@ -129,6 +129,9 @@ try:
         if st.session_state.pop("lekha_go_home", False):   # just created or joined a shop
             st.switch_page("views/overview.py")
 
+    # Each page names itself in the browser tab ("Books · Lekha"), so
+    # screen readers and people with several tabs can tell them apart.
+    st.set_page_config(page_title=f"{page.title} · Lekha")
     page.run()
 except sqlite3.Error:
     logger.exception("Database error")

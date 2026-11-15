@@ -89,7 +89,7 @@ lekha/
 ├── services/               Business rules: accounts, permissions, books, sales,
 │                           inventory, analytics, money, Open Library lookups
 ├── views/                  One file per page
-├── ui/                     Shared page pieces, sign-in state, charts, styles, ornaments
+├── ui/                     Shared page pieces, sign-in state, the Insights chart, styles
 ├── sql/
 │   ├── schema.sql          A shop's tables and rules
 │   ├── accounts_schema.sql People, shops, roles and invite codes

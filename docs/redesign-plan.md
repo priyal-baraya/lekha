@@ -17,7 +17,7 @@ Both are private to the owner. A change to either after sign-off is a new change
 | 2. Design review checkpoint | Critique re-run (25/40 → 33/40, no P1 issues), five smaller fixes, design system updated, owner sign-off | Done, 12 Nov 2026 |
 | 3. Foundations in code | Theme; shared components; the account menu in the navigation; fair comparisons and summary sentences, written test-first | Done |
 | 4. Pages, one at a time | Sign in and Get started → Overview → Sales (the till) → Books → Inventory → Insights → Team and Settings | Done, 15 Nov 2026 (Team and Settings last) |
-| 5. Polish, check and ship | Accessibility pass, automatic design scan, final critique, screenshots and docs | |
+| 5. Polish, check and ship | Accessibility pass, automatic design scan, final critique, screenshots and docs | In progress: accessibility pass, worst-case data, clean-up and docs done; design scan waits for the engine download; screenshots are the owner's to retake |
 
 ## The loop for every change (phases 3 and 4)
 

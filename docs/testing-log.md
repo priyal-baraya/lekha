@@ -627,3 +627,29 @@ Six new page tests, written first and failing first: Team lists each person with
 ### Text cuts after review: **490 passed**
 
 The Settings test now also checks both lines are gone, and failed first. The changed canvas artboards (Team and Settings) were checked in the browser.
+
+## 2026-11-15: Polish and checks (Phase 5, branch `redesign/polish`)
+
+### Accessibility pass (every page, in the browser)
+
+A small script run in the page listed, for each page: its headings, any control without a name, any image without alt text, and every piece of visible text below 4.5:1 contrast (3:1 for large text). Pages checked: Sign in, Overview, Books (all three tabs), Sales (both tabs), Inventory, Insights, Team, Settings.
+
+- **Passed everywhere:** one h1 and headings in order; every control named; every image with alt text; no text below the contrast target.
+- **Found and fixed:**
+  1. **Every page's tab title was "Lekha",** so pages couldn't be told apart by a screen reader or in a row of tabs. Each page now names itself: "Books · Lekha".
+  2. **Text fields, number fields and dropdowns showed focus only as a 1px border** turning crimson. They now get the same 2px crimson outline as buttons and links. Streamlit's focusable page area and tab panels get one too.
+  3. **"Press Enter to submit form" covered the number** in Settings' narrow reorder-level field. Hidden in every number field (so Books' price and stock fields too), as it already was in the till's search box.
+- **Keyboard:** Tab reaches every control on the till in order, with a visible outline at each stop.
+
+### Worst-case data (throwaway data folder)
+
+A shop with a 67-character name, an owner and staff member with long hyphenated names, a book with a 100-character title and an 80-character author, a ₹1,25,000 book, a ₹10 book with 999 copies, 41 books low or out of stock, and 60 days of sales.
+
+- Held up: the account menu shortens the long label with "…"; amounts keep Indian grouping (₹2,50,060; ₹1,25,000.00); long titles wrap to two lines; Overview shows the first five of 41 to reorder with "Showing 5 of 41."; Inventory lists all 41; Team's long names fit.
+- **Found and fixed:** the Insights chart's axis said "₹100,000" (Western grouping) while every amount on the page uses Indian grouping. The axis now reads ₹50k, ₹1L, ₹1.5L, as the canvas's "₹5k".
+
+### Clean-up
+
+The first design's pieces that no page used any more were removed: `hero`, `divider`, `section_header`, `page_intro`, `metric_strip`, `empty_state`, the two ornament drawings in `ui/assets/`, and about 7,000 characters of CSS. A check found no other unused classes (the remaining ones are built from a word, such as `lekha-status--` plus "warning").
+
+### Automated tests: **490 passed**
