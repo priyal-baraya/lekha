@@ -653,3 +653,13 @@ A shop with a 67-character name, an owner and staff member with long hyphenated 
 The first design's pieces that no page used any more were removed: `hero`, `divider`, `section_header`, `page_intro`, `metric_strip`, `empty_state`, the two ornament drawings in `ui/assets/`, and about 7,000 characters of CSS. A check found no other unused classes (the remaining ones are built from a word, such as `lekha-status--` plus "warning").
 
 ### Automated tests: **490 passed**
+
+## 2026-11-15: Sign in's tabs and two cuts (branch `polish/signin-inventory`)
+
+### Automated tests: **490 passed**
+
+Changed first and failing first: Sign in has no "Signs out after" line; Inventory with nothing to reorder has no second sentence. The test that idle sign-out still explains itself when it happens is unchanged and passes.
+
+### Browser check (throwaway data folder, port 8502)
+
+Sign in and Create an account: the two tabs each take half the card, with the active one underlined across its half. A throwaway account was made through Create an account, then a new shop, whose Inventory said "Nothing to reorder." on its own. The changed canvas artboards were checked the same way. The data folder was deleted afterwards.

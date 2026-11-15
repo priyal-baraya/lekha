@@ -347,7 +347,7 @@ def test_inventory_with_nothing_to_reorder(empty_shop):
                                  selling_price="300", stock_quantity=9, reorder_level=2))
     app = run_page("inventory")
     text = all_text(app)
-    assert "Nothing to reorder." in text and "Every book is above its reorder level." in text
+    assert "Nothing to reorder." in text and "Every book is above its reorder level." not in text
     assert "No corrections yet." in text and "When a shelf count doesn't match" not in text
     for extra in ("What's running low", "At or below their reorder level.", "Count the copies on the shelf"):
         assert extra not in text
@@ -590,7 +590,7 @@ def test_sign_in_page_follows_the_design(data_dir):
     text = all_text(app)
     assert '<h1 class="lekha-wordmark__name">Lekha</h1>' in str([e.proto.body for e in app.get("html")])
     assert "Independent bookstore insights" not in text            # no label above the heading
-    assert "Signs out after 60 minutes without activity." in text
+    assert "Signs out after" not in text            # said when it happens, not in advance (owner's review)
     assert "close or refresh this tab" not in text
     assert "Sign in with Google" not in [button.label for button in app.button]   # Google isn't set up
     assert "A Google sign-in is remembered" not in text

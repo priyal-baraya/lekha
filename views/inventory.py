@@ -39,8 +39,7 @@ def render_alerts(conn) -> None:
     with st.container(key="lekha_card_low_stock"):
         ui.card_heading("Low on stock")
         if not rows:
-            st.html('<p class="lekha-message lekha-message--success"><strong>Nothing to reorder.</strong> '
-                    "Every book is above its reorder level.</p>")
+            st.html('<p class="lekha-message lekha-message--success">Nothing to reorder.</p>')
             return
         st.html(ui.data_table_html(
             [("Book", "left"), ("In stock", "right"), ("Reorder at", "right"), ("Status", "left")],
