@@ -857,3 +857,12 @@ The main choices, agreed on the canvas and signed off by the owner:
 **Why:** The pages were each checked as they were built, but not together, and not against the accessibility rules as a set.
 
 **Not done here:** the automatic design scan needs the Impeccable engine, which hasn't been downloaded (the owner hasn't approved the download), so the final critique was a review by eye against the same heuristics as before. The README's screenshots still show the first design: `scripts/capture_screenshots.py` signs in as the owner, so the owner runs it.
+
+## 2026-11-15: Sign in's tabs, and two more cuts
+
+**Decision:**
+- **Sign in's two tabs share the card's width,** each label centred over its half, like the full-width button below. Before, they sat together at the card's left edge (in line with the fields, but they looked off-balance in a centred card with a full-width button).
+- **No "Signs out after 60 minutes without activity."** under Sign in. People are still signed out after an hour without activity, and the sign-in page says so when it happens.
+- **Inventory with nothing to reorder says only "Nothing to reorder."** ("Every book is above its reorder level." repeated it.)
+
+**Why:** The owner's review. The canvas was updated to match (SignIn and InventoryClear artboards).

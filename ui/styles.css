@@ -329,6 +329,12 @@ button:active:not(:disabled) {
   max-width: 25rem;                  /* 400px */
   margin: 0 auto;
 }
+/* Sign in and Create an account share the card's width, like the button
+   below them, instead of huddling at the left of a centred card. */
+.st-key-lekha_card_sign_in [role="tab"] {
+  flex: 1 1 0;
+  justify-content: center;
+}
 /* Cards: st.container(key="lekha_card_…"). Keyed, so other boxes are untouched. */
 [class*="st-key-lekha_card"] {
   background: var(--lekha-porcelain);

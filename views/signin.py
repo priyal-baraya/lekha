@@ -81,5 +81,3 @@ with st.container(key="lekha_narrow"):
             ui.or_divider()
             if st.button("Sign in with Google", key="google_sign_in", width="stretch"):
                 st.login("google")      # Google's page; Lekha never sees the password
-
-        st.html(f'<p class="lekha-note">Signs out after {session.IDLE_MINUTES} minutes without activity.</p>')
