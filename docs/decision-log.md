@@ -880,3 +880,13 @@ The main choices, agreed on the canvas and signed off by the owner:
 **Why:** The owner's review.
 
 **Not changed:** the till's "Find a book" still waits for Enter: a barcode scanner types the ISBN and presses Enter, and one match goes straight into the sale, so searching mid-typing could add the wrong book.
+
+## 2026-11-15: One reorder level for the whole shop
+
+**Decision:** Nobody types a reorder level per book any more. The shop has one, set by an owner in Settings ("Reorder level", "Used for every book"). New books get it automatically, and saving Settings sets it on every book. The Add and Edit forms no longer have the field.
+
+**Why:** The owner's review: the term wasn't clear, and asking for it on every book was one more thing to type.
+
+**How:** Books still store their reorder level, so the low-stock rule and every query stay the same (low at or below it). `services/books.set_reorder_level_for_all` sets it on every book in one step.
+
+**What it costs:** a slow seller and a bestseller can no longer have different levels. Existing books keep their old levels until an owner next saves Settings.

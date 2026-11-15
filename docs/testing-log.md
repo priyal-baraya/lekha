@@ -677,3 +677,13 @@ Changed first and failing first: Create an account has "Confirm password"; Setti
 ### Browser check (a demo data folder, port 8503)
 
 Typing in a field shows no hint or counter. "Ruskin Bond" typed into the title search listed ten matches after a pause, with no Enter. "Name saved." in Settings, "In stock" tags and the up arrows on Insights show in teal on parchment. The demo shop (separate folder, made-up prices and sales, real books from Open Library) was left running for the owner to look around.
+
+## 2026-11-15: One reorder level (branch `polish/one-reorder-level`)
+
+### Automated tests: **492 passed**
+
+Written first and failing first: setting one level on all 12 sample books, refusing a negative, decimal, text or true/false level; Add a book has no reorder field and saves the shop's level; saving Settings changes an existing book's level to the new one, and the field reads "Reorder level", "Used for every book".
+
+### Browser check (demo shop, port 8503)
+
+The demo shop was put on one level (3). Add a book → Type it in myself ends at "Copies in stock" with no reorder field.

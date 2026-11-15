@@ -4,6 +4,7 @@ import pytest
 
 from services import ValidationError
 from services.books import (
+    set_reorder_level_for_all,
     BookInput,
     add_book,
     clean_isbn,
@@ -218,3 +219,17 @@ def test_search_matches_an_isbn_with_or_without_dashes(sample_db):
 
 def test_a_short_number_is_not_treated_as_an_isbn(sample_db):
     assert search_books(sample_db, "000") == []          # would match every stand-in ISBN
+
+
+# ---------- One reorder level for the whole shop ----------
+
+def test_one_reorder_level_for_every_book(sample_db):
+    changed = set_reorder_level_for_all(sample_db, 4)
+    levels = {row[0] for row in sample_db.execute("SELECT reorder_level FROM books")}
+    assert levels == {4} and changed == 12
+
+
+def test_reorder_level_for_every_book_must_be_a_whole_number(sample_db):
+    for bad in (-1, 2.5, "3", True):
+        with pytest.raises(ValidationError):
+            set_reorder_level_for_all(sample_db, bad)
