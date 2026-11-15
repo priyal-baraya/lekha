@@ -591,6 +591,7 @@ def test_sign_in_page_follows_the_design(data_dir):
     assert '<h1 class="lekha-wordmark__name">Lekha</h1>' in str([e.proto.body for e in app.get("html")])
     assert "Independent bookstore insights" not in text            # no label above the heading
     assert "Signs out after" not in text            # said when it happens, not in advance (owner's review)
+    assert "At least 10 characters." in text and "salted hash" not in text     # Create an account: the rule only
     assert "close or refresh this tab" not in text
     assert "Sign in with Google" not in [button.label for button in app.button]   # Google isn't set up
     assert "A Google sign-in is remembered" not in text

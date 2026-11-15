@@ -47,17 +47,16 @@ with st.container(key="lekha_narrow"):
                         st.rerun()
 
         with sign_up_tab:
-            st.html(
-                f'<p class="lekha-note">At least {accounts.MIN_PASSWORD_LENGTH} characters. A few unrelated '
-                "words make a strong password that's easy to remember. Lekha keeps only a scrambled "
-                "version (a salted hash), never the password itself.</p>"
-            )
             with st.form("sign_up", border=False):
                 name = st.text_input("Your name", autocomplete="name", max_chars=accounts.MAX_NAME_LENGTH)
                 new_username = st.text_input("Choose a username", autocomplete="username", max_chars=32,
                                              help="3 to 32 letters, digits, dots, dashes or underscores.")
                 new_password = st.text_input("Choose a password", type="password", autocomplete="new-password",
                                              max_chars=accounts.MAX_PASSWORD_LENGTH)
+                # The rule, tucked under its field. (Lekha still stores only a salted
+                # hash; a password that's too easy to guess is refused with a suggestion.)
+                st.html(f'<p class="lekha-note lekha-field-note">At least {accounts.MIN_PASSWORD_LENGTH} '
+                        "characters.</p>")
                 repeat = st.text_input("Type the password again", type="password", autocomplete="new-password",
                                        max_chars=accounts.MAX_PASSWORD_LENGTH)
                 created = st.form_submit_button("Create account", type="primary", width="stretch")

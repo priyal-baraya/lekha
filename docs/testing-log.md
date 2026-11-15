@@ -663,3 +663,7 @@ Changed first and failing first: Sign in has no "Signs out after" line; Inventor
 ### Browser check (throwaway data folder, port 8502)
 
 Sign in and Create an account: the two tabs each take half the card, with the active one underlined across its half. A throwaway account was made through Create an account, then a new shop, whose Inventory said "Nothing to reorder." on its own. The changed canvas artboards were checked the same way. The data folder was deleted afterwards.
+
+### Password note: **490 passed**
+
+The Sign in test now checks the note is "At least 10 characters." without the rest, and failed first. Browser check: the note sits under "Choose a password". The data folder was deleted afterwards.

@@ -866,3 +866,5 @@ The main choices, agreed on the canvas and signed off by the owner:
 - **Inventory with nothing to reorder says only "Nothing to reorder."** ("Every book is above its reorder level." repeated it.)
 
 **Why:** The owner's review. The canvas was updated to match (SignIn and InventoryClear artboards).
+
+**Create an account's password note (same day):** trimmed to "At least 10 characters.", and moved from the top of the tab to just under "Choose a password", where it applies. Gone: the advice about unrelated words and the note that Lekha keeps only a salted hash. Both are still true: a password that's too easy to guess is refused with that advice, and only the hash is stored.
