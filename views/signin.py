@@ -57,7 +57,7 @@ with st.container(key="lekha_narrow"):
                 # hash; a password that's too easy to guess is refused with a suggestion.)
                 st.html(f'<p class="lekha-note lekha-field-note">At least {accounts.MIN_PASSWORD_LENGTH} '
                         "characters.</p>")
-                repeat = st.text_input("Type the password again", type="password", autocomplete="new-password",
+                repeat = st.text_input("Confirm password", type="password", autocomplete="new-password",
                                        max_chars=accounts.MAX_PASSWORD_LENGTH)
                 created = st.form_submit_button("Create account", type="primary", width="stretch")
             if created:

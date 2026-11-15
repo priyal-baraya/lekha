@@ -68,9 +68,12 @@ dataframeHeaderBackgroundColor = "#FBF7F0"   # Porcelain: headers read as labels
 dataframeHeaderTextColor = "#67554A"         # Secondary text, 6.6:1
 
 # Semantic states, used by st.success / st.warning / st.error / st.info
-greenColor = "#215C42"
-greenTextColor = "#215C42"
-greenBackgroundColor = "#E5F1E8"
+# "Success" is Persian Teal on warm parchment, from the palette: the
+# earlier mint green didn't sit with the page's colours (owner's review).
+# 8.9:1. A thin border (ui/styles.css) keeps the box visible on the paper.
+greenColor = "#263F3C"
+greenTextColor = "#263F3C"
+greenBackgroundColor = "#EFE3D1"
 yellowColor = "#704A0E"
 yellowTextColor = "#704A0E"
 yellowBackgroundColor = "#F8EBCB"

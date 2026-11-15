@@ -868,3 +868,15 @@ The main choices, agreed on the canvas and signed off by the owner:
 **Why:** The owner's review. The canvas was updated to match (SignIn and InventoryClear artboards).
 
 **Create an account's password note (same day):** trimmed to "At least 10 characters.", and moved from the top of the tab to just under "Choose a password", where it applies. Gone: the advice about unrelated words and the note that Lekha keeps only a salted hash. Both are still true: a password that's too easy to guess is refused with that advice, and only the hash is stored.
+
+## 2026-11-15: Quieter forms, a palette success colour, suggestions as you type
+
+**Decision:**
+- **No "Press Enter to submit form" or character count** ("12/60") inside fields while typing, anywhere. Enter still submits, every form has its button, and the length limits still apply.
+- **"Confirm password"** instead of "Type the password again" (Create an account), and "Confirm new password" in Settings, to match.
+- **Success is Persian Teal on warm parchment** (`#263F3C` on `#EFE3D1`, 8.9:1) instead of mint green, for messages after saving, "In stock", "Doing well" and the up arrows in figures. The owner found the green didn't sit with the page. Both colours were already in the palette (links and hover). Success boxes get a thin parchment edge, because the parchment is close to the page's paper.
+- **Book suggestions as you type:** in Add a book, "Search by title or author" asks Open Library after a short pause in typing, from three letters, instead of waiting for Enter. Each search is cached for a day.
+
+**Why:** The owner's review.
+
+**Not changed:** the till's "Find a book" still waits for Enter: a barcode scanner types the ISBN and presses Enter, and one match goes straight into the sale, so searching mid-typing could add the wrong book.

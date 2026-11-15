@@ -40,7 +40,7 @@ Lekha is a calm, light analytics tool for an independent bookshop. The identity 
 
 | State | Text | Background | Where |
 |---|---|---|---|
-| Success | `#215C42` | `#E5F1E8` | "In stock", "Doing well", messages after saving |
+| Success | `#263F3C` (Persian Teal) | `#EFE3D1` (warm parchment) | "In stock", "Doing well", messages after saving (with a thin parchment edge) |
 | Warning | `#704A0E` | `#F8EBCB` | "Low", "Worth a look", the remove-someone question |
 | Error | `#B42318` | `#FBE9E7` | "Out of stock", errors. Kept well apart from crimson, so an error never reads as branding |
 | Information | `#254D67` | `#E6EFF5` | "To keep in mind", the Owner tag |
@@ -58,7 +58,7 @@ Lekha is a calm, light analytics tool for an independent bookshop. The identity 
 | Teal on Paper / on Porcelain | 9.58 / 10.58 |
 | Border Taupe on Paper / on Porcelain (UI outline) | 3.49 / 3.86 |
 | Earlier bars on Porcelain (graphic) | 3.15 |
-| Success, warning, error, information, neutral tags | 6.76, 6.63, 5.61, 7.72, 5.57 |
+| Success, warning, error, information, neutral tags | 8.92, 6.63, 5.61, 7.72, 5.57 |
 
 The Phase 5 browser check measured every piece of visible text on every page against its background: none fell below 4.5:1.
 

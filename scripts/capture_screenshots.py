@@ -80,7 +80,8 @@ def title_search(page: Page) -> None:
     page.get_by_text("Search by title or author", exact=True).click()
     settle(page)
     page.get_by_label("Title or author", exact=True).fill(EXAMPLE_SEARCH)
-    page.get_by_role("button", name="Search").click()
+    # Results appear as you type, after a short pause; wait for them.
+    page.get_by_text("matches.", exact=False).first.wait_for(timeout=30_000)
     settle(page)
 
 

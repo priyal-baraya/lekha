@@ -47,8 +47,8 @@
   --lekha-ink-muted: #7A6858;
   --lekha-crimson-50: #F6E8E4;       /* selected background; crimson text on it is 8.9:1 */
   --lekha-crimson-600: #64141D;      /* primary button hover */
-  --lekha-success: #215C42;
-  --lekha-success-bg: #E5F1E8;
+  --lekha-success: #263F3C;          /* Persian Teal, 8.9:1 on its background */
+  --lekha-success-bg: #EFE3D1;       /* warm parchment, as in config.toml */
   --lekha-warning: #704A0E;
   --lekha-warning-bg: #F8EBCB;
   --lekha-error: #B42318;            /* kept apart from crimson */
@@ -205,7 +205,7 @@ textarea::placeholder {
   line-height: 1.4;
   margin: 6px 0 0;
 }
-.lekha-change--good { color: var(--lekha-success); }     /* 7.4:1 */
+.lekha-change--good { color: var(--lekha-success); }     /* 9.6:1 */
 .lekha-change--bad { color: var(--lekha-error); }        /* 6.2:1 */
 .lekha-change--neutral { color: var(--lekha-ink-secondary); }
 /* The arrow is drawn with borders (no text character), so screen
@@ -609,7 +609,8 @@ ul.lekha-booklist {
   border-radius: var(--lekha-radius);
   border-left: 3px solid currentColor;
 }
-.lekha-message--success { color: var(--lekha-success); background: var(--lekha-success-bg); }
+.lekha-message--success { color: var(--lekha-success); background: var(--lekha-success-bg);
+                          box-shadow: inset 0 0 0 1px var(--lekha-parchment); }
 .lekha-message--warning { color: var(--lekha-warning); background: var(--lekha-warning-bg); }
 .lekha-message--error   { color: var(--lekha-error);   background: var(--lekha-error-bg); }
 .lekha-message--info    { color: var(--lekha-info-fg); background: var(--lekha-info-bg); }
@@ -654,15 +655,17 @@ ul.lekha-booklist {
 .st-key-lekha_card_cancel {
   max-width: 40rem;
 }
-/* The till's search box: Streamlit's "Press Enter to submit form · 0/100"
-   ran over the placeholder on a phone. The label and placeholder say it. */
-.st-key-till_query [data-testid="InputInstructions"] {
+/* Streamlit writes "Press Enter to submit form" and a character count
+   ("12/60") inside every field while you type. The owner found it noisy,
+   and it ran over the text in narrow fields. Enter still works, every
+   form has its button, and the length limits still apply. */
+[data-testid="InputInstructions"] {
   display: none;
 }
-/* Number fields are narrow and have − and + inside, so the same hint
-   ran over the number itself. Enter still saves; the button says how. */
-[data-testid="stNumberInput"] [data-testid="InputInstructions"] {
-  display: none;
+/* Success messages (st.success) are teal on warm parchment, close to the
+   paper, so a thin parchment edge keeps them visible as a message. */
+[data-testid="stAlertContainer"]:has([data-testid="stAlertContentSuccess"]) {
+  box-shadow: inset 0 0 0 1px var(--lekha-parchment);
 }
 /* Recent sales: one line per sale; on a phone the table scrolls sideways */
 .lekha-table-wrap.lekha-nowrap td {
