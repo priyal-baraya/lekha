@@ -835,3 +835,17 @@ The main choices, agreed on the canvas and signed off by the owner:
 **Departures from the canvas:** The canvas chart showed nine weeks for "Last 30 days"; the app shows the weeks the period touches. The canvas had example findings (such as fewer books per sale) that Lekha doesn't calculate; the app shows only the findings it can back with figures.
 
 **Cut after review (the owner's less-text rule, same day):** "· owners only" after the profit share (staff never see the card); "Fiction brought in 91%." under Revenue by genre (the bars and the summary sentence say it); "Dashed bar: this week so far." under the chart (the bar is labelled "so far"); and the waiting card's explanation and list of what's coming. Its heading became "Two weeks of sales", to name what the bar counts towards. The canvas was updated to match.
+
+## 2026-11-15: Team and Settings, as designed
+
+**Decision:** Rebuild the last two pages to the canvas (Team and Settings artboards), with the less-text rule: no line under either title.
+- **Team:** "Who's in the shop" as a table (name, with "(you)"; role in words, Owner or Staff; how each person signs in, Password or Google; when they joined). Below it, side by side, "Change someone's role" (a person, then Make staff, Make owner or Remove from shop, then Apply) and "Invite someone" (Staff or Owner, then Make an invite code).
+- **Removing someone asks first:** "Remove Vikram from Kitab Ghar?" with Yes, remove and Keep. It can't be undone from here (they'd need a new invite), so it gets a second step; changing a role doesn't, because it can be changed back.
+- **An invite code** is shown once, large, with "Shown once. Works once, for 7 days." Codes not yet used are listed under it with Cancel code.
+- **Settings:** four cards, two by two: Shop (owners only), Your account, Change password (only for people who sign in with a password) and More shops.
+
+**Why:** The old pages had a label above each heading, a sentence under each, and Team's role change behind a tick box for every change.
+
+**Departures from the canvas:** The canvas has no list of unused codes; the app keeps it, so an owner can cancel a code that was never handed over. Staff don't see the Shop card at all (the old page showed them the reorder level and said only owners could change it). A password change now says just "Password changed.", since the card already says other tabs will be signed out.
+
+**Cut after review (same day):** "Other tabs signed in with the old password will be signed out." under Change password, and "Run another bookshop, or help at a friend's?" under More shops (the link says it). Other tabs are still signed out; the page just doesn't say so. The canvas was updated to match, including the lines under the Team and Settings titles, which the app already left out.

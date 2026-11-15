@@ -442,7 +442,8 @@ def team(conn: sqlite3.Connection, actor_id: int, shop_id: int, now: datetime | 
     _require(conn, actor_id, shop_id, "manage_team")
     members = conn.execute(
         """
-        SELECT u.user_id, u.display_name, u.username, u.email, m.role, m.joined_at
+        SELECT u.user_id, u.display_name, u.username, u.email, m.role, m.joined_at,
+               u.password_hash IS NOT NULL AS has_password, u.google_subject IS NOT NULL AS uses_google
         FROM memberships AS m JOIN users AS u ON u.user_id = m.user_id
         WHERE m.shop_id = ? ORDER BY m.role, u.display_name COLLATE NOCASE
         """, (shop_id,),

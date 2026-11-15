@@ -1,90 +1,133 @@
-"""Team: the shop's owners invite staff, change roles and remove people."""
+"""Team: the shop's owners see who's in the shop, change roles, remove
+people and make invite codes.
 
-import pandas as pd
+Laid out as on the design canvas (Team artboard): who's in the shop,
+then changing someone's role beside inviting someone. Removing a person
+asks first, because it can't be undone from here (they'd need a new
+invite). An invite code is shown once, right after it's made; codes
+not yet used can be cancelled.
+"""
+
+from datetime import datetime
+
 import streamlit as st
 
 from database import connect_accounts
 from services import ValidationError, accounts
-from services.permissions import ACTIONS, STAFF_ACTIONS
 from ui import components as ui
 from ui import session
 
-ui.page_intro(
-    eyebrow="The shop's people",
-    title="Team",
-    description="Invite staff, choose what each person can do, and remove people who have left.",
-)
+CHANGES = ["Make staff", "Make owner", "Remove from shop"]
+ROLES = {"Staff": "staff", "Owner": "owner"}
+REMOVING = "team_removing"          # the person waiting for "Yes, remove"
+NEW_CODE = "lekha_new_invite"       # a code just made, shown once
+
+ui.page_header("Team")
 session.require("manage_team")
 ui.show_flash()
 
 me, shop_id = session.user_id(), st.session_state[session.SHOP]
-
-# A new code is shown once, right after it's made, then only its hash remains.
-new_code = st.session_state.pop("lekha_new_invite", None)
-if new_code:
-    st.success(
-        f"Invite code: **{new_code[0]}** (for {new_code[1]}). Give it to the person you're inviting. "
-        "It works once, for 7 days. Lekha won't show it again: if it's lost, make a new one."
-    )
-
 with connect_accounts() as acc:
     members = accounts.team(acc, me, shop_id)
+    shop_name = accounts.get_shop(acc, shop_id)["name"]
 
-ui.section_header(eyebrow="Members", title="Who's in the shop")
-table = pd.DataFrame(members["members"])
-table["signs in with"] = table.apply(
-    lambda row: row["username"] if row["username"] else (row["email"] or "Google"), axis=1)
-table["role"] = table["role"].str.capitalize()
-st.dataframe(table[["display_name", "role", "signs in with", "joined_at"]], hide_index=True,
-             column_config={"display_name": "Name", "role": "Role", "signs in with": "Signs in with",
-                            "joined_at": "Joined"})
 
-staff_can = ", ".join(ACTIONS[action].lower() for action in sorted(STAFF_ACTIONS))
-st.markdown(f"**Owners** can do everything. **Staff** can {staff_can}.")
+def joined(when: str) -> str:
+    day = datetime.fromisoformat(when).date()
+    return f"{day.day} {day:%b %Y}"
+
+
+def signs_in_with(member: dict) -> str:
+    ways = [way for way, used in (("Password", member["has_password"]), ("Google", member["uses_google"])) if used]
+    return " and ".join(ways) or "—"
+
+
+# ---------------------------------------------------------- who's in the shop
+with st.container(key="lekha_card_members"):
+    ui.card_heading("Who's in the shop")
+    st.html(ui.data_table_html(
+        [("Name", "left"), ("Role", "left"), ("Signs in with", "left"), ("Joined", "left")],
+        [[member["display_name"] + (" (you)" if member["user_id"] == me else ""),
+          ui.Html(ui.status_html("info" if member["role"] == "owner" else "neutral", member["role"].capitalize())),
+          signs_in_with(member), joined(member["joined_at"])]
+         for member in members["members"]],
+    ))
+
+
+# ------------------------------------------------------------ change a role
+def render_change(others: dict) -> None:
+    with st.container(key="lekha_card_change"):
+        ui.card_heading("Change someone's role")
+        person = st.selectbox("Person", list(others), format_func=lambda uid: others[uid]["display_name"],
+                              key="team_person")
+        change = st.segmented_control("Change", CHANGES, key="team_change", label_visibility="collapsed")
+        name = others[person]["display_name"]
+
+        if st.session_state.get(REMOVING) == person:
+            st.html(f'<p class="lekha-message lekha-message--warning">Remove {ui.escape(name)} from '
+                    f'{ui.escape(shop_name)}?</p>')
+            with st.container(horizontal=True):
+                if st.button("Yes, remove", key="team_remove_yes", type="primary"):
+                    st.session_state.pop(REMOVING, None)
+                    apply(person, "remove", f"Removed {name}.")
+                if st.button("Keep", key="team_remove_no"):
+                    st.session_state.pop(REMOVING, None)
+                    st.rerun()
+            return
+
+        if st.button("Apply", key="team_apply", disabled=change is None):
+            if change == "Remove from shop":
+                st.session_state[REMOVING] = person      # ask first
+                st.rerun()
+            role = "owner" if change == "Make owner" else "staff"
+            apply(person, role, f"Made {name} {'an owner' if role == 'owner' else 'staff'}.")
+
+
+def apply(person: int, change: str, done: str) -> None:
+    try:
+        with connect_accounts() as acc:
+            if change == "remove":
+                accounts.remove_member(acc, me, shop_id, person)
+            else:
+                accounts.change_role(acc, me, shop_id, person, change)
+    except ValidationError as problem:
+        ui.show_errors(problem.errors)
+    else:
+        ui.flash("success", done)
+        st.rerun()
+
+
+# ----------------------------------------------------------- invite someone
+def render_invite() -> None:
+    with st.container(key="lekha_card_invite"):
+        ui.card_heading("Invite someone")
+        chosen = st.segmented_control("They'll join as", list(ROLES), default="Staff", key="team_invite_role",
+                                      label_visibility="collapsed")
+        if st.button("Make an invite code", key="team_invite", type="primary", disabled=chosen is None):
+            with connect_accounts() as acc:
+                st.session_state[NEW_CODE] = accounts.create_invitation(acc, me, shop_id, ROLES[chosen])
+            st.rerun()
+        code = st.session_state.pop(NEW_CODE, None)       # shown once, then only its hash remains
+        if code:
+            st.html(f'<p class="lekha-code">{ui.escape(code)}</p>'
+                    '<p class="lekha-note">Shown once. Works once, for 7 days.</p>')
+        for invite in members["invitations"]:
+            with st.container(horizontal=True, vertical_alignment="center", key=f"team_code_{invite['invitation_id']}"):
+                st.html(f'<p class="lekha-note">{invite["role"].capitalize()} code, made '
+                        f'{joined(invite["created_at"])}, not used yet</p>', width="stretch")
+                if st.button("Cancel code", key=f"revoke_{invite['invitation_id']}", type="tertiary"):
+                    with connect_accounts() as acc:
+                        accounts.revoke_invitation(acc, me, shop_id, invite["invitation_id"])
+                    ui.flash("success", "That invite code no longer works.")
+                    st.rerun()
+
 
 others = {m["user_id"]: m for m in members["members"] if m["user_id"] != me}
 if others:
-    with st.form("change_member"):
-        person = st.selectbox("Person", list(others), format_func=lambda uid: others[uid]["display_name"])
-        action = st.radio("Change", ["Make staff", "Make owner", "Remove from the shop"], horizontal=True)
-        confirmed = st.checkbox("Yes, make this change.")
-        changed = st.form_submit_button("Apply")
-    if changed:
-        if not confirmed:
-            ui.show_errors(["Tick the box to confirm."])
-        else:
-            try:
-                with connect_accounts() as acc:
-                    if action == "Remove from the shop":
-                        accounts.remove_member(acc, me, shop_id, person)
-                    else:
-                        accounts.change_role(acc, me, shop_id, person, "owner" if action == "Make owner" else "staff")
-            except ValidationError as problem:
-                ui.show_errors(problem.errors)
-            else:
-                ui.flash("success", f"{action.replace('Make', 'Made').replace('Remove', 'Removed')}: {others[person]['display_name']}.")
-                st.rerun()
-
-ui.divider()
-ui.section_header(eyebrow="Invitations", title="Invite someone",
-                  description="Make a one-time code and give it to the person. They create an account, then join with it.")
-with st.form("invite"):
-    invite_role = st.radio("They'll join as", ["staff", "owner"], format_func=str.capitalize, horizontal=True)
-    invited = st.form_submit_button("Make an invite code", type="primary")
-if invited:
-    with connect_accounts() as acc:
-        code = accounts.create_invitation(acc, me, shop_id, invite_role)
-    st.session_state["lekha_new_invite"] = (code, invite_role)
-    st.rerun()
-
-if members["invitations"]:
-    st.markdown("**Codes not yet used**")
-    for invite in members["invitations"]:
-        text_col, button_col = st.columns([5, 1.4], vertical_alignment="center")
-        text_col.markdown(f"{invite['role'].capitalize()} invite made {invite['created_at'][:16]}, "
-                          f"expires {invite['expires_at'][:16]}")
-        if button_col.button("Cancel code", key=f"revoke_{invite['invitation_id']}"):
-            with connect_accounts() as acc:
-                accounts.revoke_invitation(acc, me, shop_id, invite["invitation_id"])
-            ui.flash("success", "That invite code no longer works.")
-            st.rerun()
+    change_col, invite_col = st.columns(2)
+    with change_col:
+        render_change(others)
+    with invite_col:
+        render_invite()
+else:
+    render_invite()
