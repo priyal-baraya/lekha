@@ -71,7 +71,7 @@ def render_password() -> None:
             new = st.text_input("New password", type="password", autocomplete="new-password", max_chars=limit,
                                 placeholder=f"{accounts.MIN_PASSWORD_LENGTH} to {limit} characters",
                                 key="settings_new")
-            repeat = st.text_input("New password again", type="password", autocomplete="new-password",
+            repeat = st.text_input("Confirm new password", type="password", autocomplete="new-password",
                                    max_chars=limit, key="settings_repeat")
             changed = st.form_submit_button("Change password")
         if changed:

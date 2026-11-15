@@ -159,24 +159,27 @@ def render_isbn_lookup() -> None:
     use_found(found)
 
 
-def render_search() -> None:
-    with st.form("openlibrary_search", border=False):
-        text = st.text_input("Title or author", key="ol_search_input", max_chars=100,
-                             placeholder="For example: The God of Small Things")
-        submitted = st.form_submit_button("Search")
-    if submitted:
-        try:
-            st.session_state["add_results"] = search_cached(" ".join((text or "").split()))
-        except ValidationError as problem:
-            ui.show_errors(problem.errors)
-            return
-        except openlibrary.OpenLibraryError as problem:
-            st.error(str(problem))
-            return
+MIN_SEARCH_LETTERS = 3       # fewer would match half of Open Library
 
-    results = st.session_state.get("add_results")
-    if results is None:
+
+def render_search() -> None:
+    # Suggestions appear as you type: Streamlit reruns after a short pause
+    # in typing (live=True). Each search is cached for a day, so typing the
+    # same words again doesn't ask Open Library again.
+    text = " ".join((st.text_input("Title or author", key="ol_search_input", max_chars=100, live=True,
+                                   placeholder="For example: The God of Small Things") or "").split())
+    if len(text) < MIN_SEARCH_LETTERS:
+        st.session_state.pop("add_results", None)
         return
+    try:
+        results = search_cached(text)
+    except ValidationError as problem:
+        ui.show_errors(problem.errors)
+        return
+    except openlibrary.OpenLibraryError as problem:
+        st.error(str(problem))
+        return
+    st.session_state["add_results"] = results
     if not results:
         st.info("No matches on Open Library. Try fewer words, or just the author's surname.")
         return

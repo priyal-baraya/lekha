@@ -667,3 +667,13 @@ Sign in and Create an account: the two tabs each take half the card, with the ac
 ### Password note: **490 passed**
 
 The Sign in test now checks the note is "At least 10 characters." without the rest, and failed first. Browser check: the note sits under "Choose a password". The data folder was deleted afterwards.
+
+## 2026-11-15: Forms, success colour and suggestions as you type (branch `polish/feedback-forms`)
+
+### Automated tests: **490 passed**
+
+Changed first and failing first: Create an account has "Confirm password"; Settings has "Confirm new password"; the Open Library title search has no Search button, does nothing for two letters, and lists matches once the text is typed (from the saved real response).
+
+### Browser check (a demo data folder, port 8503)
+
+Typing in a field shows no hint or counter. "Ruskin Bond" typed into the title search listed ten matches after a pause, with no Enter. "Name saved." in Settings, "In stock" tags and the up arrows on Insights show in teal on parchment. The demo shop (separate folder, made-up prices and sales, real books from Open Library) was left running for the owner to look around.

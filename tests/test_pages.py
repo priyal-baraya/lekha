@@ -534,6 +534,7 @@ def test_settings_password_change(data_dir):
     app = open_page(asha, "settings")
     app.text_input(key="settings_current").set_value(PASSWORD)
     app.text_input(key="settings_new").set_value("a brand new passphrase")
+    assert app.text_input(key="settings_repeat").label == "Confirm new password"
     app.text_input(key="settings_repeat").set_value("a brand new passphrase")
     app.button(key="FormSubmitter:change_password-Change password").click().run()
     assert "Password changed." in all_text(app)
@@ -626,7 +627,7 @@ def test_sign_up_create_a_shop_and_land_on_its_overview(data_dir):
     field(app, "Your name").set_value("Priya")
     field(app, "Choose a username").set_value("priya")
     field(app, "Choose a password").set_value(PASSWORD)
-    field(app, "Type the password again").set_value(PASSWORD)
+    field(app, "Confirm password").set_value(PASSWORD)
     app.button(key="FormSubmitter:sign_up-Create account").click().run()
     assert not app.exception
     assert "Start a shop" in all_text(app)                      # signed in, no shop yet
@@ -890,8 +891,10 @@ def test_searching_open_library_lists_real_matches(empty_shop, open_library):
     app.session_state["books_tab"] = "Add a book"
     app.run()
     app.segmented_control(key="add_method").set_value("search").run()
-    app.text_input(key="ol_search_input").set_value("the god of small things")
-    app.button(key="FormSubmitter:openlibrary_search-Search").click().run()
+    assert "FormSubmitter:openlibrary_search-Search" not in [button.key for button in app.button]
+    app.text_input(key="ol_search_input").set_value("go").run()      # too short to search yet
+    assert "matches." not in all_text(app)
+    app.text_input(key="ol_search_input").set_value("the god of small things").run()   # as typed
     assert not app.exception
     text = all_text(app)
     assert "5 matches." in text and "Check the author and year" not in text
