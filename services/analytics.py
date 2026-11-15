@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from services.money import format_rupees
+from services.money import format_rupees_whole
 
 SQL_DIR = Path(__file__).parent.parent / "sql" / "analytics"
 
@@ -210,6 +210,14 @@ def selling_this_week(conn, now: datetime, limit: int = 5) -> list[dict]:
     return rows
 
 
+def add_covers(conn, rows: list[dict]) -> list[dict]:
+    """Give each book row its Open Library cover id (None when it has none)."""
+    for row in rows:
+        found = conn.execute("SELECT cover_id FROM books WHERE book_id = ?", (row["book_id"],)).fetchone()
+        row["cover_id"] = found["cover_id"] if found else None
+    return rows
+
+
 def unsold_books(conn, period: Period, genre: str | None = None) -> list[dict]:
     return _query(conn, "unsold_books", period, genre)
 
@@ -240,6 +248,28 @@ def _bucket_end(start: date, grain: str) -> date:
 
 def _next_bucket(start: date, grain: str) -> date:
     return _bucket_end(start, grain) + timedelta(days=1)
+
+
+def chart_grain(period: Period) -> str:
+    """How Insights groups its chart: by day up to two weeks, by week up to
+    about six months, then by month. Enough bars to see a trend, few
+    enough to read each one."""
+    days = (period.end - period.start).days + 1
+    if days <= 14:
+        return "day"
+    if days <= 182:
+        return "week"
+    return "month"
+
+
+def chart_period(period: Period, grain: str, today: date) -> Period:
+    """The days the chart covers: whole days, weeks or months from the one
+    holding the period's first day, up to the end of the one holding its
+    last day, but never past today. So every bar is a whole week (or
+    month) except the one still running."""
+    start = _bucket_start(period.start, grain)
+    end = min(_bucket_end(_bucket_start(period.end, grain), grain), today)
+    return Period(start, end)
 
 
 def revenue_over_time(
@@ -294,6 +324,7 @@ class Observation:
     evidence: str
     action: str = ""
     limits: list[str] = field(default_factory=list)
+    tone: str = "info"          # "good" (doing well), "warning" (worth a look) or "info"
 
 
 def _names(rows: list[dict], limit: int = 4) -> str:
@@ -318,10 +349,8 @@ def observations(
             limits=["Nothing can be concluded. Try a longer period."],
         )]
 
-    small = []
-    if sales < MIN_SALES_FOR_PATTERN:
-        small = [f"Only {sales} {'sale' if sales == 1 else 'sales'} in this period, "
-                 "so treat this as a hint, not a pattern."]
+    # A small number of sales is said once above the findings (see
+    # sentences.small_sample_note), not repeated in each one.
     found: list[Observation] = []
 
     if genre is None:
@@ -330,10 +359,11 @@ def observations(
             top = genres[0]
             found.append(Observation(
                 f"{top['genre']} brought in the most revenue",
-                f"{format_rupees(top['revenue_paise'])} of {format_rupees(totals['revenue_paise'])} "
+                f"{format_rupees_whole(top['revenue_paise'])} of {format_rupees_whole(totals['revenue_paise'])} "
                 f"({top['share_percent']}%) across {sales} {'sale' if sales == 1 else 'sales'}.",
-                f"Possible action: consider a {top['genre']} display or table.",
-                ["Based on recorded sales only. It doesn't show that a display would increase sales.", *small],
+                f"Consider a {top['genre']} display or table.",
+                ["Based on recorded sales only. It doesn't show that a display would increase sales."],
+                tone="good",
             ))
 
     leaders = [row for row in best_sellers(conn, period, genre) if row["copies_rank"] == 1]
@@ -345,8 +375,9 @@ def observations(
              else f"{_names(leaders)} sold the most copies"),
             f"{copies} {'copy' if copies == 1 else 'copies'} {'each' if tied else ''}".strip()
             + f" out of {totals['copies']} sold.",
-            "Possible action: check it stays in stock." if not tied else "Possible action: check they stay in stock.",
-            ["Copies sold, not profit: a cheaper book can top this list.", *small],
+            "Check it stays in stock." if not tied else "Check they stay in stock.",
+            ["Copies sold, not profit: a cheaper book can top this list."],
+            tone="good",
         ))
 
     if low_stock is not None:
@@ -357,9 +388,11 @@ def observations(
                 "Selling, and low on stock",
                 f"{_names(selling_and_low)} sold in this period and "
                 f"{'is' if len(selling_and_low) == 1 else 'are'} at or below the reorder level.",
-                "Worth checking before the next order.",
+                "Check these before the next order." if len(selling_and_low) > 1
+                else "Check it before the next order.",
                 ["This is an alert, not a reorder recommendation: it doesn't account for "
                  "delivery times or whether sales will continue."],
+                tone="warning",
             ))
 
     unsold_on_shelf = [book for book in unsold_books(conn, period, genre) if book["stock_quantity"] > 0]
@@ -369,8 +402,10 @@ def observations(
             "On the shelf, no sales this period",
             f"{_names(unsold_on_shelf)}: {copies_waiting} "
             f"{'copy' if copies_waiting == 1 else 'copies'} in stock with no completed sales.",
-            "Possible action: consider moving them to a more visible spot.",
+            "Consider moving them to a more visible spot." if len(unsold_on_shelf) > 1
+            else "Consider moving it to a more visible spot.",
             ["“No sales in this period” isn't the same as “slow-selling”. Lekha doesn't record "
-             "when each book arrived, so a recently added book may simply be new.", *small],
+             "when each book arrived, so a recently added book may simply be new."],
+            tone="warning",
         ))
     return found

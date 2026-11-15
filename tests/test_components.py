@@ -4,6 +4,8 @@ Each block is built as an HTML string first (the *_html functions), so
 these tests can check the exact markup without running Streamlit.
 """
 
+from decimal import Decimal
+
 import pytest
 
 from services.comparisons import Comparison
@@ -18,6 +20,9 @@ from ui.components import (
     card_heading_html,
     cover_letter_html,
     figure_strip_html,
+    genre_bars_html,
+    observation_html,
+    progress_html,
     data_table_html,
     page_header_html,
     shelf_html,
@@ -201,3 +206,37 @@ def test_book_rows_for_phones_escape_their_details():
     html = book_rows_html([BookRow("Godaan", None, "Premchand · ₹250 · <3> in stock", stock_status_html(3, 3))])
     assert "Premchand · ₹250 · &lt;3&gt; in stock" in html and ">Low<" in html
 
+
+# ---------- Insights ----------
+
+GENRE_ROWS = [("Fiction", 2_240_000, Decimal("46.4")), ("Poetry", 1_390_000, Decimal("28.8")),
+              ("Children's <and> YA", 300_000, Decimal("6.2"))]
+
+
+def test_genre_bars_show_amount_and_share_and_scale_to_the_largest():
+    html = genre_bars_html(GENRE_ROWS)
+    assert "₹22,400 · 46%" in html and "₹13,900 · 29%" in html and "₹3,000 · 6%" in html
+    assert 'style="width: 100.0%"' in html and 'style="width: 62.1%"' in html
+    assert "Children&#x27;s &lt;and&gt; YA" in html
+    assert "lekha-genre--muted" not in html
+
+
+def test_genre_bars_highlight_the_chosen_genre():
+    html = genre_bars_html(GENRE_ROWS, highlight="Poetry")
+    assert html.count("lekha-genre--muted") == 2           # the other two are quieter
+
+
+def test_observation_card_has_its_tone_in_words():
+    html = observation_html("good", "Fiction <earns> most", "₹22,400 of ₹48,250.", "Worth trying", "Keep it stocked.")
+    assert ">Doing well<" in html and "lekha-status--success" in html
+    assert "Fiction &lt;earns&gt; most" in html and "Worth trying" in html and "Keep it stocked." in html
+    assert ">Worth a look<" in observation_html("warning", "t", "e", "s", "x")
+    assert ">To keep in mind<" in observation_html("info", "t", "e", "s", "x")
+
+
+def test_progress_bar_is_announced_with_its_value():
+    html = progress_html(3, 14, "Days of sales recorded")
+    assert 'role="progressbar"' in html and 'aria-valuenow="3"' in html and 'aria-valuemax="14"' in html
+    assert 'aria-label="Days of sales recorded"' in html and "3 of 14 days" in html
+    assert 'style="width: 21.4%"' in html
+    assert 'aria-valuenow="14"' in progress_html(20, 14, "x")     # never past the end

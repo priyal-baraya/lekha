@@ -15,12 +15,14 @@ plain() first (see below).
 import base64
 import re
 from dataclasses import dataclass
+from decimal import ROUND_HALF_UP, Decimal
 from html import escape
 from pathlib import Path
 
 import streamlit as st
 
 from services.comparisons import Comparison
+from services.money import format_rupees_whole
 from services.sentences import showing
 
 UI_DIR = Path(__file__).parent
@@ -467,3 +469,49 @@ def book_list_html(books: list[tuple[str, str | None, int, int]]) -> str:
         BookRow(title, url, f"{in_stock} left · reorder at {reorder_at}", stock_status_html(in_stock, reorder_at))
         for title, url, in_stock, reorder_at in books
     ])
+
+
+# ---------------------------------------------------------------- Insights
+
+def genre_bars_html(rows: list[tuple[str, int, Decimal]], highlight: str | None = None) -> str:
+    """Revenue by genre as labelled bars, largest first. Each row is
+    (genre, revenue in paise, share in percent). Bars are drawn to scale
+    against the largest; the amount and share are written beside each,
+    so nothing depends on reading the bar's length. With a genre chosen
+    in the filter, the other genres are drawn quieter."""
+    largest = max((paise for _, paise, _ in rows), default=0) or 1
+    items = []
+    for genre, paise, share in rows:
+        muted = " lekha-genre--muted" if highlight and genre != highlight else ""
+        whole = int(Decimal(str(share)).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+        items.append(
+            f'<div class="lekha-genre{muted}"><span class="lekha-genre__name">{escape(genre)}</span>'
+            f'<span class="lekha-genre__track" aria-hidden="true">'
+            f'<span class="lekha-genre__bar" style="width: {paise * 100 / largest:.1f}%"></span></span>'
+            f'<span class="lekha-genre__value">{format_rupees_whole(paise)} · {whole}%</span></div>'
+        )
+    return f'<div class="lekha-genres">{"".join(items)}</div>'
+
+
+FINDING_TAGS = {"good": ("success", "Doing well"), "warning": ("warning", "Worth a look"),
+                "info": ("info", "To keep in mind")}
+
+
+def observation_html(tone: str, title: str, evidence: str, side_label: str, side_text: str) -> str:
+    """One finding: its tone in words, a title, the evidence, and to the
+    side what to try (or what it can't tell you)."""
+    kind, word = FINDING_TAGS[tone]
+    return (f'<section class="lekha-finding"><div class="lekha-finding__main">{status_html(kind, word)}'
+            f'<h3 class="lekha-finding__title">{escape(title)}</h3>'
+            f'<p class="lekha-finding__evidence">{escape(evidence)}</p></div>'
+            f'<div class="lekha-finding__side"><p class="lekha-finding__label">{escape(side_label)}</p>'
+            f'<p class="lekha-finding__text">{escape(side_text)}</p></div></section>')
+
+
+def progress_html(done: int, total: int, label: str) -> str:
+    """Progress towards a number of days, announced to screen readers."""
+    done = max(0, min(done, total))
+    return (f'<div class="lekha-progress"><div class="lekha-progress__track" role="progressbar" '
+            f'aria-valuemin="0" aria-valuemax="{total}" aria-valuenow="{done}" aria-label="{escape(label)}">'
+            f'<div class="lekha-progress__fill" style="width: {done * 100 / total:.1f}%"></div></div>'
+            f'<p class="lekha-progress__text">{done} of {total} days</p></div>')

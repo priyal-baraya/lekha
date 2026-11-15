@@ -5,14 +5,17 @@ sample data BEFORE the code was written; docs/analytics.md shows the
 working. OCT is 1–26 October 2026, the span of the sample sales.
 """
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 import pytest
 
 from services.analytics import (
     Period,
+    add_covers,
     best_sellers,
+    chart_grain,
+    chart_period,
     gross_profit,
     observations,
     percent,
@@ -230,9 +233,15 @@ def test_observations_on_sample_data(sample_db):
         "On the shelf, no sales this period",
     ]
     genre = found[0]
-    assert genre.evidence == "₹4,040.00 of ₹11,144.00 (36.3%) across 14 sales."
-    assert "doesn't show that a display would increase sales" in genre.limits[0]
-    assert "Only 14 sales in this period" in genre.limits[1]
+    assert genre.evidence == "₹4,040 of ₹11,144 (36.3%) across 14 sales."   # whole rupees, as the page
+    assert genre.limits == ["Based on recorded sales only. It doesn't show that a display would increase sales."]
+    # Each says whether it's good news or worth a look, and what to try,
+    # without a "Possible action:" label (the card says "Worth trying").
+    assert [item.tone for item in found] == ["good", "good", "warning", "warning"]
+    assert genre.action == "Consider a Fiction display or table."
+    assert found[1].action == "Check it stays in stock."
+    assert found[2].action == "Check these before the next order."
+    assert found[3].action == "Consider moving them to a more visible spot."
     assert "“Salt and Saffron”" in found[2].evidence      # books 2, 5 and 9 sold and are low
     assert "13 copies in stock" in found[3].evidence     # books 12 (6), 11 (4), 10 (3)
 
@@ -247,3 +256,42 @@ def test_tied_best_sellers_are_reported_as_a_tie(sample_db):
 def test_no_sales_gives_one_honest_observation(sample_db):
     found = observations(sample_db, Period(date(2026, 9, 1), date(2026, 9, 30)))
     assert [item.title for item in found] == ["No completed sales in this period"]
+    assert found[0].tone == "info"
+
+
+# ---------- The Insights chart: how to group, and which days it covers ----------
+
+@pytest.mark.parametrize(("days", "grain"), [(1, "day"), (14, "day"), (15, "week"), (31, "week"),
+                                              (182, "week"), (183, "month"), (700, "month")])
+def test_chart_grain_follows_the_period_length(days, grain):
+    period = Period(date(2026, 11, 13) - timedelta(days=days - 1), date(2026, 11, 13))
+    assert chart_grain(period) == grain
+
+
+def test_chart_period_shows_whole_weeks_up_to_today():
+    # Last 30 days on Friday 13 Nov: 15 Oct (a Thursday) to 13 Nov. The chart
+    # starts on Monday 12 Oct, so the first bar is a whole week, and ends today.
+    shown = chart_period(Period(date(2026, 10, 15), date(2026, 11, 13)), "week", date(2026, 11, 13))
+    assert (shown.start, shown.end) == (date(2026, 10, 12), date(2026, 11, 13))
+
+
+def test_chart_period_for_a_finished_month_ends_with_its_last_week():
+    # October 2026 ends on a Saturday; its last week runs to Sunday 1 Nov.
+    shown = chart_period(Period(date(2026, 10, 1), date(2026, 10, 31)), "week", date(2026, 11, 13))
+    assert (shown.start, shown.end) == (date(2026, 9, 28), date(2026, 11, 1))
+
+
+def test_chart_period_by_month_starts_on_the_first():
+    shown = chart_period(Period(date(2025, 11, 20), date(2026, 11, 13)), "month", date(2026, 11, 13))
+    assert (shown.start, shown.end) == (date(2025, 11, 1), date(2026, 11, 13))
+
+
+def test_only_the_week_still_running_is_partial(sample_db):
+    shown = chart_period(Period(date(2026, 10, 1), date(2026, 10, 21)), "week", date(2026, 10, 21))
+    table = revenue_over_time(sample_db, shown, "week", today=date(2026, 10, 21))
+    assert list(table["partial"]) == [False, False, False, True]      # 28 Sep, 5, 12 and 19 Oct
+
+
+def test_add_covers_gives_each_best_seller_its_cover(sample_db):
+    rows = add_covers(sample_db, best_sellers(sample_db, OCT)[:3])
+    assert all("cover_id" in row for row in rows)
