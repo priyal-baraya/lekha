@@ -378,6 +378,9 @@ def test_insights_all_time_figures_match_hand_calculations(sample_file, insights
     assert "Only 14 sales in this period, so treat these as hints, not patterns." in text
     assert "Rent and wages aren't included." in text
     assert "Reading between the numbers" not in text                         # no label above the heading
+    # Nothing that repeats what's already shown (the owner's review)
+    for repeated in ("owners only", "Fiction brought in 36%.", "Dashed bar"):
+        assert repeated not in text, repeated
 
 
 def test_insights_chooses_how_to_group_the_chart(sample_file, insights_clock):
@@ -424,6 +427,8 @@ def test_insights_waits_for_two_weeks_of_history(empty_shop, monkeypatch):
     text = all_text(run_page("insights"))
     assert "Trends appear after two weeks of sales." in text
     assert "10 Nov to 12 Nov 2026 · your first 3 days" in text and "3 of 14 days" in text
+    assert "Two weeks of sales" in text                                      # the card's heading
+    assert "Lekha waits for enough sales" not in text and "Which genres earn the most" not in text
     assert "Revenue so far" in text and "₹900" in text
     assert ">Revenue by week<" not in text and "Most copies sold" not in text     # no chart yet
 

@@ -603,3 +603,7 @@ Written first and failing first:
 4. **Lines under card headings sat 20px below them,** as separate blocks. They're now part of the heading, 4px under it.
 5. **The rank column took a fifth of the table.** It's now only as wide as its number.
 6. **On a phone the two filters stacked** on separate lines. They now share one row.
+
+### Text cuts after review: **484 passed**
+
+Tests changed first and failing first: no "owners only", genre line or "Dashed bar" on the all-time page; the waiting card is headed "Two weeks of sales" without the explanation or the list. Browser check: the genre and profit cards and the chart without those lines. The canvas artboards were checked the same way. The data folder was deleted afterwards.

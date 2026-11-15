@@ -102,9 +102,6 @@ def render_trend(conn, period, genre) -> None:
     with st.container(key="lekha_card_trend"):
         ui.card_heading(f"Revenue by {grain}", note)
         st.altair_chart(charts.revenue_trend(table, grain), width="stretch", alt=note or f"Revenue by {grain}")
-        if table["partial"].any():
-            running = {"day": "today", "week": "this week", "month": "this month"}[grain]
-            st.html(f'<p class="lekha-note">Dashed bar: {running} so far.</p>')
         with st.expander("Show as a table"):
             st.html(ui.data_table_html(
                 [(charts.BUCKET_NAMES[grain], "left"), ("Revenue", "right"), ("Copies", "right"),
@@ -123,8 +120,7 @@ def render_genres(conn, period, genre) -> None:
         if not rows:
             ui.card_heading("Revenue by genre", "No completed sales in this period.")
             return
-        named = next((row for row in rows if row["genre"] == genre), rows[0]) if genre else rows[0]
-        ui.card_heading("Revenue by genre", f"{named['genre']} brought in {whole(named['share_percent'])}%.")
+        ui.card_heading("Revenue by genre")
         st.html(ui.genre_bars_html([(row["genre"], row["revenue_paise"], row["share_percent"]) for row in rows],
                                    highlight=genre))
 
@@ -136,7 +132,7 @@ def render_profit(conn, period, genre) -> None:
         if profit["revenue_with_cost_paise"] > 0:
             share = whole(profit["estimated_gross_profit_paise"] * 100 / profit["revenue_with_cost_paise"])
             st.html(f'<p class="lekha-figure__value">{format_rupees_whole(profit["estimated_gross_profit_paise"])}</p>'
-                    f'<p class="lekha-profit__share">About {share}% of revenue · owners only</p>')
+                    f'<p class="lekha-profit__share">About {share}% of revenue</p>')
         st.html(f'<p class="lekha-card-note">{ui.escape(profit_note(profit["coverage_percent"]))}</p>')
 
 
@@ -180,14 +176,8 @@ def render_waiting(conn, history: int) -> None:
     date_line = f"{span_text(first, today)} · {first_days_text(history)}" if first else ""
     ui.summary_header(date_line, "Trends appear after two weeks of sales.")
     with st.container(key="lekha_card_waiting"):
-        ui.card_heading("What you'll see here", "Lekha waits for enough sales so that a trend means "
-                                                "something, instead of guessing from a few days.")
-        st.html(ui.progress_html(history, MIN_HISTORY_DAYS, "Days of sales recorded")
-                + '<ul class="lekha-list">'
-                  "<li>Revenue by week, with your best and latest weeks labelled</li>"
-                  "<li>Which genres earn the most</li>"
-                  "<li>Your best sellers</li>"
-                  "<li>Findings in plain language</li></ul>")
+        ui.card_heading("Two weeks of sales")
+        st.html(ui.progress_html(history, MIN_HISTORY_DAYS, "Days of sales recorded"))
     if first:
         so_far = analytics.summary(conn, analytics.Period(first, today))
         ui.figure_strip([

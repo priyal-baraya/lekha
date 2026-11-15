@@ -1080,7 +1080,7 @@ ul.lekha-booklist {
   color: var(--lekha-ink);
   margin: var(--lekha-space-1) 0 0;
 }
-/* Before two weeks of sales: how far along, and what's coming */
+/* Before two weeks of sales: how far along */
 .lekha-progress {
   margin: 0;
   max-width: 24rem;
@@ -1099,12 +1099,6 @@ ul.lekha-booklist {
   font-size: 0.8125rem;
   color: var(--lekha-ink-secondary);
   margin: var(--lekha-space-1) 0 0;
-}
-ul.lekha-list {
-  margin: var(--lekha-space-3) 0 0;
-  padding-left: 1.25rem;
-  font-size: 0.9375rem;
-  line-height: 1.6;
 }
 @media (max-width: 640px) {
   /* The two filters share one row under the sentence */

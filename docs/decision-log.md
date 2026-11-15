@@ -822,7 +822,7 @@ The main choices, agreed on the canvas and signed off by the owner:
 - **Revenue by genre** as labelled bars (always every genre; with a genre filter on, the others are drawn quieter), next to **estimated gross profit** (owners only).
 - **Most copies sold:** the top five, with covers.
 - **What the numbers suggest:** one card per finding, saying in words whether it's good news ("Doing well") or worth a look, with what to try beside it. When there's nothing to try, the side says what the finding can't tell you.
-- **Before two weeks of sales,** the page says "Trends appear after two weeks of sales.", shows how many of the 14 days there are so far, lists what's coming and gives the figures so far.
+- **Before two weeks of sales,** the page says "Trends appear after two weeks of sales.", shows how many of the 14 days there are so far ("Two weeks of sales", "3 of 14 days") and gives the figures so far.
 
 **Why:** The old page stacked six sections with labels above every heading and long explanations. The canvas answers "how are sales trending?" in the first screen.
 
@@ -832,4 +832,6 @@ The main choices, agreed on the canvas and signed off by the owner:
 - Findings use whole rupees, like the rest of the page, and their suggestions lost the "Possible action:" label (the card says "Worth trying").
 - Each finding keeps its limits in the code (and its tests), but the card shows one of them only when there's nothing to try, as on the canvas.
 
-**Departures from the canvas:** The canvas chart showed nine weeks for "Last 30 days"; the app shows the weeks the period touches. The canvas had example findings (such as fewer books per sale) that Lekha doesn't calculate; the app shows only the findings it can back with figures. The waiting card's list says "Your best sellers" and "Findings in plain language", because unsold books are no longer a section and not every limit is shown.
+**Departures from the canvas:** The canvas chart showed nine weeks for "Last 30 days"; the app shows the weeks the period touches. The canvas had example findings (such as fewer books per sale) that Lekha doesn't calculate; the app shows only the findings it can back with figures.
+
+**Cut after review (the owner's less-text rule, same day):** "· owners only" after the profit share (staff never see the card); "Fiction brought in 91%." under Revenue by genre (the bars and the summary sentence say it); "Dashed bar: this week so far." under the chart (the bar is labelled "so far"); and the waiting card's explanation and list of what's coming. Its heading became "Two weeks of sales", to name what the bar counts towards. The canvas was updated to match.
