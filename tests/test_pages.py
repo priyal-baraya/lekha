@@ -24,7 +24,7 @@ import streamlit as st
 from streamlit.testing.v1 import AppTest
 
 from database import connect, connect_accounts, ensure_shop_database, get_connection, reset_empty, reset_with_sample_data
-from services import accounts, analytics, clock, limits, openlibrary
+from services import accounts, analytics, clock, googlebooks, limits, openlibrary
 from services.comparisons import compare_count, compare_money
 from services.books import BookInput, add_book
 from services.sales import SaleLine, record_sale
@@ -874,7 +874,7 @@ def test_adding_a_real_book_by_isbn(empty_shop, open_library):
     assert app.text_input(key="add_publisher_1").value == "Flamingo"
     assert app.number_input(key="add_year_1").value == 1998
     assert app.selectbox(key="add_genre_1").value == "Fiction"      # suggested from subjects
-    assert app.number_input(key="add_price_1").value is None       # never guessed
+    assert app.number_input(key="add_price_1").value is None       # no Google Books key, so no price
 
     assert "add_reorder_1" not in [field.key for field in app.number_input]   # set once, in Settings
     app.session_state[session.DEFAULT_REORDER] = 4                # the shop's reorder level
@@ -892,6 +892,64 @@ def test_adding_a_real_book_by_isbn(empty_shop, open_library):
     assert (row["isbn"], row["publisher"], row["published_year"], row["cover_id"], row["openlibrary_key"]) == (
         "9780006550686", "Flamingo", 1998, 10585942, "/books/OL31903694M")
     assert (row["selling_price_paise"], row["stock_quantity"], row["reorder_level"]) == (39900, 3, 4)
+
+
+GOOGLE_KEY = "AIza" + "x" * 35       # the shape of a Google API key; not a real one
+
+
+def look_up_god_of_small_things(app: AppTest) -> None:
+    app.session_state["books_tab"] = "Add a book"
+    app.run()
+    app.segmented_control(key="add_method").set_value("isbn").run()
+    app.text_input(key="isbn_lookup_input").set_value("978-0-00-655068-6")
+    app.button(key="FormSubmitter:isbn_lookup-Look up").click().run()
+    assert not app.exception
+
+
+def test_no_google_books_key_means_google_is_never_asked(empty_shop, open_library, monkeypatch):
+    asked = []
+    monkeypatch.setattr(googlebooks, "fetch_json", lambda url: asked.append(url) or {})
+    app = run_page("books")
+    look_up_god_of_small_things(app)
+    assert asked == []
+    assert app.number_input(key="add_price_1").value is None
+    assert "Google" not in html_bodies(app)
+
+
+def test_isbn_lookup_fills_in_the_google_books_price(empty_shop, open_library, monkeypatch):
+    fixtures = Path(__file__).parent / "fixtures"
+    monkeypatch.setattr(googlebooks, "fetch_json", lambda url: json.loads(
+        (fixtures / "googlebooks_isbn_9780006550686.json").read_text(encoding="utf-8")))
+    app = run_page("books")
+    app.secrets["google_books"] = {"api_key": GOOGLE_KEY}
+    look_up_god_of_small_things(app)
+    assert app.number_input(key="add_price_1").value == 399.0
+    bodies = html_bodies(app)
+    assert "Google Play ebook price" in bodies
+    assert "check the price and add your stock" in bodies
+    assert GOOGLE_KEY not in bodies and GOOGLE_KEY not in all_text(app)
+
+    app.number_input(key="add_stock_1").set_value(2)
+    app.button(key="FormSubmitter:add_book_form_1-Add book").click().run()
+    assert not app.exception
+    conn = get_connection(empty_shop)
+    try:
+        assert conn.execute("SELECT selling_price_paise FROM books").fetchone()[0] == 39900
+    finally:
+        conn.close()
+
+
+def test_google_books_trouble_leaves_the_price_empty(empty_shop, open_library, monkeypatch):
+    def fail(url):
+        raise googlebooks.GoogleBooksError("busy")
+
+    monkeypatch.setattr(googlebooks, "fetch_json", fail)
+    app = run_page("books")
+    app.secrets["google_books"] = {"api_key": GOOGLE_KEY}
+    look_up_god_of_small_things(app)
+    assert "Found on Open Library." in all_text(app)
+    assert app.number_input(key="add_price_1").value is None
+    assert not app.error
 
 
 def test_searching_open_library_lists_real_matches(empty_shop, open_library):

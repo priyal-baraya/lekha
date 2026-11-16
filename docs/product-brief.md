@@ -42,7 +42,7 @@ This is a portfolio project. It should demonstrate relational data modelling, SQ
 
 ## Real data only (since Phase 8)
 
-The app shows nothing invented. Book details come from Open Library (looked up by ISBN or found by title or author) or are typed in by the owner. Prices, stock and sales come only from the owner. No reviews or ratings are shown. A small fictional dataset still exists, but only inside the automated tests, where known numbers are needed to check the calculations.
+The app shows nothing invented. Book details come from Open Library (looked up by ISBN or found by title or author) or are typed in by the owner. Stock and sales come only from the owner. Prices come from the owner too; with a Google Books key, an ISBN lookup fills in Google Play's price for the owner to check. No reviews or ratings are shown. A small fictional dataset still exists, but only inside the automated tests, where known numbers are needed to check the calculations.
 
 ## Out of scope for now
 

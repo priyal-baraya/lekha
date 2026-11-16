@@ -6,12 +6,13 @@ services/openlibrary.py; checking and saving in services/books.py. Both
 have their own tests.
 """
 
+import logging
 from dataclasses import asdict
 
 import streamlit as st
 
 from database import connect
-from services import ValidationError, openlibrary
+from services import ValidationError, googlebooks, openlibrary
 from services.books import (
     BookInput,
     add_book,
@@ -48,6 +49,8 @@ CREDIT = ("Book details and covers come from Open Library (openlibrary.org), a f
           "catalogue edited by volunteers. Check them against the book in your hand.")
 ONE_DAY = 24 * 60 * 60
 
+log = logging.getLogger(__name__)
+
 
 def price_field(paise: int | None) -> float | None:
     """Paise -> rupees for a number field (display only; saving uses Decimal)."""
@@ -72,6 +75,28 @@ def lookup_isbn_cached(isbn: str) -> dict | None:
 @st.cache_data(ttl=ONE_DAY, show_spinner="Searching Open Library…")
 def search_cached(text: str) -> list[dict]:
     return [asdict(found) for found in openlibrary.search(text)]
+
+
+# Google Books prices are cached for a day too. The key is an argument so
+# that adding or changing it in secrets.toml takes effect at once.
+@st.cache_data(ttl=ONE_DAY, show_spinner="Looking for a price on Google Books…")
+def price_cached(isbn: str, key: str) -> dict | None:
+    found = googlebooks.price_for_isbn(isbn, key)
+    return asdict(found) if found else None
+
+
+def with_price(found: dict) -> dict:
+    """The Open Library book, plus Google Books' price if there is one.
+    Any trouble with Google just means no price: the form works as before."""
+    key = session.google_books_key()
+    if not key or not found.get("isbn"):
+        return found
+    try:
+        price = price_cached(found["isbn"], key)
+    except (googlebooks.GoogleBooksError, ValidationError) as problem:
+        log.warning("No Google Books price: %s", problem)
+        return found
+    return {**found, "price": price} if price else found
 
 
 # ---------------------------------------------------------------- browse
@@ -156,7 +181,7 @@ def render_isbn_lookup() -> None:
             "search by title instead, or type the book in yourself."
         )
         return
-    use_found(found)
+    use_found(with_price(found))
 
 
 MIN_SEARCH_LETTERS = 3       # fewer would match half of Open Library
@@ -210,7 +235,8 @@ def render_found_summary(found: dict) -> None:
              else ui.cover_letter_html(found.get("title") or "?"))
     st.html(
         f'<div class="lekha-found">{cover}<p class="lekha-found__text"><strong>Found on Open Library.</strong><br>'
-        f"{ui.escape(facts)}. Check the details against the book in your hand, then add your price and stock. "
+        f"{ui.escape(facts)}. Check the details against the book in your hand, then "
+        + ("check the price and add your stock. " if found.get("price") else "add your price and stock. ")
         + ("This is the exact edition with this ISBN." if edition else
            "This is the book in general, not a particular edition: type the ISBN from your copy if it has one.")
         + f' <a href="{ui.escape(openlibrary.API + found["openlibrary_key"])}" target="_blank" rel="noopener">'
@@ -224,6 +250,7 @@ def render_found_summary(found: dict) -> None:
 
 def render_add_form(conn, found: dict | None) -> None:
     found = found or {}
+    price_hint = found.get("price")      # from Google Books, if it had one
     suggested = openlibrary.suggest_genre(found.get("subjects", ())) if found else None
     options = genre_options(conn, suggested)
 
@@ -257,10 +284,14 @@ def render_add_form(conn, found: dict | None) -> None:
         st.html('<h3 class="lekha-subhead">Your shop\'s details</h3>')
         price_col, cost_col = st.columns(2)
         price = price_col.number_input(
-            "Selling price (₹)", min_value=0.0, step=1.0, format="%.2f", value=None, key=f"add_price_{version}",
+            "Selling price (₹)", min_value=0.0, step=1.0, format="%.2f",
+            value=price_field(price_hint["paise"]) if price_hint else None, key=f"add_price_{version}",
             placeholder="For example 350",
-            help="Only you set prices.",
+            help=None if price_hint else "Only you set prices.",
         )
+        if price_hint:
+            source = "Google Play ebook price" if price_hint["ebook"] else "Google Books price"
+            price_col.html(f'<p class="lekha-note lekha-field-note">{source}</p>')
         cost = cost_col.number_input(
             "Cost price (₹, optional)", min_value=0.0, step=1.0, format="%.2f", value=None,
             key=f"add_cost_{version}", help="What you pay per copy.",

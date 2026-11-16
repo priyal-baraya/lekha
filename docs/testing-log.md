@@ -691,3 +691,11 @@ The demo shop was put on one level (3). Add a book → Type it in myself ends at
 ### No "Reorder at" column: **492 passed**
 
 Changed first and failing first: Books, Inventory and Overview show no "Reorder at" heading; the phone list says "0 left". Checked in the demo shop by reading each table: Overview and Inventory are Book, In stock, Status; Books is Book, Genre, Price, In stock, Status; every row has as many cells as its header. The canvas tables were checked the same way.
+
+### Google Books price: **524 passed**
+
+Tests first, failing first: 29 for `services/googlebooks.py` and the key in secrets, 3 for the Books page (no key: Google never asked and the field empty; with a key: 399.00 filled in, labelled, saved as 39900 paise, the key nowhere on the page; Google failing: the form works with an empty price). The Google answer in `tests/fixtures/` is shaped like Google's documented answer, with made-up prices, because Google refused keyless requests on the day and no real answer could be recorded.
+
+Checked in the browser with a copy of the demo shop and that saved answer standing in for Google: the price field shows 399.00, "Google Play ebook price" sits 6px under it, and the found-book line says "check the price and add your stock". bandit clean.
+
+**Not yet checked:** a real Google Books answer. That needs the owner's API key in `secrets.toml`.

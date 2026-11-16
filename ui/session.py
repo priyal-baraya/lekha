@@ -17,7 +17,7 @@ import time
 import streamlit as st
 
 from database import connect_accounts
-from services import accounts
+from services import accounts, googlebooks
 from services.permissions import ACTIONS, can
 from ui.components import plain
 
@@ -167,6 +167,22 @@ def google_configured() -> bool:
                     MIN_COOKIE_SECRET_LENGTH)
         return False
     return True
+
+
+def google_books_key() -> str | None:
+    """The Google Books API key from .streamlit/secrets.toml, or None.
+    Without one, Lekha never asks Google Books for a price."""
+    try:
+        key = st.secrets.get("google_books", {}).get("api_key")
+    except Exception:          # no secrets file at all
+        return None
+    if not key:
+        return None
+    key = str(key).strip()
+    if not googlebooks.valid_key(key):
+        log.warning("Google Books price suggestions are off: api_key in secrets.toml isn't a Google API key")
+        return None
+    return key
 
 
 def names(user_ids) -> dict[int, str]:
