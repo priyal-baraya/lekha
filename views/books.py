@@ -108,10 +108,10 @@ def render_browse(conn) -> None:
         if shown:
             st.html(ui.data_table_html(
                 [("Book", "left"), ("Genre", "left"), ("Price", "right"), ("In stock", "right"),
-                 ("Reorder at", "right"), ("Status", "left")],
+                 ("Status", "left")],
                 [[ui.book_cell_html(book["title"], book["author"], openlibrary.cover_url(book["cover_id"], "S")),
                   book["genre"], format_rupees(book["selling_price_paise"]), book["stock_quantity"],
-                  book["reorder_level"], ui.Html(ui.stock_status_html(book["stock_quantity"], book["reorder_level"]))]
+                  ui.Html(ui.stock_status_html(book["stock_quantity"], book["reorder_level"]))]
                  for book in shown],
                 css_class="lekha-wide-only",
             ))

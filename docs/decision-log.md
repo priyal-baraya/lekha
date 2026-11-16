@@ -890,3 +890,5 @@ The main choices, agreed on the canvas and signed off by the owner:
 **How:** Books still store their reorder level, so the low-stock rule and every query stay the same (low at or below it). `services/books.set_reorder_level_for_all` sets it on every book in one step.
 
 **What it costs:** a slow seller and a bestseller can no longer have different levels. Existing books keep their old levels until an owner next saves Settings.
+
+**No "Reorder at" column (next day, 16 Nov):** with one reorder level for the shop, the column showed the same number on every row, so it was removed from Overview's "Reorder these", Inventory's "Low on stock" and the Books table, and the phone lists say "0 left" instead of "0 left · reorder at 3". The level is in Settings; the status word (Low, Out of stock) still says which books need reordering. The canvas was updated to match.

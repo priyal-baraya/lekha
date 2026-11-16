@@ -162,6 +162,7 @@ def test_page_opens_without_errors(sample_file, page, expected):
     text = all_text(app)
     assert expected.replace("<strong>", "**").replace("</strong>", "**") in text or expected in text
     assert "fictional" not in text.lower()          # the app never labels itself as fake data
+    assert ">Reorder at<" not in html_bodies(app)    # one level for the shop, so no column for it
 
 
 # ---------- The example from the brief, through the real page ----------
@@ -827,7 +828,7 @@ def test_overview_of_a_trading_shop(data_dir, fixed_now):
     assert "This week so far" in bodies and "Last 30 days" in bodies
     for extra in ("by this time last Thursday", "sales ·", "Monday to today", "Compared with"):
         assert extra not in bodies                                     # just the figures
-    assert "Reorder these" in bodies and "Out of stock" in bodies
+    assert "Reorder these" in bodies and "Out of stock" in bodies and ">Reorder at<" not in bodies
     assert "Malgudi Days ×2, Gitanjali" in bodies                       # latest sales, in words
     assert "Gitanjali sold out, so it's on the reorder list." in bodies
     for extra in ("Today and yesterday.", "emptiest first", "Copies sold since Monday."):

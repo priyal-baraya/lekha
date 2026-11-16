@@ -189,7 +189,7 @@ def test_shelf_marks_sold_out_books_in_words():
 
 def test_book_list_for_phones_says_stock_in_words():
     html = book_list_html([("Gitanjali", None, 0, 3), ("The <Guide>", "https://covers.openlibrary.org/b/id/1-S.jpg", 1, 4)])
-    assert "0 left · reorder at 3" in html and "1 left · reorder at 4" in html
+    assert ">0 left<" in html and ">1 left<" in html and "reorder at" not in html
     assert html.count("Out of stock") == 1 and html.count(">Low<") == 1
     assert "The &lt;Guide&gt;" in html
 
