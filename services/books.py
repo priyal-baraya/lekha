@@ -292,3 +292,17 @@ def update_book(conn: sqlite3.Connection, book_id: int, data: BookInput) -> None
         raise ValidationError([f"The database refused this change: {problem}"]) from None
     if cursor.rowcount == 0:
         raise ValidationError(["This book no longer exists."])
+
+
+def set_reorder_level_for_all(conn: sqlite3.Connection, level: int) -> int:
+    """Give every book the shop's reorder level, in one step. Returns how
+    many books it set.
+
+    A shop has one reorder level, set in Settings (owner's decision,
+    15 Nov 2026): nobody types one per book. Books still store it, so
+    the low-stock rule is unchanged: low at or below this number.
+    """
+    if isinstance(level, bool) or not isinstance(level, int) or level < 0:
+        raise ValidationError(["The reorder level is a whole number, 0 or more."])
+    with conn:
+        return conn.execute("UPDATE books SET reorder_level = ?", (level,)).rowcount

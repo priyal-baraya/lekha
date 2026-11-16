@@ -511,10 +511,13 @@ def test_team_invite_code_is_shown_once_and_can_be_cancelled(data_dir):
 
 def test_settings_owner_saves_the_shop_and_their_name(data_dir):
     asha, _, shop = team_shop()
+    with connect(ensure_shop_database(shop)) as conn:
+        book = add_book(conn, BookInput(title="Gitanjali", author="Rabindranath Tagore", genre="Poetry",
+                                        selling_price="250", stock_quantity=4, reorder_level=2))
     app = open_page(asha, "settings")
     text = all_text(app)
     assert "Your shop and your own account." not in text and "Configuration" not in text
-    assert "Used for new books" in text
+    assert "Used for every book" in text and app.number_input(key="settings_reorder").label == "Reorder level"
     for extra in ("Other tabs signed in with the old password", "Run another bookshop"):    # cut in review
         assert extra not in text, extra
 
@@ -527,6 +530,8 @@ def test_settings_owner_saves_the_shop_and_their_name(data_dir):
         saved = accounts.get_shop(acc, shop)
         assert (saved["name"], saved["default_reorder_level"]) == ("Kitab Ghar Books", 5)
         assert accounts.get_user(acc, asha)["display_name"] == "Asha R."
+    with connect(ensure_shop_database(shop)) as conn:          # every book follows the shop's number
+        assert conn.execute("SELECT reorder_level FROM books WHERE book_id = ?", (book,)).fetchone()[0] == 5
 
 
 def test_settings_password_change(data_dir):
@@ -870,6 +875,8 @@ def test_adding_a_real_book_by_isbn(empty_shop, open_library):
     assert app.selectbox(key="add_genre_1").value == "Fiction"      # suggested from subjects
     assert app.number_input(key="add_price_1").value is None       # never guessed
 
+    assert "add_reorder_1" not in [field.key for field in app.number_input]   # set once, in Settings
+    app.session_state[session.DEFAULT_REORDER] = 4                # the shop's reorder level
     app.number_input(key="add_price_1").set_value(399.0)
     app.number_input(key="add_stock_1").set_value(3)
     app.button(key="FormSubmitter:add_book_form_1-Add book").click().run()
@@ -883,7 +890,7 @@ def test_adding_a_real_book_by_isbn(empty_shop, open_library):
         conn.close()
     assert (row["isbn"], row["publisher"], row["published_year"], row["cover_id"], row["openlibrary_key"]) == (
         "9780006550686", "Flamingo", 1998, 10585942, "/books/OL31903694M")
-    assert (row["selling_price_paise"], row["stock_quantity"]) == (39900, 3)
+    assert (row["selling_price_paise"], row["stock_quantity"], row["reorder_level"]) == (39900, 3, 4)
 
 
 def test_searching_open_library_lists_real_matches(empty_shop, open_library):

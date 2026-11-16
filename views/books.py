@@ -265,13 +265,8 @@ def render_add_form(conn, found: dict | None) -> None:
             "Cost price (₹, optional)", min_value=0.0, step=1.0, format="%.2f", value=None,
             key=f"add_cost_{version}", help="What you pay per copy.",
         )
-        stock_col, reorder_col = st.columns(2)
+        stock_col, _ = st.columns(2)
         stock = stock_col.number_input("Copies in stock", min_value=0, step=1, value=0, key=f"add_stock_{version}")
-        reorder = reorder_col.number_input(
-            "Reorder level", min_value=0, step=1, value=session.default_reorder_level(),
-            key=f"add_reorder_{version}",
-            help="Lekha flags the book as low at or below this.",
-        )
         submitted = st.form_submit_button("Add book", type="primary")
 
     if not submitted:
@@ -279,7 +274,8 @@ def render_add_form(conn, found: dict | None) -> None:
     data = BookInput(
         title=title, author=author, genre=genre or "", isbn=isbn,
         selling_price=price, cost_price=cost,
-        stock_quantity=int(stock), reorder_level=int(reorder),
+        # The shop's one reorder level, set in Settings
+        stock_quantity=int(stock), reorder_level=session.default_reorder_level(),
         publisher=publisher or None,
         published_year=int(published_year) if published_year is not None else None,
         cover_id=found.get("cover_id"),
@@ -372,10 +368,6 @@ def render_edit(conn) -> None:
             "Cost price (₹, optional)", min_value=0.0, step=1.0, format="%.2f",
             value=price_field(book["cost_price_paise"]), key=f"edit_cost_{book_id}",
         )
-        reorder = st.number_input(
-            "Reorder level", min_value=0, step=1, value=book["reorder_level"],
-            key=f"edit_reorder_{book_id}",
-        )
         st.html(f'<p class="lekha-note"><strong>In stock: {book["stock_quantity"]}.</strong> Stock isn\'t '
                 "edited here. Use Inventory, Correct stock, so every change is recorded with a reason.</p>")
         submitted = st.form_submit_button("Save changes", type="primary")
@@ -384,7 +376,8 @@ def render_edit(conn) -> None:
         return
     session.require("edit_books")     # checked again at the moment of saving
     data = BookInput(title=title, author=author, genre=genre or "", isbn=isbn,
-                     selling_price=price, cost_price=cost, reorder_level=int(reorder))
+                     selling_price=price, cost_price=cost,
+                     reorder_level=book["reorder_level"])     # the shop's, set in Settings
     try:
         update_book(conn, book_id, data)
     except ValidationError as problem:

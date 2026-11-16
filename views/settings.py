@@ -8,8 +8,9 @@ signs in only with Google has no password to change, so no Password card.
 
 import streamlit as st
 
-from database import connect_accounts
+from database import connect, connect_accounts
 from services import ValidationError, accounts
+from services.books import set_reorder_level_for_all
 from ui import components as ui
 from ui import session
 
@@ -27,14 +28,16 @@ def render_shop() -> None:
         ui.card_heading("Shop")
         with st.form("shop_settings", border=False):
             name = st.text_input("Shop name", value=shop["name"], max_chars=80, key="settings_shop_name")
-            reorder = st.number_input("Default reorder level", min_value=0, step=1,
+            reorder = st.number_input("Reorder level", min_value=0, step=1,
                                       value=shop["default_reorder_level"], key="settings_reorder", width=200)
-            st.html('<p class="lekha-note lekha-field-note">Used for new books</p>')
+            st.html('<p class="lekha-note lekha-field-note">Used for every book</p>')
             saved = st.form_submit_button("Save shop settings", type="primary")
         if saved:
             try:
                 with connect_accounts() as acc:
                     accounts.update_shop_settings(acc, me, shop_id, name, int(reorder))
+                with connect() as conn:                  # one reorder level for every book
+                    set_reorder_level_for_all(conn, int(reorder))
             except ValidationError as problem:
                 ui.show_errors(problem.errors)
             else:
