@@ -892,3 +892,17 @@ The main choices, agreed on the canvas and signed off by the owner:
 **What it costs:** a slow seller and a bestseller can no longer have different levels. Existing books keep their old levels until an owner next saves Settings.
 
 **No "Reorder at" column (next day, 16 Nov):** with one reorder level for the shop, the column showed the same number on every row, so it was removed from Overview's "Reorder these", Inventory's "Low on stock" and the Books table, and the phone lists say "0 left" instead of "0 left · reorder at 3". The level is in Settings; the status word (Low, Out of stock) still says which books need reordering. The canvas was updated to match.
+
+## Selling price from Google Books (16 Nov 2026)
+
+**Context:** the owner asked whether the selling price could be fetched, so it doesn't have to be typed for every book. Until now Lekha never suggested prices.
+
+**Checked first:** Google Books refused every keyless request ("quota exceeded"): without a key, all apps share one daily limit. Its prices are what Google Play charges in India, usually the ebook, and many print books have none.
+
+**Decision (the owner's):** use the shop's own free API key from `secrets.toml` (or the host's secret settings, once hosted: one key serves everyone using that Lekha), and fill in the price field rather than only showing a hint. Only after an ISBN lookup, because a title search doesn't give an exact edition.
+
+**How:** `services/googlebooks.py` asks for `isbn:<the ISBN>` in India and uses only the edition with that ISBN, its list price (closest to the printed price) or else its retail price, in rupees, ₹0 to ₹1,00,000. The field shows "Google Play ebook price" (or "Google Books price") under it, the found-book line says "check the price", and "Only you set prices." shows only when there is no suggestion. With no key, or any trouble, the field is empty as before. Cached for a day like Open Library.
+
+**What it costs:** an ebook price can be lower than the printed copy, so the label matters, and the owner still has to check it. This reverses the earlier "never guessed" rule for prices; stock is still never guessed.
+
+**Canvas:** BooksAdd shows the filled-in price with its label, and its out-of-date per-book "Reorder level" field (removed from the app in #29) is gone.

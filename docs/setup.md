@@ -60,7 +60,7 @@ Go to **Books → Add a book** and choose how:
 - **Search by title or author**: pick the right book from the results (check the author and year: results can include study guides and translations).
 - **Type it in myself**: for books Open Library doesn't have, or when you're offline.
 
-Check the details against the book, correct anything that's wrong, then enter **your** selling price, copies in stock and reorder level. These come only from you: Lekha never guesses them.
+Check the details against the book, correct anything that's wrong, then enter **your** selling price and copies in stock. Stock comes only from you. The price can be filled in from Google Books (see below); check it before saving. The reorder level is one number for the whole shop, in Settings.
 
 Looking books up needs an internet connection. Lekha remembers each answer for a day, so repeated lookups are instant.
 
@@ -95,6 +95,27 @@ Username and password sign-in works without any of this. To add a **Sign in with
 
 If the button doesn't appear, one of the three settings (`redirect_uri`, `cookie_secret`, `[auth.google]`) is missing, or the cookie secret is shorter than 32 characters (Lekha refuses a short one, because it protects the Google sign-in cookie). If Google says "redirect_uri_mismatch", the address in step 3 doesn't exactly match the one in `secrets.toml`, including `http` and the port.
 
+## Optional: selling prices from Google Books
+
+With a Google Books API key, looking a book up by ISBN also fills in the selling price that Google Play charges for that edition in India. The form says **Google Play ebook price** under it, because it's usually the ebook, which often costs less than the printed copy. Many print books have no price there; the field then stays empty. Without a key, Lekha never asks Google.
+
+Google Books needs a key: without one, every app in the world shares one small daily limit, which is usually used up.
+
+1. In the [Google Cloud Console](https://console.cloud.google.com/), choose or create a project.
+2. Open **APIs & Services → Library**, find **Books API** and click **Enable**.
+3. Open **APIs & Services → Credentials → Create credentials → API key**.
+4. Click the new key, and under **API restrictions** choose **Restrict key** and tick only **Books API**. Save.
+5. Add it to `.streamlit/secrets.toml` (the same file as Google sign-in, never committed):
+
+   ```toml
+   [google_books]
+   api_key = "your API key"
+   ```
+
+6. Restart Lekha.
+
+The free limit is about 1,000 lookups a day, and Lekha remembers each answer for a day. When Lekha is hosted, put the same lines in the host's secret settings instead: one key serves everyone who uses that Lekha. If the price never appears, check the terminal: Lekha warns there when the key isn't shaped like a Google API key.
+
 ## Letting other devices in
 
 Lekha only accepts connections from the computer it runs on (`address = "localhost"` in `.streamlit/config.toml`). This is deliberate: Lekha has no HTTPS of its own, so if a phone or a second till opened it over the shop's Wi-Fi, passwords and sales would travel across the network unencrypted, readable by anyone else on it.
@@ -124,7 +145,7 @@ See [docs/security.md](security.md) for everything Lekha protects and what it do
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-All 492 should pass. They use their own temporary folders, never your `data/` folder, and don't need the internet: Open Library lookups are replayed from real responses saved in `tests/fixtures/`.
+All 524 should pass. They use their own temporary folders, never your `data/` folder, and don't need the internet: Open Library lookups are replayed from real responses saved in `tests/fixtures/`.
 
 **Start again from nothing**
 

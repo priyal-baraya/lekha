@@ -43,6 +43,7 @@ What Lekha protects, how, and what it doesn't cover yet. Every check listed here
 - **HTML:** Lekha's own page pieces escape text with `html.escape`.
 - **Markdown:** Streamlit reads text in `st.markdown`, `st.info` and similar as Markdown. Anything a person typed or Open Library sent goes through `ui.plain()` first, so a title like `The $100 *Startup*` shows as typed, not as maths and italics, a name can't fake bold "owner" text, a picture link can't load an image from another website, and a bare web address doesn't become a link.
 - **Open Library:** only `https://openlibrary.org` is ever fetched; answers over 2 MB are refused; record references, cover numbers and years must have the expected shape, or they're ignored; text is trimmed to sensible lengths. Book details are only pre-filled: a person checks them before saving.
+- **Google Books:** only `https://www.googleapis.com/books/v1/volumes` is fetched, and only when an API key is set. The key must look like a Google API key (`AIza` and 35 letters, digits, `-` or `_`), so a mistyped one can't change the address. It is read from `secrets.toml` and never shown, logged or put in an error message. Only a price in rupees for the exact ISBN, between ₹0 and ₹1,00,000, is used; answers over 2 MB are refused; any trouble just leaves the price empty. The price is only filled in: a person checks it before saving.
 - **Length limits:** title 300, author 200, genre 60, publisher 200, cancellation reason and stock note 300 characters.
 
 ## The server
