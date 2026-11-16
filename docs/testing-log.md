@@ -687,3 +687,7 @@ Written first and failing first: setting one level on all 12 sample books, refus
 ### Browser check (demo shop, port 8503)
 
 The demo shop was put on one level (3). Add a book → Type it in myself ends at "Copies in stock" with no reorder field.
+
+### No "Reorder at" column: **492 passed**
+
+Changed first and failing first: Books, Inventory and Overview show no "Reorder at" heading; the phone list says "0 left". Checked in the demo shop by reading each table: Overview and Inventory are Book, In stock, Status; Books is Book, Genre, Price, In stock, Status; every row has as many cells as its header. The canvas tables were checked the same way.

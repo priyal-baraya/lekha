@@ -42,9 +42,9 @@ def render_alerts(conn) -> None:
             st.html('<p class="lekha-message lekha-message--success">Nothing to reorder.</p>')
             return
         st.html(ui.data_table_html(
-            [("Book", "left"), ("In stock", "right"), ("Reorder at", "right"), ("Status", "left")],
+            [("Book", "left"), ("In stock", "right"), ("Status", "left")],
             [[ui.book_cell_html(book["title"], book["author"], cover_url(book["cover_id"], "S")),
-              book["stock_quantity"], book["reorder_level"],
+              book["stock_quantity"],
               ui.Html(ui.stock_status_html(book["stock_quantity"], book["reorder_level"]))]
              for book in rows],
             css_class="lekha-wide-only",

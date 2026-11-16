@@ -315,9 +315,10 @@ def book_rows_html(rows: list[BookRow]) -> str:
 
 def book_list_html(books: list[tuple[str, str | None, int, int]]) -> str:
     """Books to reorder as a list, for phones. Each item is
-    (title, cover_url, in_stock, reorder_at)."""
+    (title, cover_url, in_stock, reorder_at). The shop has one reorder
+    level, so the line says only what's left."""
     return book_rows_html([
-        BookRow(title, url, f"{in_stock} left · reorder at {reorder_at}", stock_status_html(in_stock, reorder_at))
+        BookRow(title, url, f"{in_stock} left", stock_status_html(in_stock, reorder_at))
         for title, url, in_stock, reorder_at in books
     ])
 
