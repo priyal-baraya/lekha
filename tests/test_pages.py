@@ -925,7 +925,7 @@ def test_isbn_lookup_fills_in_the_google_books_price(empty_shop, open_library, m
     look_up_god_of_small_things(app)
     assert app.number_input(key="add_price_1").value == 399.0
     bodies = html_bodies(app)
-    assert "Google Play ebook price" in bodies
+    assert "Recommended price" in bodies
     assert "check the price and add your stock" in bodies
     assert GOOGLE_KEY not in bodies and GOOGLE_KEY not in all_text(app)
 
@@ -964,7 +964,7 @@ def test_no_isbn_price_falls_back_to_the_title(empty_shop, open_library, real_go
     look_up_god_of_small_things(app)
     assert [("isbn:" in url, "intitle:" in url) for url in real_google] == [(True, False), (False, True)]
     assert app.number_input(key="add_price_1").value == 382.0
-    assert "Google Play ebook price" in html_bodies(app)
+    assert "Recommended price" in html_bodies(app)
 
 
 def test_a_book_from_the_title_search_gets_a_price_too(empty_shop, open_library, real_google):
@@ -977,7 +977,7 @@ def test_a_book_from_the_title_search_gets_a_price_too(empty_shop, open_library,
     app.button(key="use_result_0").click().run()
     assert not app.exception
     assert app.number_input(key="add_price_1").value == 382.0
-    assert "Google Play ebook price" in html_bodies(app)
+    assert "Recommended price" in html_bodies(app)
 
 
 def test_google_books_trouble_leaves_the_price_empty(empty_shop, open_library, monkeypatch):

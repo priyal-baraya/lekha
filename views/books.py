@@ -293,8 +293,8 @@ def render_add_form(conn, found: dict | None) -> None:
             help=None if price_hint else "Only you set prices.",
         )
         if price_hint:
-            source = "Google Play ebook price" if price_hint["ebook"] else "Google Books price"
-            price_col.html(f'<p class="lekha-note lekha-field-note">{source}</p>')
+            # From Google Books (usually its ebook price); the owner changes it as they like.
+            price_col.html('<p class="lekha-note lekha-field-note">Recommended price</p>')
         cost = cost_col.number_input(
             "Cost price (₹, optional)", min_value=0.0, step=1.0, format="%.2f", value=None,
             key=f"add_cost_{version}", help="What you pay per copy.",

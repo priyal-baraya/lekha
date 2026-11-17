@@ -707,3 +707,7 @@ Tests first, failing first: 15 more for `services/googlebooks.py`, replaying **r
 Found on the way: AppTest reads the real `secrets.toml`, which now holds a key, so the "no key" test failed. `tests/conftest.py` now gives every test empty secrets and blocks the internet.
 
 Checked with the real key: in the browser (a copy of the demo shop on port 8502, deleted afterwards), ISBN 9780006550686 filled in 382.00 with "Google Play ebook price" under it. By script, 9 of 16 well-known books got a price (The God of Small Things ₹382, Train to Pakistan ₹358.72, Gitanjali ₹89, Midnight's Children ₹398.25, Sapiens ₹529.82, Atomic Habits ₹707.11 and others); Harry Potter, Malgudi Days, The White Tiger, A Suitable Boy, Wings of Fire, The Guide and Five Point Someone got none. bandit clean.
+
+### "Recommended price": **541 passed**
+
+The three page tests that check the label now look for "Recommended price" (failing first, then passing after the one-line change).
