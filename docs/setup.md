@@ -97,7 +97,7 @@ If the button doesn't appear, one of the three settings (`redirect_uri`, `cookie
 
 ## Optional: selling prices from Google Books
 
-With a Google Books API key, a book found on Open Library (by ISBN or by title) also gets a selling price: what Google Play charges for it in India. Google has no price for most printed ISBNs, so Lekha then searches by title and author and takes a priced edition with the same title and author. The form says **Google Play ebook price** under the field, because it's nearly always the ebook, which can cost more or less than the printed copy. In a test of 16 well-known books on 17 Nov 2026, 9 got a price. When nothing matches, the field stays empty. Without a key, Lekha never asks Google.
+With a Google Books API key, a book found on Open Library (by ISBN or by title) also gets a selling price: what Google Play charges for it in India. Google has no price for most printed ISBNs, so Lekha then searches by title and author and takes a priced edition with the same title and author. The form says **Recommended price** under the field. It's nearly always Google Play's ebook price, which can cost more or less than the printed copy, so change it as you like before saving. In a test of 16 well-known books on 17 Nov 2026, 9 got a price. When nothing matches, the field stays empty. Without a key, Lekha never asks Google.
 
 Google Books needs a key: without one, every app in the world shares one small daily limit, which is usually used up.
 

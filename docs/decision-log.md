@@ -914,3 +914,5 @@ Now, when the ISBN has no price (or a book is chosen from a title search, which 
 **What it costs:** it's an ebook price for some edition of the book, not the copy in the shop's hand; Google's answers change between calls (a ₹199 Train to Pakistan was listed once, then not); and some prices are odd (₹1,146 for a Penguin Pride and Prejudice ebook). 9 of 16 well-known books got a price. The owner checks every price before saving.
 
 Tests now never read the real `.streamlit/secrets.toml` and can't reach the internet: an autouse fixture in `tests/conftest.py` gives every test empty secrets and blocks `urlopen`.
+
+**"Recommended price" (18 Nov):** the owner didn't want the label to say "Google Play ebook price". The field now says **Recommended price** under it, whatever Google's edition: it's a starting point the owner changes as they like. Where it comes from is in the setup guide and in `services/googlebooks.py`. The canvas BooksAdd artboard matches.
