@@ -939,6 +939,47 @@ def test_isbn_lookup_fills_in_the_google_books_price(empty_shop, open_library, m
         conn.close()
 
 
+@pytest.fixture
+def real_google(monkeypatch):
+    """Answer Google Books with the real answers saved in tests/fixtures:
+    no price for the printed ISBN, ebook prices when searched by title."""
+    fixtures = Path(__file__).parent / "fixtures"
+    asked = []
+
+    def fake_fetch(url):
+        url = urllib.parse.unquote_plus(url)
+        asked.append(url)
+        name = ("googlebooks_isbn_9780006550686_print.json" if "q=isbn:9780006550686" in url
+                else "googlebooks_title_god_of_small_things.json" if 'intitle:"The God of Small Things"' in url
+                else None)
+        return json.loads((fixtures / name).read_text(encoding="utf-8")) if name else {}
+
+    monkeypatch.setattr(googlebooks, "fetch_json", fake_fetch)
+    return asked
+
+
+def test_no_isbn_price_falls_back_to_the_title(empty_shop, open_library, real_google):
+    app = run_page("books")
+    app.secrets["google_books"] = {"api_key": GOOGLE_KEY}
+    look_up_god_of_small_things(app)
+    assert [("isbn:" in url, "intitle:" in url) for url in real_google] == [(True, False), (False, True)]
+    assert app.number_input(key="add_price_1").value == 382.0
+    assert "Google Play ebook price" in html_bodies(app)
+
+
+def test_a_book_from_the_title_search_gets_a_price_too(empty_shop, open_library, real_google):
+    app = run_page("books")
+    app.secrets["google_books"] = {"api_key": GOOGLE_KEY}
+    app.session_state["books_tab"] = "Add a book"
+    app.run()
+    app.segmented_control(key="add_method").set_value("search").run()
+    app.text_input(key="ol_search_input").set_value("the god of small things").run()
+    app.button(key="use_result_0").click().run()
+    assert not app.exception
+    assert app.number_input(key="add_price_1").value == 382.0
+    assert "Google Play ebook price" in html_bodies(app)
+
+
 def test_google_books_trouble_leaves_the_price_empty(empty_shop, open_library, monkeypatch):
     def fail(url):
         raise googlebooks.GoogleBooksError("busy")

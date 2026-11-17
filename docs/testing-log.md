@@ -699,3 +699,11 @@ Tests first, failing first: 29 for `services/googlebooks.py` and the key in secr
 Checked in the browser with a copy of the demo shop and that saved answer standing in for Google: the price field shows 399.00, "Google Play ebook price" sits 6px under it, and the found-book line says "check the price and add your stock". bandit clean.
 
 **Not yet checked:** a real Google Books answer. That needs the owner's API key in `secrets.toml`.
+
+### Google Books price by title: **541 passed**
+
+Tests first, failing first: 15 more for `services/googlebooks.py`, replaying **real** Google answers recorded with the owner's key (the key is not in them): the printed ISBN has no price; a title search finds Penguin UK's ebook at ₹382, not the Marathi edition at ₹358.72; subtitles, capitals, quotes and missing authors handled; a different author or title doesn't match; a longer edition title counts only when no exact title is priced. 2 more page tests: an ISBN with no price falls back to the title (one ISBN request, then one title request) and a book chosen from the title search gets a price.
+
+Found on the way: AppTest reads the real `secrets.toml`, which now holds a key, so the "no key" test failed. `tests/conftest.py` now gives every test empty secrets and blocks the internet.
+
+Checked with the real key: in the browser (a copy of the demo shop on port 8502, deleted afterwards), ISBN 9780006550686 filled in 382.00 with "Google Play ebook price" under it. By script, 9 of 16 well-known books got a price (The God of Small Things ₹382, Train to Pakistan ₹358.72, Gitanjali ₹89, Midnight's Children ₹398.25, Sapiens ₹529.82, Atomic Habits ₹707.11 and others); Harry Potter, Malgudi Days, The White Tiger, A Suitable Boy, Wings of Fire, The Guide and Five Point Someone got none. bandit clean.

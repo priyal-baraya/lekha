@@ -1,10 +1,12 @@
 """Tests for services/googlebooks.py: the price suggestion when adding a book.
 
 tests/fixtures/googlebooks_isbn_9780006550686.json is shaped like Google
-Books' documented answer, but its prices are made up for the tests: on
-2026-11-16 Google refused keyless requests (the shared daily limit was
-used up), so no real answer could be recorded. The tests replay it
-instead of calling the internet.
+Books' documented answer, but its prices are made up to test the rules
+(on 2026-11-16 no key was set up yet). The two other googlebooks_ files
+are REAL answers, recorded on 2026-11-17 with the owner's key (the key is
+not in them): Google has no price for the printed ISBN, but a search by
+title finds priced ebook editions. The tests replay them instead of
+calling the internet.
 """
 
 import json
@@ -151,3 +153,103 @@ def test_the_key_is_read_from_secrets_only_when_it_looks_right(monkeypatch):
     ):
         monkeypatch.setattr(st, "secrets", secrets)
         assert session.google_books_key() == expected
+
+
+# ---------- search by title and author (real answers) ----------
+
+def real(name):
+    return json.loads((FIXTURES / f"googlebooks_{name}.json").read_text(encoding="utf-8"))
+
+
+def test_the_printed_isbn_has_no_price_on_google(monkeypatch):
+    monkeypatch.setattr(googlebooks, "fetch_json", lambda url: real("isbn_9780006550686_print"))
+    assert googlebooks.price_for_isbn("9780006550686", KEY) is None
+
+
+@pytest.fixture
+def title_search(monkeypatch):
+    calls = []
+
+    def fake_fetch(url):
+        calls.append(url)
+        return real("title_god_of_small_things")
+
+    monkeypatch.setattr(googlebooks, "fetch_json", fake_fetch)
+    return calls
+
+
+def test_title_search_finds_the_ebook_price(title_search):
+    found = googlebooks.price_for_title("The God of Small Things", "Arundhati Roy", KEY)
+    # Penguin UK's English ebook, not the Marathi edition (₹358.72) further down
+    assert found == googlebooks.PriceSuggestion(paise=38200, ebook=True)
+    url = googlebooks.urllib.parse.unquote_plus(title_search[0])
+    assert url.startswith(googlebooks.API + "?")
+    assert 'q=intitle:"The God of Small Things" inauthor:Roy' in url and "country=IN" in url
+
+
+def test_title_search_ignores_a_subtitle_and_case(title_search):
+    found = googlebooks.price_for_title("THE GOD OF SMALL THINGS: A Novel", "Arundhati Roy, Someone Else", KEY)
+    assert found.paise == 38200
+    assert 'intitle:"THE GOD OF SMALL THINGS"' in googlebooks.urllib.parse.unquote_plus(title_search[0])
+
+
+def test_title_search_needs_the_same_title_and_author(title_search):
+    assert googlebooks.price_for_title("The God of Small Things", "Jane Austen", KEY) is None
+    assert googlebooks.price_for_title("The God of Big Things", "Arundhati Roy", KEY) is None
+
+
+def test_title_search_without_an_author_still_matches_the_title(title_search):
+    assert googlebooks.price_for_title("The God of Small Things", "", KEY).paise == 38200
+    assert "inauthor" not in googlebooks.urllib.parse.unquote_plus(title_search[0])
+
+
+def test_title_search_keeps_quotes_out_of_the_query(title_search):
+    googlebooks.price_for_title('The "God" of Small Things', "Roy", KEY)
+    assert 'intitle:"The God of Small Things"' in googlebooks.urllib.parse.unquote_plus(title_search[0])
+
+
+@pytest.mark.parametrize("title", ["", "   ", ":", '""'])
+def test_title_search_with_no_title_asks_nothing(title_search, title):
+    assert googlebooks.price_for_title(title, "Roy", KEY) is None
+    assert title_search == []
+
+
+def test_title_search_needs_a_key(title_search):
+    with pytest.raises(ValueError):
+        googlebooks.price_for_title("The God of Small Things", "Roy", "nope")
+    assert title_search == []
+
+
+def test_a_very_long_title_is_cut_before_asking(title_search):
+    googlebooks.price_for_title("A" * 1000, "Roy", KEY)
+    assert len(title_search[0]) < 600
+
+
+def edition(title, authors, amount, language="en"):
+    return {"volumeInfo": {"title": title, "authors": authors, "language": language},
+            "saleInfo": {"country": "IN", "saleability": "FOR_SALE", "isEbook": True,
+                         "listPrice": {"amount": amount, "currencyCode": "INR"}}}
+
+
+def test_a_longer_edition_title_counts_when_nothing_matches_exactly(monkeypatch):
+    # As Google answered for Train to Pakistan on 2026-11-17: only the
+    # "Premium Classic Edition" had a price.
+    answer = {"items": [edition("Karachi Express", ["Dilip Singh"], 88.5),
+                        edition("Train to Pakistan - 2004", ["Veeresh Malik"], 50),
+                        edition("Train to Pakistan Penguin Premium Classic Edition", ["Khushwant Singh"], 358.72)]}
+    monkeypatch.setattr(googlebooks, "fetch_json", lambda url: answer)
+    assert googlebooks.price_for_title("Train to Pakistan", "Khushwant Singh", KEY).paise == 35872
+
+
+def test_an_exact_title_comes_before_a_longer_one(monkeypatch):
+    answer = {"items": [edition("Train to Pakistan Penguin Premium Classic Edition", ["Khushwant Singh"], 358.72),
+                        edition("Train to Pakistan", ["Khushwant Singh"], 199.42)]}
+    monkeypatch.setattr(googlebooks, "fetch_json", lambda url: answer)
+    assert googlebooks.price_for_title("Train to Pakistan", "Khushwant Singh", KEY).paise == 19942
+
+
+def test_a_title_that_only_starts_the_same_word_does_not_count(monkeypatch):
+    answer = {"items": [edition("Train to Pakistani Kitchens", ["Khushwant Singh"], 300)]}
+    monkeypatch.setattr(googlebooks, "fetch_json", lambda url: answer)
+    assert googlebooks.price_for_title("Train to Pakistan", "Khushwant Singh", KEY) is None
+
