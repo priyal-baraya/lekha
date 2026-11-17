@@ -80,8 +80,11 @@ def search_cached(text: str) -> list[dict]:
 # Google Books prices are cached for a day too. The key is an argument so
 # that adding or changing it in secrets.toml takes effect at once.
 @st.cache_data(ttl=ONE_DAY, show_spinner="Looking for a price on Google Books…")
-def price_cached(isbn: str, key: str) -> dict | None:
-    found = googlebooks.price_for_isbn(isbn, key)
+def price_cached(isbn: str | None, title: str, author: str, key: str) -> dict | None:
+    """This edition's price if Google has one, or else the price of an
+    edition with the same title and author."""
+    found = googlebooks.price_for_isbn(isbn, key) if isbn else None
+    found = found or googlebooks.price_for_title(title, author, key)
     return asdict(found) if found else None
 
 
@@ -89,10 +92,10 @@ def with_price(found: dict) -> dict:
     """The Open Library book, plus Google Books' price if there is one.
     Any trouble with Google just means no price: the form works as before."""
     key = session.google_books_key()
-    if not key or not found.get("isbn"):
+    if not key:
         return found
     try:
-        price = price_cached(found["isbn"], key)
+        price = price_cached(found.get("isbn"), found.get("title") or "", found.get("author") or "", key)
     except (googlebooks.GoogleBooksError, ValidationError) as problem:
         log.warning("No Google Books price: %s", problem)
         return found
@@ -218,7 +221,7 @@ def render_search() -> None:
                 f"{'first published ' + str(year) if year else 'year not listed'}",
                 openlibrary.cover_url(found["cover_id"], "S")))
             if st.button("Use this book", key=f"use_result_{index}"):
-                use_found(found)
+                use_found(with_price(found))
     note(CREDIT)
 
 

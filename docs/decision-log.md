@@ -906,3 +906,11 @@ The main choices, agreed on the canvas and signed off by the owner:
 **What it costs:** an ebook price can be lower than the printed copy, so the label matters, and the owner still has to check it. This reverses the earlier "never guessed" rule for prices; stock is still never guessed.
 
 **Canvas:** BooksAdd shows the filled-in price with its label, and its out-of-date per-book "Reorder level" field (removed from the app in #29) is gone.
+
+**Price by title and author (next day, 17 Nov):** with the owner's key, real answers showed Google has no price for printed ISBNs: all 8 tried were "not for sale" (and one ISBN, 9780143028574, was even catalogued under The God of Small Things instead of Train to Pakistan). Its prices belong to its own ebook editions. Offered removing the feature or searching by title; the owner chose the title search.
+
+Now, when the ISBN has no price (or a book is chosen from a title search, which has no ISBN), Lekha searches Google for the title and the first author's surname and takes a priced edition whose authors include that surname and whose title is the same (ignoring a subtitle) or starts with it, like "Train to Pakistan Penguin Premium Classic Edition". Exact titles come first, then English editions for a title in Latin letters (Google listed a Marathi edition of The God of Small Things), then Google's order. The label stays "Google Play ebook price".
+
+**What it costs:** it's an ebook price for some edition of the book, not the copy in the shop's hand; Google's answers change between calls (a ₹199 Train to Pakistan was listed once, then not); and some prices are odd (₹1,146 for a Penguin Pride and Prejudice ebook). 9 of 16 well-known books got a price. The owner checks every price before saving.
+
+Tests now never read the real `.streamlit/secrets.toml` and can't reach the internet: an autouse fixture in `tests/conftest.py` gives every test empty secrets and blocks `urlopen`.

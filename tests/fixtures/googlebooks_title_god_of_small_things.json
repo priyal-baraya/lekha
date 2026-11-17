@@ -1,0 +1,461 @@
+{
+ "kind": "books#volumes",
+ "totalItems": 6,
+ "items": [
+  {
+   "kind": "books#volume",
+   "id": "IUf0AgAAQBAJ",
+   "etag": "DPAer6f7WkA",
+   "selfLink": "https://www.googleapis.com/books/v1/volumes/IUf0AgAAQBAJ",
+   "volumeInfo": {
+    "title": "The God of Small Things",
+    "authors": [
+     "Arundhati Roy"
+    ],
+    "publisher": "Penguin UK",
+    "publishedDate": "2017-06-13",
+    "description": "Still, to say that it all began when Sophie Mol came to Ayemenem is only one way of looking at it . . . It could be argued that it actually began thousands of years ago. Long before the Marxists came. Before the British took Malabar, before the Dutch Ascendancy, before Vasco da Gama arrived, before the Zamorin’s conquest of Calicut. Before Christianity arrived in a boat and seeped into Kerala like tea from a teabag. That it really began in the days when the Love Laws were made. The laws that lay down who should be loved, and how. And how much.",
+    "industryIdentifiers": [
+     {
+      "type": "ISBN_13",
+      "identifier": "9789351184409"
+     },
+     {
+      "type": "ISBN_10",
+      "identifier": "9351184404"
+     }
+    ],
+    "readingModes": {
+     "text": true,
+     "image": false
+    },
+    "pageCount": 343,
+    "printType": "BOOK",
+    "categories": [
+     "Fiction"
+    ],
+    "maturityRating": "NOT_MATURE",
+    "allowAnonLogging": true,
+    "contentVersion": "1.5.5.0.preview.2",
+    "panelizationSummary": {
+     "containsEpubBubbles": false,
+     "containsImageBubbles": false
+    },
+    "imageLinks": {
+     "smallThumbnail": "http://books.google.com/books/content?id=IUf0AgAAQBAJ&printsec=frontcover&img=1&zoom=5&edge=curl&source=gbs_api",
+     "thumbnail": "http://books.google.com/books/content?id=IUf0AgAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+    },
+    "language": "en",
+    "previewLink": "http://books.google.co.in/books?id=IUf0AgAAQBAJ&printsec=frontcover&dq=intitle:%22The+God+of+Small+Things%22+inauthor:Roy&hl=&as_pt=BOOKS&cd=1&source=gbs_api",
+    "infoLink": "https://play.google.com/store/books/details?id=IUf0AgAAQBAJ&source=gbs_api",
+    "canonicalVolumeLink": "https://play.google.com/store/books/details?id=IUf0AgAAQBAJ"
+   },
+   "saleInfo": {
+    "country": "IN",
+    "saleability": "FOR_SALE",
+    "isEbook": true,
+    "listPrice": {
+     "amount": 382,
+     "currencyCode": "INR"
+    },
+    "retailPrice": {
+     "amount": 267.4,
+     "currencyCode": "INR"
+    },
+    "buyLink": "https://play.google.com/store/books/details?id=IUf0AgAAQBAJ&rdid=book-IUf0AgAAQBAJ&rdot=1&source=gbs_api",
+    "offers": [
+     {
+      "finskyOfferType": 1,
+      "listPrice": {
+       "amountInMicros": 382000000,
+       "currencyCode": "INR"
+      },
+      "retailPrice": {
+       "amountInMicros": 267400000,
+       "currencyCode": "INR"
+      }
+     }
+    ]
+   },
+   "accessInfo": {
+    "country": "IN",
+    "viewability": "PARTIAL",
+    "embeddable": true,
+    "publicDomain": false,
+    "textToSpeechPermission": "ALLOWED",
+    "epub": {
+     "isAvailable": true,
+     "acsTokenLink": "http://books.google.co.in/books/download/The_God_of_Small_Things-sample-epub.acsm?id=IUf0AgAAQBAJ&format=epub&output=acs4_fulfillment_token&dl_type=sample&source=gbs_api"
+    },
+    "pdf": {
+     "isAvailable": false
+    },
+    "webReaderLink": "http://play.google.com/books/reader?id=IUf0AgAAQBAJ&hl=&as_pt=BOOKS&source=gbs_api",
+    "accessViewStatus": "SAMPLE",
+    "quoteSharingAllowed": false
+   },
+   "searchInfo": {
+    "textSnippet": "Still, to say that it all began when Sophie Mol came to Ayemenem is only one way of looking at it ."
+   }
+  },
+  {
+   "kind": "books#volume",
+   "id": "2LgYuhRK0yIC",
+   "etag": "eLl1EBntFIc",
+   "selfLink": "https://www.googleapis.com/books/v1/volumes/2LgYuhRK0yIC",
+   "volumeInfo": {
+    "title": "The God of Small Things",
+    "subtitle": "A Novel of Social Commitment",
+    "authors": [
+     "Amitabh Roy"
+    ],
+    "publisher": "Atlantic Publishers & Dist",
+    "publishedDate": "2005",
+    "description": "The God Of Small Things, The International Best Seller By Arundhati Roy, Has Raised Numerous Questions. Is It A Piece Of Anti-Communist Propaganda? Does It Distort Social Reality? Is It A Cheap Imitation Of The Western Fashion In Novel? Does It Offer Nothing But Play With Words? The Present Book Examines The Novel Sociologically And Answers All These Questions Well.The Book Also Shows That The Novelist Cares For The Neglected In The Society Like Women, Children And Dalits And Even The Environment. She Conveys Messages So Relevant To Our Society And Our Age.",
+    "industryIdentifiers": [
+     {
+      "type": "ISBN_10",
+      "identifier": "8126904097"
+     },
+     {
+      "type": "ISBN_13",
+      "identifier": "9788126904099"
+     }
+    ],
+    "readingModes": {
+     "text": false,
+     "image": true
+    },
+    "pageCount": 176,
+    "printType": "BOOK",
+    "categories": [
+     "Social problems in literature"
+    ],
+    "maturityRating": "NOT_MATURE",
+    "allowAnonLogging": false,
+    "contentVersion": "0.11.8.0.preview.1",
+    "panelizationSummary": {
+     "containsEpubBubbles": false,
+     "containsImageBubbles": false
+    },
+    "imageLinks": {
+     "smallThumbnail": "http://books.google.com/books/content?id=2LgYuhRK0yIC&printsec=frontcover&img=1&zoom=5&edge=curl&source=gbs_api",
+     "thumbnail": "http://books.google.com/books/content?id=2LgYuhRK0yIC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+    },
+    "language": "en",
+    "previewLink": "http://books.google.co.in/books?id=2LgYuhRK0yIC&printsec=frontcover&dq=intitle:%22The+God+of+Small+Things%22+inauthor:Roy&hl=&as_pt=BOOKS&cd=2&source=gbs_api",
+    "infoLink": "http://books.google.co.in/books?id=2LgYuhRK0yIC&dq=intitle:%22The+God+of+Small+Things%22+inauthor:Roy&hl=&as_pt=BOOKS&source=gbs_api",
+    "canonicalVolumeLink": "https://books.google.com/books/about/The_God_of_Small_Things.html?hl=&id=2LgYuhRK0yIC"
+   },
+   "saleInfo": {
+    "country": "IN",
+    "saleability": "NOT_FOR_SALE",
+    "isEbook": false
+   },
+   "accessInfo": {
+    "country": "IN",
+    "viewability": "PARTIAL",
+    "embeddable": true,
+    "publicDomain": false,
+    "textToSpeechPermission": "ALLOWED",
+    "epub": {
+     "isAvailable": false
+    },
+    "pdf": {
+     "isAvailable": true,
+     "acsTokenLink": "http://books.google.co.in/books/download/The_God_of_Small_Things-sample-pdf.acsm?id=2LgYuhRK0yIC&format=pdf&output=acs4_fulfillment_token&dl_type=sample&source=gbs_api"
+    },
+    "webReaderLink": "http://play.google.com/books/reader?id=2LgYuhRK0yIC&hl=&as_pt=BOOKS&source=gbs_api",
+    "accessViewStatus": "SAMPLE",
+    "quoteSharingAllowed": false
+   },
+   "searchInfo": {
+    "textSnippet": "The Present Book Examines The Novel Sociologically And Answers All These Questions Well.The Book Also Shows That The Novelist Cares For The Neglected In The Society Like Women, Children And Dalits And Even The Environment."
+   }
+  },
+  {
+   "kind": "books#volume",
+   "id": "FVwxDwAAQBAJ",
+   "etag": "vWPkEtal0S0",
+   "selfLink": "https://www.googleapis.com/books/v1/volumes/FVwxDwAAQBAJ",
+   "volumeInfo": {
+    "title": "THE GOD OF SMALL THINGS",
+    "authors": [
+     "AURNDHATI ROY"
+    ],
+    "publisher": "MEHTA PUBLISHING HOUSE",
+    "publishedDate": "2001-11-01",
+    "description": "अपर्णा वेलणकर",
+    "industryIdentifiers": [
+     {
+      "type": "ISBN_13",
+      "identifier": "9789386888174"
+     },
+     {
+      "type": "ISBN_10",
+      "identifier": "9386888173"
+     }
+    ],
+    "readingModes": {
+     "text": true,
+     "image": true
+    },
+    "pageCount": 494,
+    "printType": "BOOK",
+    "categories": [
+     "Fiction"
+    ],
+    "maturityRating": "NOT_MATURE",
+    "allowAnonLogging": true,
+    "contentVersion": "1.4.4.0.preview.3",
+    "panelizationSummary": {
+     "containsEpubBubbles": false,
+     "containsImageBubbles": false
+    },
+    "imageLinks": {
+     "smallThumbnail": "http://books.google.com/books/content?id=FVwxDwAAQBAJ&printsec=frontcover&img=1&zoom=5&edge=curl&source=gbs_api",
+     "thumbnail": "http://books.google.com/books/content?id=FVwxDwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+    },
+    "language": "mr",
+    "previewLink": "http://books.google.co.in/books?id=FVwxDwAAQBAJ&printsec=frontcover&dq=intitle:%22The+God+of+Small+Things%22+inauthor:Roy&hl=&as_pt=BOOKS&cd=3&source=gbs_api",
+    "infoLink": "https://play.google.com/store/books/details?id=FVwxDwAAQBAJ&source=gbs_api",
+    "canonicalVolumeLink": "https://play.google.com/store/books/details?id=FVwxDwAAQBAJ"
+   },
+   "saleInfo": {
+    "country": "IN",
+    "saleability": "FOR_SALE",
+    "isEbook": true,
+    "listPrice": {
+     "amount": 358.72,
+     "currencyCode": "INR"
+    },
+    "retailPrice": {
+     "amount": 251.1,
+     "currencyCode": "INR"
+    },
+    "buyLink": "https://play.google.com/store/books/details?id=FVwxDwAAQBAJ&rdid=book-FVwxDwAAQBAJ&rdot=1&source=gbs_api",
+    "offers": [
+     {
+      "finskyOfferType": 1,
+      "listPrice": {
+       "amountInMicros": 358720000,
+       "currencyCode": "INR"
+      },
+      "retailPrice": {
+       "amountInMicros": 251100000,
+       "currencyCode": "INR"
+      }
+     }
+    ]
+   },
+   "accessInfo": {
+    "country": "IN",
+    "viewability": "PARTIAL",
+    "embeddable": true,
+    "publicDomain": false,
+    "textToSpeechPermission": "ALLOWED",
+    "epub": {
+     "isAvailable": true,
+     "acsTokenLink": "http://books.google.co.in/books/download/THE_GOD_OF_SMALL_THINGS-sample-epub.acsm?id=FVwxDwAAQBAJ&format=epub&output=acs4_fulfillment_token&dl_type=sample&source=gbs_api"
+    },
+    "pdf": {
+     "isAvailable": true,
+     "acsTokenLink": "http://books.google.co.in/books/download/THE_GOD_OF_SMALL_THINGS-sample-pdf.acsm?id=FVwxDwAAQBAJ&format=pdf&output=acs4_fulfillment_token&dl_type=sample&source=gbs_api"
+    },
+    "webReaderLink": "http://play.google.com/books/reader?id=FVwxDwAAQBAJ&hl=&as_pt=BOOKS&source=gbs_api",
+    "accessViewStatus": "SAMPLE",
+    "quoteSharingAllowed": false
+   },
+   "searchInfo": {
+    "textSnippet": "अपर्णा वेलणकर"
+   }
+  },
+  {
+   "kind": "books#volume",
+   "id": "TgC0MgEACAAJ",
+   "etag": "1oENHzqehBo",
+   "selfLink": "https://www.googleapis.com/books/v1/volumes/TgC0MgEACAAJ",
+   "volumeInfo": {
+    "title": "The God of Small Things",
+    "authors": [
+     "Arundati Roy",
+     "Adam Kissel"
+    ],
+    "publishedDate": "2007",
+    "industryIdentifiers": [
+     {
+      "type": "ISBN_10",
+      "identifier": "1602590273"
+     },
+     {
+      "type": "ISBN_13",
+      "identifier": "9781602590274"
+     }
+    ],
+    "readingModes": {
+     "text": false,
+     "image": false
+    },
+    "pageCount": 94,
+    "printType": "BOOK",
+    "maturityRating": "NOT_MATURE",
+    "allowAnonLogging": false,
+    "contentVersion": "preview-1.0.0",
+    "language": "en",
+    "previewLink": "http://books.google.co.in/books?id=TgC0MgEACAAJ&dq=intitle:%22The+God+of+Small+Things%22+inauthor:Roy&hl=&as_pt=BOOKS&cd=4&source=gbs_api",
+    "infoLink": "http://books.google.co.in/books?id=TgC0MgEACAAJ&dq=intitle:%22The+God+of+Small+Things%22+inauthor:Roy&hl=&as_pt=BOOKS&source=gbs_api",
+    "canonicalVolumeLink": "https://books.google.com/books/about/The_God_of_Small_Things.html?hl=&id=TgC0MgEACAAJ"
+   },
+   "saleInfo": {
+    "country": "IN",
+    "saleability": "NOT_FOR_SALE",
+    "isEbook": false
+   },
+   "accessInfo": {
+    "country": "IN",
+    "viewability": "NO_PAGES",
+    "embeddable": false,
+    "publicDomain": false,
+    "textToSpeechPermission": "ALLOWED",
+    "epub": {
+     "isAvailable": false
+    },
+    "pdf": {
+     "isAvailable": false
+    },
+    "webReaderLink": "http://play.google.com/books/reader?id=TgC0MgEACAAJ&hl=&as_pt=BOOKS&source=gbs_api",
+    "accessViewStatus": "NONE",
+    "quoteSharingAllowed": false
+   }
+  },
+  {
+   "kind": "books#volume",
+   "id": "xHZy0AEACAAJ",
+   "etag": "jnQksPfnV0A",
+   "selfLink": "https://www.googleapis.com/books/v1/volumes/xHZy0AEACAAJ",
+   "volumeInfo": {
+    "title": "The God of Small Things (Talking Book).",
+    "authors": [
+     "Arundhati Roy"
+    ],
+    "publishedDate": "2012",
+    "industryIdentifiers": [
+     {
+      "type": "OTHER",
+      "identifier": "OCLC:824550941"
+     }
+    ],
+    "readingModes": {
+     "text": false,
+     "image": false
+    },
+    "pageCount": 0,
+    "printType": "BOOK",
+    "maturityRating": "NOT_MATURE",
+    "allowAnonLogging": false,
+    "contentVersion": "preview-1.0.0",
+    "panelizationSummary": {
+     "containsEpubBubbles": false,
+     "containsImageBubbles": false
+    },
+    "language": "en",
+    "previewLink": "http://books.google.co.in/books?id=xHZy0AEACAAJ&dq=intitle:%22The+God+of+Small+Things%22+inauthor:Roy&hl=&as_pt=BOOKS&cd=5&source=gbs_api",
+    "infoLink": "http://books.google.co.in/books?id=xHZy0AEACAAJ&dq=intitle:%22The+God+of+Small+Things%22+inauthor:Roy&hl=&as_pt=BOOKS&source=gbs_api",
+    "canonicalVolumeLink": "https://books.google.com/books/about/The_God_of_Small_Things_Talking_Book.html?hl=&id=xHZy0AEACAAJ"
+   },
+   "saleInfo": {
+    "country": "IN",
+    "saleability": "NOT_FOR_SALE",
+    "isEbook": false
+   },
+   "accessInfo": {
+    "country": "IN",
+    "viewability": "NO_PAGES",
+    "embeddable": false,
+    "publicDomain": false,
+    "textToSpeechPermission": "ALLOWED",
+    "epub": {
+     "isAvailable": false
+    },
+    "pdf": {
+     "isAvailable": false
+    },
+    "webReaderLink": "http://play.google.com/books/reader?id=xHZy0AEACAAJ&hl=&as_pt=BOOKS&source=gbs_api",
+    "accessViewStatus": "NONE",
+    "quoteSharingAllowed": false
+   }
+  },
+  {
+   "kind": "books#volume",
+   "id": "ZWKl0QEACAAJ",
+   "etag": "RvQY4JOuD3s",
+   "selfLink": "https://www.googleapis.com/books/v1/volumes/ZWKl0QEACAAJ",
+   "volumeInfo": {
+    "title": "El Dios de Las Pequeñas Cosas / the God of Small Things",
+    "authors": [
+     "Arundhati Roy"
+    ],
+    "publisher": "Alfaguara",
+    "publishedDate": "2026-03-24",
+    "industryIdentifiers": [
+     {
+      "type": "ISBN_10",
+      "identifier": "6073864744"
+     },
+     {
+      "type": "ISBN_13",
+      "identifier": "9786073864749"
+     }
+    ],
+    "readingModes": {
+     "text": false,
+     "image": false
+    },
+    "pageCount": 0,
+    "printType": "BOOK",
+    "categories": [
+     "Fiction"
+    ],
+    "maturityRating": "NOT_MATURE",
+    "allowAnonLogging": false,
+    "contentVersion": "preview-1.0.0",
+    "panelizationSummary": {
+     "containsEpubBubbles": false,
+     "containsImageBubbles": false
+    },
+    "imageLinks": {
+     "smallThumbnail": "http://books.google.com/books/content?id=ZWKl0QEACAAJ&printsec=frontcover&img=1&zoom=5&source=gbs_api",
+     "thumbnail": "http://books.google.com/books/content?id=ZWKl0QEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api"
+    },
+    "language": "es",
+    "previewLink": "http://books.google.co.in/books?id=ZWKl0QEACAAJ&dq=intitle:%22The+God+of+Small+Things%22+inauthor:Roy&hl=&as_pt=BOOKS&cd=6&source=gbs_api",
+    "infoLink": "http://books.google.co.in/books?id=ZWKl0QEACAAJ&dq=intitle:%22The+God+of+Small+Things%22+inauthor:Roy&hl=&as_pt=BOOKS&source=gbs_api",
+    "canonicalVolumeLink": "https://books.google.com/books/about/El_Dios_de_Las_Peque%C3%B1as_Cosas_the_God_o.html?hl=&id=ZWKl0QEACAAJ"
+   },
+   "saleInfo": {
+    "country": "IN",
+    "saleability": "NOT_FOR_SALE",
+    "isEbook": false
+   },
+   "accessInfo": {
+    "country": "IN",
+    "viewability": "NO_PAGES",
+    "embeddable": false,
+    "publicDomain": false,
+    "textToSpeechPermission": "ALLOWED",
+    "epub": {
+     "isAvailable": false
+    },
+    "pdf": {
+     "isAvailable": false
+    },
+    "webReaderLink": "http://play.google.com/books/reader?id=ZWKl0QEACAAJ&hl=&as_pt=BOOKS&source=gbs_api",
+    "accessViewStatus": "NONE",
+    "quoteSharingAllowed": false
+   },
+   "searchInfo": {
+    "textSnippet": "This family saga, compared to the works of Gabriel García Márquez and Salman Rushdie, is much more than a family portrait. It is a narrative gem about desire and loss, childhood and its fractures, love and justice."
+   }
+  }
+ ]
+}
