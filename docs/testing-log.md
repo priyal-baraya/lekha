@@ -711,3 +711,9 @@ Checked with the real key: in the browser (a copy of the demo shop on port 8502,
 ### "Recommended price": **541 passed**
 
 The three page tests that check the label now look for "Recommended price" (failing first, then passing after the one-line change).
+
+### Hosting and backups: **559 passed**
+
+Tests first, failing first. 11 for `backup.py`: accounts and every shop copied and checked; a change still being written isn't in the copy; other files ignored; nothing to back up makes no folders; never overwriting a backup or writing inside the data folder; only the newest kept, other folders left alone; `--keep 0` refused; the folders read from `LEKHA_DATA_DIR` and `LEKHA_BACKUP_DIR`. 4 for `deploy/`: the app and backups use the same data folder, Streamlit stays on localhost with Caddy pointing at its port, both run as a locked-down `lekha` user, backups run nightly and catch up. 3 for the visitor's address behind Caddy.
+
+Not yet tried on a real server: the guide (docs/hosting.md) is checked step by step when the VM is set up.

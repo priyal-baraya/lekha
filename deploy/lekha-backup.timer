@@ -1,0 +1,11 @@
+# Backs Lekha up at 2:30 every night, India time. If the server was off
+# then, the backup runs as soon as it's back on.
+[Unit]
+Description=Back up Lekha every night
+
+[Timer]
+OnCalendar=*-*-* 02:30:00 Asia/Kolkata
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,18 @@
+# Caddy faces the internet for Lekha: it gets and renews an HTTPS
+# certificate by itself, and passes requests to Streamlit on localhost,
+# with the visitor's address in X-Forwarded-For (Caddy replaces any the
+# visitor sent; Lekha counts failed sign-ins by it).
+# docs/hosting.md replaces LEKHA_ADDRESS with the server's address.
+LEKHA_ADDRESS {
+	encode zstd gzip
+	reverse_proxy localhost:8501
+	header {
+		# Browsers only ever use HTTPS for this address from now on
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# No other website can show Lekha inside a frame (clickjacking)
+		X-Frame-Options "DENY"
+		-Server
+	}
+}

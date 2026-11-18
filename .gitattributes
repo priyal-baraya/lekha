@@ -1,0 +1,2 @@
+# Server files are used on Linux: keep Unix line endings even on Windows.
+deploy/** text eol=lf

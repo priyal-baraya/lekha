@@ -122,7 +122,7 @@ Lekha only accepts connections from the computer it runs on (`address = "localho
 
 If staff need to use another device:
 
-- **Best:** put Lekha behind a web server that adds HTTPS (for example Caddy or nginx), or host it on a service that provides HTTPS, and keep `address = "localhost"` so only that web server can reach it.
+- **Best:** host it online, behind a web server that adds HTTPS: [docs/hosting.md](hosting.md) does this on Google Cloud for free, with Caddy, and keeps `address = "localhost"` so only Caddy can reach it.
 - **On a trusted shop network only:** start Lekha with `--server.address 0.0.0.0` and open the "Network URL" it prints on the other device. Only do this on a network with a strong Wi-Fi password that customers don't have.
 
 See [docs/security.md](security.md) for everything Lekha protects and what it doesn't yet.
@@ -134,7 +134,7 @@ See [docs/security.md](security.md) for everything Lekha protects and what it do
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .\.venv\Scripts\python.exe -m pip_audit -r requirements.txt
-.\.venv\Scripts\python.exe -m bandit -q -r app.py database.py query.py services ui views scripts
+.\.venv\Scripts\python.exe -m bandit -q -r app.py database.py query.py backup.py services ui views scripts
 ```
 
 `pip_audit` checks every package Lekha installs against published vulnerabilities; `bandit` scans the code for risky patterns. GitHub runs both on every push and every Monday.
@@ -145,7 +145,7 @@ See [docs/security.md](security.md) for everything Lekha protects and what it do
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-All 541 should pass. They use their own temporary folders, never your `data/` folder, and don't need the internet: Open Library lookups are replayed from real responses saved in `tests/fixtures/`.
+All 559 should pass. They use their own temporary folders, never your `data/` folder, and don't need the internet: Open Library lookups are replayed from real responses saved in `tests/fixtures/`.
 
 **Start again from nothing**
 
@@ -163,6 +163,15 @@ $env:LEKHA_DATA_DIR = "D:\lekha-data"     # macOS/Linux: export LEKHA_DATA_DIR=/
 ```
 
 Accounts and shops are then kept in that folder. Close the terminal (or run `Remove-Item Env:LEKHA_DATA_DIR`) to go back to `data/`.
+
+**Back up**
+
+```powershell
+$env:LEKHA_BACKUP_DIR = "D:\lekha-backups"
+.\.venv\Scripts\python.exe backup.py
+```
+
+Copies every account and shop into a new dated folder there, safely even while Lekha is open, and keeps the newest 30 (`--keep` changes that). The hosted Lekha does this every night.
 
 **Practise SQL** on the small fictional dataset the tests use. It's built in memory for that run only; nothing is saved:
 
