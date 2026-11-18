@@ -11,6 +11,7 @@ A signed-in tab is also signed out when:
   * the account's password was changed somewhere else.
 """
 
+import ipaddress
 import logging
 import time
 
@@ -133,13 +134,32 @@ def sign_out(reason: str | None = None) -> None:
     st.rerun()
 
 
+def visitor_address(direct, headers) -> str:
+    """Which address to count failed sign-ins against.
+
+    `direct` is the connection's own address. Streamlit gives None when
+    the connection comes from this machine, which is how every visitor
+    arrives on the hosted Lekha: through Caddy (docs/hosting.md). Caddy
+    then puts the real address last in X-Forwarded-For, replacing any
+    the visitor sent. The header is only used in that case, so someone
+    connecting directly can't claim another address with it."""
+    if isinstance(direct, str) and direct:
+        return direct
+    forwarded = next((value for key, value in (headers or {}).items()
+                      if str(key).lower() == "x-forwarded-for"), "")
+    last = str(forwarded).split(",")[-1].strip()
+    try:
+        return str(ipaddress.ip_address(last))
+    except ValueError:
+        return "unknown"
+
+
 def network_address() -> str:
     """The visitor's network address, for limits on repeated failures."""
     try:
-        address = st.context.ip_address
+        return visitor_address(st.context.ip_address, st.context.headers)
     except Exception:            # no browser connection
         return "unknown"
-    return address if isinstance(address, str) and address else "unknown"
 
 
 def choose_shop(shop_id: int) -> None:

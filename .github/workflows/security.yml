@@ -54,4 +54,4 @@ jobs:
       - name: Scan Lekha's code
         # Lines marked "# nosec" were reviewed by hand; the reason is in a
         # comment next to each one.
-        run: python -m bandit -q -r app.py database.py query.py services ui views scripts
+        run: python -m bandit -q -r app.py database.py query.py backup.py services ui views scripts

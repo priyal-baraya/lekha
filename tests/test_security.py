@@ -227,3 +227,28 @@ def test_server_settings_stay_safe():
 def test_secrets_file_is_never_committed():
     ignored = (PROJECT / ".gitignore").read_text(encoding="utf-8").splitlines()
     assert ".streamlit/secrets.toml" in ignored
+
+
+# Behind Caddy (docs/hosting.md) every connection comes from the machine
+# itself, so Streamlit has no address. Caddy passes the real one on.
+
+def test_visitor_address_is_the_direct_connection_when_there_is_one():
+    from ui.session import visitor_address
+    # A header sent by a visitor directly can't pretend to be someone else.
+    assert visitor_address("203.0.113.7", {"X-Forwarded-For": "198.51.100.1"}) == "203.0.113.7"
+
+
+def test_visitor_address_behind_the_proxy_comes_from_its_header():
+    from ui.session import visitor_address
+    assert visitor_address(None, {"X-Forwarded-For": "198.51.100.1"}) == "198.51.100.1"
+    assert visitor_address(None, {"x-forwarded-for": " 2001:db8::1 "}) == "2001:db8::1"
+    # Only the address the proxy added (the last) counts.
+    assert visitor_address(None, {"X-Forwarded-For": "10.0.0.1, 198.51.100.1"}) == "198.51.100.1"
+
+
+def test_visitor_address_ignores_anything_that_is_not_an_address():
+    from ui.session import visitor_address
+    assert visitor_address(None, {}) == "unknown"
+    assert visitor_address(None, {"X-Forwarded-For": "<script>"}) == "unknown"
+    assert visitor_address(None, {"X-Forwarded-For": "198.51.100.1, "}) == "unknown"
+    assert visitor_address("", None) == "unknown"

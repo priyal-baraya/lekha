@@ -50,10 +50,21 @@ What Lekha protects, how, and what it doesn't cover yet. Every check listed here
 
 Set in `.streamlit/config.toml`, and a test checks they stay that way:
 
-- **Only this computer can open Lekha** (`address = "localhost"`). Lekha has no HTTPS of its own, so on a shop's Wi-Fi, passwords would cross the network unencrypted. See [the setup guide](setup.md#letting-other-devices-in) before changing this.
+- **Only this computer can open Lekha** (`address = "localhost"`). Lekha has no HTTPS of its own, so on a shop's Wi-Fi, passwords would cross the network unencrypted. See [the setup guide](setup.md#letting-other-devices-in) before changing this. The hosted Lekha keeps this setting: Caddy, on the same machine, is the only thing open to the internet.
 - Requests from other websites refused (CORS) and every form submission checked with a token (XSRF protection).
 - No file uploads, no extra files served, no error details or tracebacks in the browser.
 - Secrets (`.streamlit/secrets.toml`) are in `.gitignore`, and a test checks it.
+
+## The hosted server
+
+[docs/hosting.md](hosting.md) and the files in `deploy/`; `tests/test_deploy.py` checks the main points.
+
+- **HTTPS** from Caddy, with a Let's Encrypt certificate it renews itself; browsers are told to use only HTTPS (HSTS), and no other site may show Lekha in a frame.
+- **Lekha runs as its own user**, which can't sign in. It can write only to `/var/lib/lekha`, which only it can read; the rest of the system is read-only to it (systemd's `ProtectSystem=strict` and related settings). The code belongs to root, so Lekha can't change it.
+- **Secrets** are in `/opt/lekha/.streamlit/secrets.toml`, readable only by root and Lekha.
+- **Failed sign-ins are counted per visitor**: every connection reaches Streamlit from Caddy, so Lekha takes the address Caddy puts in `X-Forwarded-For`. It does that only for connections from the machine itself, so a visitor can't claim another address by sending the header.
+- **Security updates** for Debian install themselves (`unattended-upgrades`). Lekha's own packages update with `deploy/update.sh`.
+- **Backups** every night with SQLite's backup (never a half-saved file), checked, kept 30 nights, and copied to a private Cloud Storage bucket by an account that can only reach that bucket.
 
 ## Logging
 
@@ -74,8 +85,8 @@ On 2026-11-10, pip-audit found no known vulnerabilities in the pinned packages, 
 
 ## Not covered yet
 
-- **No HTTPS.** Fine on one computer. For other devices, put Lekha behind a proxy that adds HTTPS (see the setup guide), or host it somewhere that provides it.
-- **Limits on repeated attempts are kept in memory**, so restarting Lekha resets them (the account lockout is stored and survives). Behind a proxy, every visitor can look like the same address unless the proxy passes the real one on.
+- **No HTTPS of its own.** Fine on one computer; hosted, Caddy adds it ([docs/hosting.md](hosting.md)).
+- **Limits on repeated attempts are kept in memory**, so restarting Lekha resets them (the account lockout is stored and survives). Behind a proxy other than Caddy, every visitor can look like the same address unless the proxy passes the real one on in `X-Forwarded-For`.
 - **The lockout message shows that an account exists** (only for usernames that have one). This is a common trade-off: hiding it would mean locking usernames nobody has.
 - **The sign-up page says when a username is taken.** Same trade-off.
 - **No password reset by email, and no two-step sign-in** (Google sign-in can use Google's).

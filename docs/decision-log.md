@@ -916,3 +916,18 @@ Now, when the ISBN has no price (or a book is chosen from a title search, which 
 Tests now never read the real `.streamlit/secrets.toml` and can't reach the internet: an autouse fixture in `tests/conftest.py` gives every test empty secrets and blocks `urlopen`.
 
 **"Recommended price" (18 Nov):** the owner didn't want the label to say "Google Play ebook price". The field now says **Recommended price** under it, whatever Google's edition: it's a starting point the owner changes as they like. Where it comes from is in the setup guide and in `services/googlebooks.py`. The canvas BooksAdd artboard matches.
+
+**Hosting: Google Cloud's free VM (18 Nov):** the owner wanted Lekha online for a couple of people, for free. Lekha keeps its data in SQLite files (accounts plus one per shop), so the host must keep files across restarts. Options looked at:
+
+- **Streamlit Community Cloud:** free, but its files can be wiped on any restart, which would lose every account and shop.
+- **Community Cloud with Turso** (SQLite online): free, but the data code would change, Turso's Python library is partly still marked experimental, and the app sleeps after 12 hours unused.
+- **Railway or Fly.io:** keep files on a volume, from about $5 a month. Not free.
+- **The owner's own computer with Tailscale Funnel:** free, but online only while it's on, and for non-commercial use.
+- **Oracle Cloud Always Free:** free, but Oracle can stop machines it judges idle.
+- **Google Cloud e2-micro (chosen):** free for one small machine with a 30 GB disk in a US region. Lekha runs exactly as on a computer, so the 541 tests still describe it.
+
+**What it costs:** setting up and looking after a Linux server (docs/hosting.md); pages are a little slower from India; the address comes from the IP through sslip.io and changes if the VM is ever stopped; Google needs a card.
+
+**Found on the way:** behind Caddy, every visitor reaches Streamlit from the machine itself, which has no address, so 20 failed sign-ins from anyone would have blocked everyone's for 15 minutes. Lekha now takes the visitor's address from the `X-Forwarded-For` header Caddy sets, and only for connections from the machine itself.
+
+**Backups** came with it: `backup.py` uses SQLite's own backup, so a copy is never caught mid-write, checks each copy, and keeps the newest 30; a timer runs it every night and copies the folders to a Cloud Storage bucket.

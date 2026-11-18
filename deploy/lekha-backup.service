@@ -1,0 +1,29 @@
+# Copies every account and shop file into /var/lib/lekha/backups and keeps
+# the newest 30 (backup.py). Started each night by lekha-backup.timer.
+[Unit]
+Description=Back up Lekha's accounts and shops
+
+[Service]
+Type=oneshot
+User=lekha
+Group=lekha
+WorkingDirectory=/opt/lekha
+Environment=LEKHA_DATA_DIR=/var/lib/lekha/data
+Environment=LEKHA_BACKUP_DIR=/var/lib/lekha/backups
+Environment=HOME=/var/lib/lekha
+Environment=CLOUDSDK_CONFIG=/var/lib/lekha/.gcloud
+ExecStart=/opt/lekha/.venv/bin/python backup.py --keep 30
+
+StateDirectory=lekha
+StateDirectoryMode=0700
+UMask=0077
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+NoNewPrivileges=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes

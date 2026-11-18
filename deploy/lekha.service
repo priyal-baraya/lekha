@@ -1,0 +1,36 @@
+# Runs Lekha on the hosted server (docs/hosting.md).
+# Streamlit listens only on localhost (.streamlit/config.toml); Caddy is
+# the one thing that faces the internet, and adds HTTPS.
+[Unit]
+Description=Lekha bookshop app
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=lekha
+Group=lekha
+WorkingDirectory=/opt/lekha
+Environment=LEKHA_DATA_DIR=/var/lib/lekha/data
+Environment=HOME=/var/lib/lekha
+ExecStart=/opt/lekha/.venv/bin/python -m streamlit run app.py --server.port 8501 --server.headless true --server.fileWatcherType none
+Restart=on-failure
+RestartSec=5
+
+# /var/lib/lekha is the only folder Lekha can write to, and only it can read it.
+StateDirectory=lekha
+StateDirectoryMode=0700
+UMask=0077
+# Everything else is read-only or hidden from Lekha.
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+NoNewPrivileges=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target
