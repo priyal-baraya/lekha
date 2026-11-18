@@ -170,9 +170,29 @@ def test_a_failed_rule_inside_a_with_block_leaves_nothing_half_saved(conn):
 
 
 def test_executescript_with_its_own_transaction(conn):
-    conn.executescript("BEGIN;\nCREATE TABLE extra (n INTEGER) STRICT;\nPRAGMA user_version = 4;\nCOMMIT;")
+    conn.executescript("BEGIN;\nCREATE TABLE extra (n INTEGER) STRICT;\nINSERT INTO extra VALUES (4);\nCOMMIT;")
 
-    assert conn.execute("PRAGMA user_version").fetchone()[0] == 4
+    assert conn.execute("SELECT n FROM extra").fetchone()[0] == 4
+
+
+def test_no_rows_from_turso_is_an_empty_list():
+    """Over the internet, the driver gives None instead of [] after a
+    statement that returns no rows (found on real Turso)."""
+    class NoRows:
+        description = None
+
+        def execute(self, sql, values):
+            pass
+
+        def fetchall(self):
+            return None
+
+        def fetchmany(self, size=None):
+            return None
+
+    cursor = turso.Cursor(NoRows()).execute("PRAGMA foreign_keys = ON")
+    assert cursor.fetchall() == []
+    assert cursor.fetchmany(5) == []
 
 
 def test_row_factory_can_be_set_like_sqlite3(conn):

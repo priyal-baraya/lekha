@@ -9,7 +9,7 @@ or else from .streamlit/secrets.toml, and never prints the token.
 For each database it sets up Lekha's tables (safe to repeat: nothing is
 deleted), then checks what Lekha relies on: foreign keys are enforced,
 and a transaction that fails leaves nothing behind. It changes no data:
-the transaction check uses a temporary table that disappears afterwards.
+the transaction check uses a small table of its own, removed afterwards.
 """
 
 import os
@@ -36,15 +36,20 @@ def check(conn) -> list[str]:
     problems = []
     if conn.execute("PRAGMA foreign_keys").fetchone()[0] != 1:
         problems.append("foreign keys aren't enforced")
-    conn.execute("CREATE TEMP TABLE IF NOT EXISTS lekha_check (n INTEGER)")
+    # Turso has no temporary tables, so the check uses a small table of its
+    # own and removes it afterwards.
+    conn.executescript("CREATE TABLE IF NOT EXISTS lekha_check (n INTEGER);")
     try:
-        with conn:
-            conn.execute("INSERT INTO lekha_check (n) VALUES (1)")
-            raise _Undo
-    except _Undo:
-        pass
-    if conn.execute("SELECT COUNT(*) FROM lekha_check").fetchone()[0] != 0:
-        problems.append("a failed transaction wasn't undone")
+        try:
+            with conn:
+                conn.execute("INSERT INTO lekha_check (n) VALUES (1)")
+                raise _Undo
+        except _Undo:
+            pass
+        if conn.execute("SELECT COUNT(*) FROM lekha_check").fetchone()[0] != 0:
+            problems.append("a failed transaction wasn't undone")
+    finally:
+        conn.executescript("DROP TABLE IF EXISTS lekha_check;")
     return problems
 
 

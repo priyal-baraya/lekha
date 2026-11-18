@@ -227,6 +227,36 @@ def test_old_database_is_upgraded_without_losing_books():
     conn.close()
 
 
+
+def test_the_version_is_kept_in_a_table(empty_db):
+    """Turso refuses PRAGMA user_version = N, so the number is kept in a
+    one-row table that works the same in a file and in Turso."""
+    assert [tuple(row) for row in empty_db.execute("SELECT version FROM lekha_schema")] == [(LATEST_VERSION,)]
+
+
+def test_a_file_from_before_the_table_keeps_its_version(tmp_path):
+    """Files made before lekha_schema remember their version in
+    user_version: it carries over, so no migration runs twice."""
+    path = tmp_path / "shop_1.db"
+    old = sqlite3.connect(path)
+    old.executescript(SCHEMA_PATH.read_text(encoding="utf-8"))
+    for migration in sorted((SCHEMA_PATH.parent / "migrations").glob("[0-9][0-9][0-9]_*.sql")):
+        old.executescript(migration.read_text(encoding="utf-8"))
+    old.execute(f"PRAGMA user_version = {LATEST_VERSION}")
+    old.commit()
+    old.close()
+
+    conn = get_connection(path)
+    assert schema_version(conn) == LATEST_VERSION
+    assert apply_migrations(conn) == []
+    assert [tuple(row) for row in conn.execute("SELECT version FROM lekha_schema")] == [(LATEST_VERSION,)]
+    conn.close()
+
+
+def test_the_version_table_holds_one_row(empty_db):
+    with pytest.raises(sqlite3.IntegrityError):
+        empty_db.execute("INSERT INTO lekha_schema (version) VALUES (5)")
+
 def test_create_schema_is_safe_to_run_again(empty_db):
     create_schema(empty_db)
     assert schema_version(empty_db) == LATEST_VERSION

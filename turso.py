@@ -190,11 +190,12 @@ class Cursor:
     def fetchmany(self, size: int | None = None) -> list[Row]:
         with _sqlite3_errors():
             values = self._raw.fetchmany(size) if size is not None else self._raw.fetchmany()
-        return [self._row(v) for v in values]
+        return [self._row(v) for v in values or []]   # Turso gives None for "no rows"
 
     def fetchall(self) -> list[Row]:
         with _sqlite3_errors():
-            return [self._row(v) for v in self._raw.fetchall()]
+            values = self._raw.fetchall()
+        return [self._row(v) for v in values or []]   # Turso gives None for "no rows"
 
     def __iter__(self) -> Iterator[Row]:
         while (row := self.fetchone()) is not None:

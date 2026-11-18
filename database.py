@@ -24,6 +24,7 @@ account and every shop's books and sales:
 import os
 import sqlite3
 import sys
+import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -86,6 +87,8 @@ def database_path() -> Path:
 # are checked once per run of Lekha instead of on every page (a new table
 # arrives with a new version of Lekha, which starts a new run).
 _set_up: set[str] = set()
+# Two visitors arriving at once must not both run the same migration.
+_set_up_lock = threading.Lock()
 
 
 def _already_set_up(path) -> bool:
@@ -164,8 +167,9 @@ def connect_accounts(path: Path | str | None = None) -> Iterator[sqlite3.Connect
     conn = get_connection(path)
     try:
         if not _already_set_up(path):
-            conn.executescript(ACCOUNTS_SCHEMA_PATH.read_text(encoding="utf-8"))
-            _remember_set_up(path)
+            with _set_up_lock:
+                conn.executescript(ACCOUNTS_SCHEMA_PATH.read_text(encoding="utf-8"))
+                _remember_set_up(path)
         yield conn
     finally:
         conn.close()
@@ -189,11 +193,30 @@ def create_schema(connection: sqlite3.Connection) -> None:
 def schema_version(connection: sqlite3.Connection) -> int:
     """How many migrations this database has had.
 
-    SQLite keeps a spare whole number in every database file's header,
-    `PRAGMA user_version` (0 in a new file). Lekha uses it to remember
-    which numbered migration ran last.
+    Kept in a one-row table, lekha_schema. (Lekha first used SQLite's
+    spare header number, PRAGMA user_version, but Turso refuses to change
+    it; files from then still have their number there, and
+    _version_table() carries it over.)
     """
-    return connection.execute("PRAGMA user_version").fetchone()[0]
+    row = connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'lekha_schema'").fetchone()
+    if row is None:
+        return connection.execute("PRAGMA user_version").fetchone()[0]
+    return connection.execute("SELECT version FROM lekha_schema").fetchone()[0]
+
+
+def _version_table(connection: sqlite3.Connection) -> None:
+    """Create lekha_schema if it's missing, starting from user_version."""
+    start = int(schema_version(connection))
+    connection.executescript(
+        "BEGIN;\n"
+        "CREATE TABLE IF NOT EXISTS lekha_schema (\n"
+        "    only_row INTEGER PRIMARY KEY CHECK (only_row = 1),\n"
+        "    version  INTEGER NOT NULL CHECK (version >= 0)\n"
+        ") STRICT;\n"
+        f"INSERT OR IGNORE INTO lekha_schema (only_row, version) VALUES (1, {start});\n"
+        "COMMIT;"
+    )
 
 
 def apply_migrations(connection: sqlite3.Connection) -> list[int]:
@@ -203,6 +226,7 @@ def apply_migrations(connection: sqlite3.Connection) -> list[int]:
     so a failure leaves the database exactly as it was. Returns the
     numbers of the migrations applied (usually none).
     """
+    _version_table(connection)
     applied = []
     for path in sorted(MIGRATIONS_DIR.glob("[0-9][0-9][0-9]_*.sql")):
         number = int(path.name[:3])
@@ -211,7 +235,7 @@ def apply_migrations(connection: sqlite3.Connection) -> list[int]:
         connection.executescript(
             "BEGIN;\n"
             + path.read_text(encoding="utf-8")
-            + f"\nPRAGMA user_version = {number};\nCOMMIT;"
+            + f"\nUPDATE lekha_schema SET version = {number};\nCOMMIT;"
         )
         applied.append(number)
     return applied
@@ -227,9 +251,9 @@ def ensure_database(db_path: Path | str | None = None) -> None:
     path = db_path or database_path()
     if _already_set_up(path):
         return
-    with connect(path) as conn:
+    with _set_up_lock, connect(path) as conn:
         create_schema(conn)
-    _remember_set_up(path)
+        _remember_set_up(path)
 
 
 def load_sample_data(connection: sqlite3.Connection) -> None:
