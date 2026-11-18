@@ -353,6 +353,23 @@ def create_shop(conn: sqlite3.Connection, user_id: int, name: str, now: datetime
     return shop_id
 
 
+def undo_new_shop(conn: sqlite3.Connection, user_id: int, shop_id: int) -> None:
+    """Remove a shop its creator has only just made, when its own database
+    couldn't be set up (on the hosted Lekha, each shop's database is
+    prepared in advance: docs/hosting.md). Only its owner can, and only
+    while nobody else has joined."""
+    if role_in(conn, user_id, shop_id) != "owner":
+        raise ValidationError(["Only the shop's owner can do that."])
+    members = conn.execute("SELECT COUNT(*) FROM memberships WHERE shop_id = ?", (shop_id,)).fetchone()[0]
+    if members != 1:
+        raise ValidationError(["Other people have joined this shop."])
+    with conn:   # all or nothing
+        conn.execute("DELETE FROM invitations WHERE shop_id = ?", (shop_id,))
+        conn.execute("DELETE FROM memberships WHERE shop_id = ?", (shop_id,))
+        conn.execute("DELETE FROM shops WHERE shop_id = ?", (shop_id,))
+    log.info("Account %s's new shop %s was undone: its database couldn't be set up", user_id, shop_id)
+
+
 def get_shop(conn: sqlite3.Connection, shop_id: int) -> dict | None:
     row = conn.execute("SELECT * FROM shops WHERE shop_id = ?", (shop_id,)).fetchone()
     return dict(row) if row else None

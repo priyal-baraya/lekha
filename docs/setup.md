@@ -134,7 +134,7 @@ See [docs/security.md](security.md) for everything Lekha protects and what it do
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .\.venv\Scripts\python.exe -m pip_audit -r requirements.txt
-.\.venv\Scripts\python.exe -m bandit -q -r app.py database.py query.py services ui views scripts
+.\.venv\Scripts\python.exe -m bandit -q -r app.py database.py query.py turso.py services ui views scripts
 ```
 
 `pip_audit` checks every package Lekha installs against published vulnerabilities; `bandit` scans the code for risky patterns. GitHub runs both on every push and every Monday.

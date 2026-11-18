@@ -14,6 +14,7 @@ The real data/ folder is never touched.
 import html
 import json
 import re
+import sqlite3
 import time
 import urllib.parse
 from datetime import date, datetime
@@ -651,6 +652,34 @@ def test_sign_up_create_a_shop_and_land_on_its_overview(data_dir):
         assert [(m.shop_name, m.role) for m in accounts.memberships(acc, 1)] == [("Kitaab Corner", "owner")]
     assert (data_dir / "shops" / "shop_1.db").exists()
 
+
+
+def test_a_shop_whose_database_cant_be_set_up_is_not_created(data_dir, monkeypatch):
+    """On the hosted Lekha each shop's Turso database is made in advance;
+    with none ready, nothing is half-made."""
+    import database
+
+    def no_database(shop_id):
+        raise sqlite3.OperationalError("no such database")
+
+    person_with_shop("asha", "First Shop")      # takes shop 1
+    app = run_app()
+    field(app, "Your name").set_value("Priya")
+    field(app, "Choose a username").set_value("priya")
+    field(app, "Choose a password").set_value(PASSWORD)
+    field(app, "Confirm password").set_value(PASSWORD)
+    app.button(key="FormSubmitter:sign_up-Create account").click().run()
+    monkeypatch.setattr(database, "ensure_shop_database", no_database)
+
+    field(app, "Shop name").set_value("Kitaab Corner")
+    app.button(key="FormSubmitter:create_shop-Create shop").click().run()
+
+    assert not app.exception
+    assert any("couldn't set up" in shown(box.value) for box in app.error)
+    assert "Start a shop" in all_text(app)                     # still on Get started
+    with connect_accounts() as acc:
+        assert [row["name"] for row in acc.execute("SELECT name FROM shops")] == ["First Shop"]
+        assert accounts.memberships(acc, 2) == []
 
 def test_wrong_password_is_refused_on_the_page(data_dir):
     person_with_shop("priya", "Kitaab Corner")

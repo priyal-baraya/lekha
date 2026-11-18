@@ -5,12 +5,18 @@ Laid out as on the design canvas (GetStarted artboard): the page header,
 then two cards side by side, which stack on a phone.
 """
 
+import logging
+import sqlite3
+
 import streamlit as st
 
-from database import connect_accounts, ensure_shop_database
+import database
+from database import connect_accounts
 from services import ValidationError, accounts, limits
 from ui import components as ui
 from ui import session
+
+log = logging.getLogger(__name__)
 
 ui.page_header("Get started")
 ui.show_flash()
@@ -29,7 +35,16 @@ with create_col, st.container(key="lekha_card_create_shop"):
         except ValidationError as problem:
             ui.show_errors(problem.errors)
         else:
-            ensure_shop_database(shop_id)
+            try:
+                database.ensure_shop_database(shop_id)
+            except sqlite3.Error:
+                # On the hosted Lekha, each shop's database is made in
+                # advance (docs/hosting.md); with none ready, undo the shop.
+                log.exception("Shop %s's database couldn't be set up", shop_id)
+                with connect_accounts() as acc:
+                    accounts.undo_new_shop(acc, session.user_id(), shop_id)
+                st.error("Lekha couldn't set up this shop's database, so the shop wasn't created.")
+                st.stop()
             session.choose_shop(shop_id)
             st.session_state["lekha_go_home"] = True      # app.py opens the Overview
             ui.flash("success", "Your shop is ready.")

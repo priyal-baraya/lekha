@@ -34,6 +34,9 @@ st.set_page_config(
 
 ui.load_styles()
 
+# On the hosted Lekha the data is in Turso: its address and token come from the secrets.
+session.use_turso_settings_from_secrets()
+
 # The five pages used every day, in the navigation bar itself.
 SHOP_PAGES = [
     ("views/overview.py", "Overview", None),

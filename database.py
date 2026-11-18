@@ -29,6 +29,8 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from pathlib import Path
 
+import turso
+
 PROJECT_DIR = Path(__file__).parent
 DEFAULT_DB_PATH = PROJECT_DIR / "data" / "lekha.db"
 SCHEMA_PATH = PROJECT_DIR / "sql" / "schema.sql"
@@ -80,6 +82,44 @@ def database_path() -> Path:
     return Path(configured) if configured else DEFAULT_DB_PATH
 
 
+# On Turso every statement crosses the internet, so each database's tables
+# are checked once per run of Lekha instead of on every page (a new table
+# arrives with a new version of Lekha, which starts a new run).
+_set_up: set[str] = set()
+
+
+def _already_set_up(path) -> bool:
+    return uses_turso() and str(path) in _set_up
+
+
+def _remember_set_up(path) -> None:
+    if uses_turso():
+        _set_up.add(str(path))
+
+
+def uses_turso() -> bool:
+    """True on the hosted Lekha, where the data is in Turso (docs/hosting.md)."""
+    return bool(os.environ.get("LEKHA_TURSO_URL"))
+
+
+def _turso_connection(target: Path | str):
+    """A connection through Turso's driver, or None to use sqlite3.
+
+    On the hosted Lekha (LEKHA_TURSO_URL set), each of Lekha's files is a
+    Turso database instead (turso.py). LEKHA_SQLITE_DRIVER=libsql sends
+    local files through the same driver, so the tests can check it
+    behaves like sqlite3. In-memory databases never go to Turso."""
+    if uses_turso() and str(target) != ":memory:":
+        token = os.environ.get("LEKHA_TURSO_TOKEN")
+        if not token:
+            raise RuntimeError("LEKHA_TURSO_URL is set, so LEKHA_TURSO_TOKEN must be too.")
+        url = turso.address(os.environ["LEKHA_TURSO_URL"], turso.database_name(target))
+        return turso.connect(url, auth_token=token)
+    if os.environ.get("LEKHA_SQLITE_DRIVER") == "libsql":
+        return turso.connect(str(target))
+    return None
+
+
 def get_connection(db_path: Path | str | None = None) -> sqlite3.Connection:
     """Open a connection to the database with Lekha's settings applied.
 
@@ -87,7 +127,8 @@ def get_connection(db_path: Path | str | None = None) -> sqlite3.Connection:
     temporary database that lives only in memory, which the rule tests
     use so they never touch a real file.
     """
-    connection = sqlite3.connect(db_path or database_path())
+    target = db_path or database_path()
+    connection = _turso_connection(target) or sqlite3.connect(target)
     # Rows behave like dictionaries: row["title"] instead of row[2].
     connection.row_factory = sqlite3.Row
     # SQLite ignores foreign keys unless this is switched on for every
@@ -122,7 +163,9 @@ def connect_accounts(path: Path | str | None = None) -> Iterator[sqlite3.Connect
         path.parent.mkdir(parents=True, exist_ok=True)
     conn = get_connection(path)
     try:
-        conn.executescript(ACCOUNTS_SCHEMA_PATH.read_text(encoding="utf-8"))
+        if not _already_set_up(path):
+            conn.executescript(ACCOUNTS_SCHEMA_PATH.read_text(encoding="utf-8"))
+            _remember_set_up(path)
         yield conn
     finally:
         conn.close()
@@ -181,8 +224,12 @@ def ensure_database(db_path: Path | str | None = None) -> None:
     existing data is untouched and new tables (like stock_adjustments)
     are added to older databases.
     """
-    with connect(db_path) as conn:
+    path = db_path or database_path()
+    if _already_set_up(path):
+        return
+    with connect(path) as conn:
         create_schema(conn)
+    _remember_set_up(path)
 
 
 def load_sample_data(connection: sqlite3.Connection) -> None:

@@ -12,6 +12,7 @@ A signed-in tab is also signed out when:
 """
 
 import logging
+import os
 import time
 
 import streamlit as st
@@ -167,6 +168,27 @@ def google_configured() -> bool:
                     MIN_COOKIE_SECRET_LENGTH)
         return False
     return True
+
+
+TURSO_SETTINGS = ("LEKHA_TURSO_URL", "LEKHA_TURSO_TOKEN")
+
+
+def copy_turso_settings(secrets, environ) -> None:
+    """On the hosted Lekha, the Turso address and token are in the app's
+    secrets (docs/hosting.md); database.py reads them from the environment.
+    A value already in the environment wins."""
+    for name in TURSO_SETTINGS:
+        value = secrets.get(name)
+        if name not in environ and isinstance(value, str) and value.strip():
+            environ[name] = value.strip()
+
+
+def use_turso_settings_from_secrets() -> None:
+    try:
+        secrets = {name: st.secrets.get(name) for name in TURSO_SETTINGS}
+    except Exception:          # no secrets file at all: Lekha uses its own files
+        return
+    copy_turso_settings(secrets, os.environ)
 
 
 def google_books_key() -> str | None:
