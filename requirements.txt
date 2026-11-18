@@ -1,5 +1,5 @@
 streamlit==1.66.1
-pandas==3.1.0
+pandas==3.1.1
 pytest==9.2.0
 Authlib==1.9.5   # needed by Streamlit's built-in Google sign-in (st.login)
 libsql==0.1.11   # Turso's driver: the hosted Lekha keeps its data in Turso (turso.py, docs/hosting.md)
