@@ -310,3 +310,17 @@ def test_no_secrets_no_turso():
     copy_turso_settings({"LEKHA_TURSO_URL": "  "}, environ)
 
     assert environ == {}
+
+
+def test_the_turso_check_passes_on_a_good_connection(tmp_path):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("check_turso", database.PROJECT_DIR / "scripts" / "check_turso.py")
+    check_turso = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(check_turso)
+
+    with database.connect(tmp_path / "shop_1.db") as conn:
+        assert check_turso.check(conn) == []
+    raw = turso.connect(str(tmp_path / "no_rules.db"))     # foreign keys left off
+    raw.execute("PRAGMA foreign_keys = OFF")
+    assert check_turso.check(raw) == ["foreign keys aren't enforced"]
+    raw.close()
