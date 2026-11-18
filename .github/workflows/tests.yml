@@ -30,3 +30,11 @@ jobs:
 
       - name: Run the tests
         run: python -m pytest
+
+      # The hosted Lekha talks to Turso through its own driver (turso.py).
+      # Run every test again through that driver, on local files, to
+      # check it behaves exactly like Python's sqlite3.
+      - name: Run the tests through Turso's driver
+        env:
+          LEKHA_SQLITE_DRIVER: libsql
+        run: python -m pytest

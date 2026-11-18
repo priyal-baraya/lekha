@@ -24,10 +24,13 @@ account and every shop's books and sales:
 import os
 import sqlite3
 import sys
+import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from pathlib import Path
+
+import turso
 
 PROJECT_DIR = Path(__file__).parent
 DEFAULT_DB_PATH = PROJECT_DIR / "data" / "lekha.db"
@@ -80,6 +83,53 @@ def database_path() -> Path:
     return Path(configured) if configured else DEFAULT_DB_PATH
 
 
+# On Turso every statement crosses the internet, so each database's tables
+# are checked once per run of Lekha instead of on every page (a new table
+# arrives with a new version of Lekha, which starts a new run).
+_set_up: set[str] = set()
+# Two visitors arriving at once must not both run the same migration.
+_set_up_lock = threading.Lock()
+
+
+def _already_set_up(path) -> bool:
+    return uses_turso() and str(path) in _set_up
+
+
+def _remember_set_up(path) -> None:
+    if uses_turso():
+        _set_up.add(str(path))
+
+
+def uses_turso() -> bool:
+    """True on the hosted Lekha, where the data is in Turso (docs/hosting.md)."""
+    return bool(os.environ.get("LEKHA_TURSO_URL"))
+
+
+def where_data_lives() -> str:
+    """One line for the log: Turso's address (never its token), or the folder."""
+    if uses_turso():
+        return f"Lekha keeps its data in Turso ({os.environ['LEKHA_TURSO_URL']})."
+    return f"Lekha keeps its data in files in {data_dir()}."
+
+
+def _turso_connection(target: Path | str):
+    """A connection through Turso's driver, or None to use sqlite3.
+
+    On the hosted Lekha (LEKHA_TURSO_URL set), each of Lekha's files is a
+    Turso database instead (turso.py). LEKHA_SQLITE_DRIVER=libsql sends
+    local files through the same driver, so the tests can check it
+    behaves like sqlite3. In-memory databases never go to Turso."""
+    if uses_turso() and str(target) != ":memory:":
+        token = os.environ.get("LEKHA_TURSO_TOKEN")
+        if not token:
+            raise RuntimeError("LEKHA_TURSO_URL is set, so LEKHA_TURSO_TOKEN must be too.")
+        url = turso.address(os.environ["LEKHA_TURSO_URL"], turso.database_name(target))
+        return turso.connect(url, auth_token=token)
+    if os.environ.get("LEKHA_SQLITE_DRIVER") == "libsql":
+        return turso.connect(str(target))
+    return None
+
+
 def get_connection(db_path: Path | str | None = None) -> sqlite3.Connection:
     """Open a connection to the database with Lekha's settings applied.
 
@@ -87,7 +137,8 @@ def get_connection(db_path: Path | str | None = None) -> sqlite3.Connection:
     temporary database that lives only in memory, which the rule tests
     use so they never touch a real file.
     """
-    connection = sqlite3.connect(db_path or database_path())
+    target = db_path or database_path()
+    connection = _turso_connection(target) or sqlite3.connect(target)
     # Rows behave like dictionaries: row["title"] instead of row[2].
     connection.row_factory = sqlite3.Row
     # SQLite ignores foreign keys unless this is switched on for every
@@ -122,7 +173,10 @@ def connect_accounts(path: Path | str | None = None) -> Iterator[sqlite3.Connect
         path.parent.mkdir(parents=True, exist_ok=True)
     conn = get_connection(path)
     try:
-        conn.executescript(ACCOUNTS_SCHEMA_PATH.read_text(encoding="utf-8"))
+        if not _already_set_up(path):
+            with _set_up_lock:
+                conn.executescript(ACCOUNTS_SCHEMA_PATH.read_text(encoding="utf-8"))
+                _remember_set_up(path)
         yield conn
     finally:
         conn.close()
@@ -146,11 +200,30 @@ def create_schema(connection: sqlite3.Connection) -> None:
 def schema_version(connection: sqlite3.Connection) -> int:
     """How many migrations this database has had.
 
-    SQLite keeps a spare whole number in every database file's header,
-    `PRAGMA user_version` (0 in a new file). Lekha uses it to remember
-    which numbered migration ran last.
+    Kept in a one-row table, lekha_schema. (Lekha first used SQLite's
+    spare header number, PRAGMA user_version, but Turso refuses to change
+    it; files from then still have their number there, and
+    _version_table() carries it over.)
     """
-    return connection.execute("PRAGMA user_version").fetchone()[0]
+    row = connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'lekha_schema'").fetchone()
+    if row is None:
+        return connection.execute("PRAGMA user_version").fetchone()[0]
+    return connection.execute("SELECT version FROM lekha_schema").fetchone()[0]
+
+
+def _version_table(connection: sqlite3.Connection) -> None:
+    """Create lekha_schema if it's missing, starting from user_version."""
+    start = int(schema_version(connection))
+    connection.executescript(
+        "BEGIN;\n"
+        "CREATE TABLE IF NOT EXISTS lekha_schema (\n"
+        "    only_row INTEGER PRIMARY KEY CHECK (only_row = 1),\n"
+        "    version  INTEGER NOT NULL CHECK (version >= 0)\n"
+        ") STRICT;\n"
+        f"INSERT OR IGNORE INTO lekha_schema (only_row, version) VALUES (1, {start});\n"
+        "COMMIT;"
+    )
 
 
 def apply_migrations(connection: sqlite3.Connection) -> list[int]:
@@ -160,6 +233,7 @@ def apply_migrations(connection: sqlite3.Connection) -> list[int]:
     so a failure leaves the database exactly as it was. Returns the
     numbers of the migrations applied (usually none).
     """
+    _version_table(connection)
     applied = []
     for path in sorted(MIGRATIONS_DIR.glob("[0-9][0-9][0-9]_*.sql")):
         number = int(path.name[:3])
@@ -168,7 +242,8 @@ def apply_migrations(connection: sqlite3.Connection) -> list[int]:
         connection.executescript(
             "BEGIN;\n"
             + path.read_text(encoding="utf-8")
-            + f"\nPRAGMA user_version = {number};\nCOMMIT;"
+            # number is int() of the migration file's own name: always a whole number.
+            + f"\nUPDATE lekha_schema SET version = {number};\nCOMMIT;"  # nosec B608
         )
         applied.append(number)
     return applied
@@ -181,8 +256,12 @@ def ensure_database(db_path: Path | str | None = None) -> None:
     existing data is untouched and new tables (like stock_adjustments)
     are added to older databases.
     """
-    with connect(db_path) as conn:
+    path = db_path or database_path()
+    if _already_set_up(path):
+        return
+    with _set_up_lock, connect(path) as conn:
         create_schema(conn)
+        _remember_set_up(path)
 
 
 def load_sample_data(connection: sqlite3.Connection) -> None:

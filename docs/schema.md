@@ -65,7 +65,7 @@ The last four columns were added in Phase 8 by a migration (see below).
 | `001_book_details.sql` | Adds `publisher`, `published_year`, `cover_id` and `openlibrary_key` to `books` (Phase 8) |
 | `002_recorded_by.sql` | Adds who did it: `sales.recorded_by`, `sale_cancellations.cancelled_by`, `stock_adjustments.recorded_by` (Phase 9) |
 
-SQLite keeps a spare whole number in every database file's header, `PRAGMA user_version`. `database.apply_migrations()` runs every migration numbered higher than it, in order. Each file and its new version number run in one transaction, so a failure leaves the database as it was. New databases go through exactly the same files, so old and new databases always end up identical. It runs on every start, and a database already up to date changes nothing.
+The number of the last migration a database has had is kept in a one-row table, `lekha_schema`. (Lekha first used SQLite's spare header number, `PRAGMA user_version`, but Turso refuses to change it. Files from then still have their number there, and it's carried over into `lekha_schema` the first time, so no migration runs twice.) `database.apply_migrations()` runs every migration numbered higher than it, in order. Each file and its new version number run in one transaction, so a failure leaves the database as it was. New databases go through exactly the same files, so old and new databases always end up identical. It runs on every start, and a database already up to date changes nothing.
 
 Tested: a database in the Phase 7 shape with a book in it is upgraded to the latest version (2) with the book kept and its new columns empty; running it again applies nothing; the database refuses a bad cover number or record reference.
 

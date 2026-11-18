@@ -916,3 +916,18 @@ Now, when the ISBN has no price (or a book is chosen from a title search, which 
 Tests now never read the real `.streamlit/secrets.toml` and can't reach the internet: an autouse fixture in `tests/conftest.py` gives every test empty secrets and blocks `urlopen`.
 
 **"Recommended price" (18 Nov):** the owner didn't want the label to say "Google Play ebook price". The field now says **Recommended price** under it, whatever Google's edition: it's a starting point the owner changes as they like. Where it comes from is in the setup guide and in `services/googlebooks.py`. The canvas BooksAdd artboard matches.
+
+**Hosting: Streamlit Community Cloud with Turso (18 Nov):** the owner wanted Lekha online for a couple of people, free, and without adding a card anywhere. Lekha keeps its data in SQLite files, so the host must keep files, or the data must live elsewhere. Options looked at:
+
+- **Community Cloud alone:** free, but its files can be wiped on any restart, losing every account and shop.
+- **Google Cloud's always-free VM** (PR #35): free and no code changes, but Google needs a card. Set aside.
+- **Railway or Fly.io:** keep files, from about $5 a month. Not free.
+- **Vercel:** no files kept either, and Streamlit's live connection doesn't suit its short-lived functions.
+- **The owner's computer with Tailscale Funnel:** free, but online only while it's on.
+- **Community Cloud with Turso (chosen):** both free, no card. Turso is SQLite online, so the SQL stays the same.
+
+**What it took:** Turso's driver is close to `sqlite3` but not the same: no rows by column name, no `:named` parameters, a plain `ValueError` for every database error. `turso.py` fills those gaps, and CI runs every test twice, through `sqlite3` and through the driver. Each of Lekha's files becomes one Turso database, so shops stay as separate as before.
+
+**Found against real Turso:** it refuses `PRAGMA user_version = N` (the schema version moved to a `lekha_schema` table; older files carry their number over), it has no temporary tables, and its driver gives `None` instead of `[]` for "no rows". Also found on the first deploy: the app ran `main`, without the Turso code, and the secrets were empty, so a test account went to Community Cloud's own files. The app now prints where its data lives when it starts.
+
+**What it costs:** each shop's database is made in advance by hand (the app holds no key that could create or delete databases); every query crosses the internet (about half a second from India to Virginia; less from Community Cloud); the app sleeps after 12 hours without visitors; Turso's free plan keeps only one day of history.

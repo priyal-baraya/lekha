@@ -339,3 +339,29 @@ def test_display_names_for_recorded_by(acc):
     second = new_user(acc, "second", "Ben")
     assert accounts.display_names(acc, [first, second, None, first]) == {first: "Asha", second: "Ben"}
     assert accounts.display_names(acc, []) == {}
+
+
+# ---------- Undoing a shop whose database couldn't be set up ----------
+
+def test_undo_new_shop_removes_it_completely(acc):
+    asha = accounts.create_user(acc, "asha", "Asha", "a long enough password 7")
+    shop = accounts.create_shop(acc, asha, "Kitaab Corner")
+
+    accounts.undo_new_shop(acc, asha, shop)
+
+    assert accounts.get_shop(acc, shop) is None
+    assert accounts.memberships(acc, asha) == []
+
+
+def test_undo_new_shop_only_for_its_only_owner(acc):
+    asha = accounts.create_user(acc, "asha", "Asha", "a long enough password 7")
+    ravi = accounts.create_user(acc, "ravi", "Ravi", "another long password 8")
+    shop = accounts.create_shop(acc, asha, "Kitaab Corner")
+    code = accounts.create_invitation(acc, asha, shop)
+    accounts.redeem_invitation(acc, ravi, code)
+
+    with pytest.raises(ValidationError):
+        accounts.undo_new_shop(acc, ravi, shop)      # not an owner
+    with pytest.raises(ValidationError):
+        accounts.undo_new_shop(acc, asha, shop)      # someone else has joined
+    assert accounts.get_shop(acc, shop) is not None

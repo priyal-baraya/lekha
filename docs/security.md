@@ -55,6 +55,16 @@ Set in `.streamlit/config.toml`, and a test checks they stay that way:
 - No file uploads, no extra files served, no error details or tracebacks in the browser.
 - Secrets (`.streamlit/secrets.toml`) are in `.gitignore`, and a test checks it.
 
+## The hosted Lekha
+
+On Streamlit Community Cloud with its data in Turso ([docs/hosting.md](hosting.md)):
+
+- **HTTPS** from Community Cloud; Turso is reached over `libsql://`, which is encrypted. Lekha refuses a Turso address that isn't.
+- **The Turso token** lives in the app's secrets on Community Cloud and in `.streamlit/secrets.toml` (never committed). It's never logged: the start-up line names the address only. It can read and write Lekha's databases, but it can't create or delete them, which is why each shop's database is made in advance.
+- **A leaked token** is stopped by invalidating the group's tokens in Turso and making a new one.
+- **Each shop is still its own database**, as with files, so one shop's queries can't reach another's books.
+- **Backups:** Turso keeps one day of history on the free plan. That's short: a mistake noticed after a day can't be undone there.
+
 ## Logging
 
 Security events go to the terminal Lekha runs in, under `lekha.security`: sign-ins, failed sign-ins, lockouts, new accounts, password changes, invites, role changes, removals and refused actions. People appear by account number. Passwords and invite codes are never logged.
@@ -74,8 +84,8 @@ On 2026-11-10, pip-audit found no known vulnerabilities in the pinned packages, 
 
 ## Not covered yet
 
-- **No HTTPS.** Fine on one computer. For other devices, put Lekha behind a proxy that adds HTTPS (see the setup guide), or host it somewhere that provides it.
-- **Limits on repeated attempts are kept in memory**, so restarting Lekha resets them (the account lockout is stored and survives). Behind a proxy, every visitor can look like the same address unless the proxy passes the real one on.
+- **No HTTPS of its own.** Fine on one computer; the hosted Lekha gets it from Community Cloud ([docs/hosting.md](hosting.md)).
+- **Limits on repeated attempts are kept in memory**, so restarting Lekha resets them (the account lockout is stored and survives). Behind a proxy, every visitor can look like the same address unless the proxy passes the real one on. On Community Cloud this hasn't been checked yet.
 - **The lockout message shows that an account exists** (only for usernames that have one). This is a common trade-off: hiding it would mean locking usernames nobody has.
 - **The sign-up page says when a username is taken.** Same trade-off.
 - **No password reset by email, and no two-step sign-in** (Google sign-in can use Google's).
