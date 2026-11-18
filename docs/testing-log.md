@@ -711,3 +711,11 @@ Checked with the real key: in the browser (a copy of the demo shop on port 8502,
 ### "Recommended price": **541 passed**
 
 The three page tests that check the label now look for "Recommended price" (failing first, then passing after the one-line change).
+
+### Hosting on Turso: **582 passed**, twice
+
+Tests first, failing first: 35 for `turso.py` and the hosted settings (rows by name, named parameters including colons inside text and comments, errors as `sqlite3`'s, transactions, file-to-database names, addresses, tokens, setting up once per run, secrets, the start-up line), 3 for the schema version table, 2 for undoing a new shop, 1 page test for a shop whose database can't be set up.
+
+**The whole suite also runs through Turso's driver** (`LEKHA_SQLITE_DRIVER=libsql`, on local files): it found that SQLite's type errors in STRICT tables must count as `IntegrityError`. Two tests force a failure with a trigger; through the driver that's a general database error (it passes on only the message), so they accept either and still check nothing was half-saved.
+
+Checked against **real Turso** (`scripts/check_turso.py 2`): all three databases ready, foreign keys on, a failed save undone, about 500 ms a query from India. That check found the three Turso differences in the decision log. bandit clean; pip-audit finds no known vulnerabilities, `libsql` included.

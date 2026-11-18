@@ -41,7 +41,7 @@ services/    Rules: accounts, permissions, books, sales, inventory, analytics,
              money, Open Library (plain Python, no Streamlit)
    │  run SQL through
 database.py  Connections with foreign keys on; picks the signed-in person's shop
-             file; numbered migrations tracked with PRAGMA user_version
+             file (or its Turso database, when hosted); numbered migrations
    │
 SQLite       data/accounts.db       people, shops, roles, invite codes
              data/shops/shop_N.db   one file per shop: 5 STRICT tables with
@@ -52,7 +52,7 @@ Keeping SQL and network calls out of the pages means the rules are tested withou
 
 ## Quality
 
-- **541 automated tests** (pytest), run on every push and pull request by GitHub Actions: sign-in, lockout, invite codes and every role's limits, two shops that must never see each other's books, rules the database must refuse, transactions that must roll back, every analytics figure against numbers worked out by hand, Open Library lookups replayed from **real saved responses** (so the tests don't need the internet), a schema migration that must keep existing data, and the pages themselves via Streamlit's `AppTest`, including adding a real book by ISBN and a 2-copy sale that must reduce stock by exactly 2.
+- **582 automated tests** (pytest), run on every push and pull request by GitHub Actions: sign-in, lockout, invite codes and every role's limits, two shops that must never see each other's books, rules the database must refuse, transactions that must roll back, every analytics figure against numbers worked out by hand, Open Library lookups replayed from **real saved responses** (so the tests don't need the internet), a schema migration that must keep existing data, and the pages themselves via Streamlit's `AppTest`, including adding a real book by ISBN and a 2-copy sale that must reduce stock by exactly 2.
 - **Test data stays in the tests.** The analytics are checked against a small, hand-calculated fictional dataset (`data/sample_data.sql`). It is loaded only into temporary test databases, never into the app.
 - **Accessibility:** a contrast audit of every piece of text on every page went from 37 failures to 0 (WCAG 2.2 AA); visible keyboard focus; charts with alt text, tooltips, written summaries and table views; layouts checked at 1280px and 375px.
 - **Security** ([details](docs/security.md)): scrypt password hashes, lockout after 5 wrong passwords (also on the change-password form), limits on repeated sign-ins, sign-ups and invite codes, sign-out after 60 idle minutes or a password change elsewhere, roles checked in the services, names and Open Library text escaped so they can't inject formatting, links or pictures, Open Library answers checked before use, and only this computer can open the app by default. GitHub checks every package for known vulnerabilities (**pip-audit**) and scans the code (**bandit**) on every push and weekly; Dependabot proposes updates.
@@ -86,6 +86,7 @@ lekha/
 │                           pages they may see, error handling
 ├── database.py             Connections, schemas, migrations, per-shop files, reset
 ├── query.py                Runs SQL and prints the results (learning tool)
+├── turso.py                Turso's driver made to behave like sqlite3, for the hosted Lekha
 ├── services/               Business rules: accounts, permissions, books, sales,
 │                           inventory, analytics, money, Open Library lookups
 ├── views/                  One file per page
@@ -97,8 +98,8 @@ lekha/
 │   ├── analytics/          The analytics queries, one commented file each
 │   └── 01_first_queries.sql
 ├── data/sample_data.sql    The fictional, hand-checked dataset the tests use
-├── tests/                  541 pytest tests; fixtures/ holds real Open Library responses
-├── scripts/                Screenshot capture (development only)
+├── tests/                  582 pytest tests; fixtures/ holds real Open Library responses
+├── scripts/                Screenshot capture, and a check of the Turso databases
 ├── .github/workflows/      Runs the tests on GitHub
 └── docs/                   Case study, setup, schema, analytics, design, decisions, logs
 ```
@@ -106,7 +107,7 @@ lekha/
 ## Documentation
 
 - **[Case study](docs/case-study.md)**: the problem, the design, the SQL, the results and the limits, in one read
-- [Setup guide](docs/setup.md)
+- [Setup guide](docs/setup.md) · [Hosting for free](docs/hosting.md)
 - [Product brief](docs/product-brief.md) · [Database schema](docs/schema.md) · [Test dataset](docs/sample-data.md) · [Analytics definitions](docs/analytics.md)
 - [Security](docs/security.md) · [Design system](docs/design-system.md) · [Decision log](docs/decision-log.md) · [Testing log](docs/testing-log.md) · [Dev log](docs/devlog/)
 
@@ -119,7 +120,7 @@ lekha/
 
 ## Limitations
 
-- Runs on one computer (or one server). Several people and shops can share it, but it isn't hosted online yet, and it has no HTTPS of its own, so by default only the computer it runs on can open it (see [Letting other devices in](docs/setup.md#letting-other-devices-in)).
+- On a computer, only that computer can open it: Lekha has no HTTPS of its own. Hosted on Streamlit Community Cloud with its data in Turso ([docs/hosting.md](docs/hosting.md)), it's online for anyone you invite, but each shop's database has to be made in advance, and the app sleeps after 12 hours without visitors.
 - A username-and-password sign-in lasts until the browser tab is refreshed or closed; Google sign-in is remembered by a browser cookie.
 - Google sign-in is built and its account rules are tested, but the round trip to Google itself is only tried once Google credentials are set up (see the setup guide).
 - No "forgot password" by email: an owner can't reset a password yet, so a forgotten one means a new account.

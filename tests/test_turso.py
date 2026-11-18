@@ -344,3 +344,25 @@ def test_the_turso_check_passes_on_a_good_connection(tmp_path):
     raw.execute("PRAGMA foreign_keys = OFF")
     assert check_turso.check(raw) == ["foreign keys aren't enforced"]
     raw.close()
+
+
+def test_where_the_data_lives_is_told_plainly(tmp_path, monkeypatch):
+    monkeypatch.delenv("LEKHA_TURSO_URL", raising=False)
+    monkeypatch.setenv("LEKHA_DATA_DIR", str(tmp_path))
+    assert database.where_data_lives() == f"Lekha keeps its data in files in {tmp_path}."
+
+    monkeypatch.setenv("LEKHA_TURSO_URL", "libsql://lekha-{name}-someone.turso.io")
+    monkeypatch.setenv("LEKHA_TURSO_TOKEN", "secret-token-value")
+    told = database.where_data_lives()
+    assert told == "Lekha keeps its data in Turso (libsql://lekha-{name}-someone.turso.io)."
+    assert "secret-token-value" not in told
+
+
+def test_where_the_data_lives_is_printed_once(monkeypatch, capsys):
+    from ui import session
+    monkeypatch.delenv("LEKHA_TURSO_URL", raising=False)
+    monkeypatch.setattr(session, "_told_where_data_lives", False)
+    session.use_turso_settings_from_secrets()
+    session.use_turso_settings_from_secrets()
+
+    assert capsys.readouterr().out.count("Lekha keeps its data in") == 1

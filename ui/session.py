@@ -17,7 +17,7 @@ import time
 
 import streamlit as st
 
-from database import connect_accounts
+from database import connect_accounts, where_data_lives
 from services import accounts, googlebooks
 from services.permissions import ACTIONS, can
 from ui.components import plain
@@ -183,12 +183,21 @@ def copy_turso_settings(secrets, environ) -> None:
             environ[name] = value.strip()
 
 
+_told_where_data_lives = False
+
+
 def use_turso_settings_from_secrets() -> None:
+    global _told_where_data_lives
     try:
         secrets = {name: st.secrets.get(name) for name in TURSO_SETTINGS}
     except Exception:          # no secrets file at all: Lekha uses its own files
-        return
+        secrets = {}
     copy_turso_settings(secrets, os.environ)
+    if not _told_where_data_lives:
+        # Once per run, in the terminal (or the host's log), so it's easy
+        # to see whether the hosted Lekha is using Turso.
+        print(where_data_lives(), flush=True)
+        _told_where_data_lives = True
 
 
 def google_books_key() -> str | None:

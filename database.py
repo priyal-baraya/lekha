@@ -105,6 +105,13 @@ def uses_turso() -> bool:
     return bool(os.environ.get("LEKHA_TURSO_URL"))
 
 
+def where_data_lives() -> str:
+    """One line for the log: Turso's address (never its token), or the folder."""
+    if uses_turso():
+        return f"Lekha keeps its data in Turso ({os.environ['LEKHA_TURSO_URL']})."
+    return f"Lekha keeps its data in files in {data_dir()}."
+
+
 def _turso_connection(target: Path | str):
     """A connection through Turso's driver, or None to use sqlite3.
 
@@ -235,7 +242,8 @@ def apply_migrations(connection: sqlite3.Connection) -> list[int]:
         connection.executescript(
             "BEGIN;\n"
             + path.read_text(encoding="utf-8")
-            + f"\nUPDATE lekha_schema SET version = {number};\nCOMMIT;"
+            # number is int() of the migration file's own name: always a whole number.
+            + f"\nUPDATE lekha_schema SET version = {number};\nCOMMIT;"  # nosec B608
         )
         applied.append(number)
     return applied
