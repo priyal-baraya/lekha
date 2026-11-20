@@ -629,6 +629,21 @@ def test_get_started_follows_the_design(data_dir):
         assert old_label not in text
 
 
+
+def test_a_second_shop_with_the_same_name_is_refused(data_dir):
+    priya, _ = person_with_shop("priya", "Test Shop")
+    app = AppTest.from_file(str(PROJECT / "views" / "get_started.py"), default_timeout=TIMEOUT)
+    app.session_state[session.USER] = priya
+    app.run()
+
+    field(app, "Shop name").set_value("test shop")
+    app.button(key="FormSubmitter:create_shop-Create shop").click().run()
+
+    assert not app.exception
+    assert any("You already have a shop called Test Shop." in shown(box.value) for box in app.error)
+    with connect_accounts() as acc:
+        assert [m.shop_name for m in accounts.memberships(acc, priya)] == ["Test Shop"]
+
 def test_sign_up_create_a_shop_and_land_on_its_overview(data_dir):
     app = run_app()
     field(app, "Your name").set_value("Priya")
