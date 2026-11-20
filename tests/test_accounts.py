@@ -152,6 +152,37 @@ def test_creating_a_shop_makes_you_its_owner(acc):
     assert accounts.memberships(acc, user_id) == [accounts.Membership(shop_id, "Kitaab Corner", "owner")]
 
 
+
+def test_you_cant_own_two_shops_with_the_same_name(acc):
+    """A slow page can be clicked twice; that must not make two shops."""
+    user_id = new_user(acc)
+    accounts.create_shop(acc, user_id, "Test Shop", now=NOW)
+
+    for again in ("Test Shop", "  test   SHOP "):
+        with pytest.raises(ValidationError) as refused:
+            accounts.create_shop(acc, user_id, again, now=NOW)
+        assert refused.value.errors == ["You already have a shop called Test Shop."]
+    assert len(accounts.memberships(acc, user_id)) == 1
+
+
+def test_other_people_can_use_the_same_shop_name(acc):
+    asha = new_user(acc, "asha", "Asha")
+    ravi = new_user(acc, "ravi", "Ravi")
+    accounts.create_shop(acc, asha, "Kitaab Corner", now=NOW)
+
+    accounts.create_shop(acc, ravi, "Kitaab Corner", now=NOW)
+    assert [m.shop_name for m in accounts.memberships(acc, ravi)] == ["Kitaab Corner"]
+
+
+def test_staff_can_start_their_own_shop_with_the_same_name(acc):
+    """Only shops you own count: working at one doesn't take its name."""
+    owner, shop = shop_with_owner(acc)
+    person = new_user(acc, "both", "Both")
+    accounts.redeem_invitation(acc, person, accounts.create_invitation(acc, owner, shop, now=NOW), now=NOW)
+
+    accounts.create_shop(acc, person, "Kitaab Corner", now=NOW)
+    assert sorted(m.role for m in accounts.memberships(acc, person)) == ["owner", "staff"]
+
 @pytest.mark.parametrize(
     "role, allowed, refused",
     [

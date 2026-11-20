@@ -719,3 +719,7 @@ Tests first, failing first: 35 for `turso.py` and the hosted settings (rows by n
 **The whole suite also runs through Turso's driver** (`LEKHA_SQLITE_DRIVER=libsql`, on local files): it found that SQLite's type errors in STRICT tables must count as `IntegrityError`. Two tests force a failure with a trigger; through the driver that's a general database error (it passes on only the message), so they accept either and still check nothing was half-saved.
 
 Checked against **real Turso** (`scripts/check_turso.py 2`): all three databases ready, foreign keys on, a failed save undone, about 500 ms a query from India. That check found the three Turso differences in the decision log. bandit clean; pip-audit finds no known vulnerabilities, `libsql` included.
+
+### One shop name per owner: **586 passed**, twice
+
+Tests first, failing first: the same owner can't make "Test Shop" twice (nor "  test   SHOP "), another person can, and staff of a "Kitaab Corner" can still start their own. A page test: Get started refuses the duplicate and says why.
