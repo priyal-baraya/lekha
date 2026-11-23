@@ -342,8 +342,18 @@ def _shop_name(name: str) -> str:
 
 
 def create_shop(conn: sqlite3.Connection, user_id: int, name: str, now: datetime | None = None) -> int:
-    """Create a shop with this person as its owner. Returns shop_id."""
+    """Create a shop with this person as its owner. Returns shop_id.
+
+    Nobody can own two shops with the same name (ignoring capitals and
+    spaces): on a slow page, a second click on "Create shop" made a second
+    shop on the hosted Lekha, each taking one of its prepared databases."""
     name = _shop_name(name)
+    owned = conn.execute(
+        "SELECT s.name FROM shops AS s JOIN memberships AS m USING (shop_id)"
+        " WHERE m.user_id = ? AND m.role = 'owner'", (user_id,)).fetchall()
+    for row in owned:
+        if " ".join(row["name"].split()).casefold() == name.casefold():
+            raise ValidationError([f"You already have a shop called {row['name']}."])
     stamp = _text(_now(now))
     with conn:   # the shop and its first owner are created together, or not at all
         shop_id = conn.execute("INSERT INTO shops (name, created_at) VALUES (?, ?)", (name, stamp)).lastrowid
