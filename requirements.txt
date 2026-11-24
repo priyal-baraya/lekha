@@ -1,4 +1,4 @@
-streamlit==1.66.1
+streamlit==1.67.0
 pandas==3.1.0
 pytest==9.2.0
 Authlib==1.9.5   # needed by Streamlit's built-in Google sign-in (st.login)
