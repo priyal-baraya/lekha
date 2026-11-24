@@ -20,7 +20,7 @@ Lekha uses Turso only when two settings are present, `LEKHA_TURSO_URL` and `LEKH
 - **Turso's free plan:** 100 databases and 5 GB, with no card. Turso keeps one day of history, so a database can be put back to how it was earlier that day.
 - **Community Cloud:** free for public repositories. The app **sleeps after 12 hours without visitors**; the next visit wakes it, which takes about a minute.
 - **Each shop needs a Turso database made in advance.** Lekha doesn't hold a key that could create or delete databases. When none is ready, creating a shop says "Lekha couldn't set up this shop's database" and nothing is half-made.
-- **Speed:** every query crosses the internet. From India to Turso's Virginia servers, a query took about half a second; from Community Cloud's servers it should be much quicker.
+- **Speed:** every query crosses the internet. Lekha keeps one secure connection to each database open and sends each query as one request: about a quarter of a second from India to Turso's Virginia servers, so a page took 2 to 4 seconds from here, and less from Community Cloud's servers. Each page writes a line to the app's log, such as `Overview: 16 requests to Turso, 0.41 s of 0.62 s`, so you can see.
 
 ## 1. Turso: account, databases and token
 
@@ -83,5 +83,6 @@ In Turso, invalidate the group's tokens (this stops every old token), create a n
 | Accounts and shops disappear after a while | Lekha is using Community Cloud's files, not Turso. Check the log line in step 4, the **Secrets**, and that the app runs `main` |
 | "Invalid format: please enter valid TOML" | Curly quotes or a token split over two lines. Copy `secrets.toml` from Notepad |
 | "Lekha couldn't set up this shop's database" | No Turso database is ready for the next shop: create the next `lekha-shop-N` |
+| Pages are slow | Open **Manage app**: each page's log line says how long it waited for Turso. The first page after the app wakes up is slower: it checks every database's tables |
 | "Lekha couldn't read or write its database" | Turso couldn't be reached, or the token has expired or been invalidated. Run `scripts/check_turso.py` on your computer to see which |
 | The first visit takes a minute | The app was asleep after 12 hours without visitors |

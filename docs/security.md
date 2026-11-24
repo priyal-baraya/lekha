@@ -59,7 +59,7 @@ Set in `.streamlit/config.toml`, and a test checks they stay that way:
 
 On Streamlit Community Cloud with its data in Turso ([docs/hosting.md](hosting.md)):
 
-- **HTTPS** from Community Cloud; Turso is reached over `libsql://`, which is encrypted. Lekha refuses a Turso address that isn't.
+- **HTTPS** from Community Cloud. Lekha reaches Turso over HTTPS too, checking its certificate, and refuses a Turso address that isn't `libsql://` or `https://` or that has unexpected characters in it. The token travels only in the request's `Authorization` header; an error from Turso shows Turso's own short explanation, never what was sent. A request that fails on a stale connection is sent again only if it can't have changed anything.
 - **The Turso token** lives in the app's secrets on Community Cloud and in `.streamlit/secrets.toml` (never committed). It's never logged: the start-up line names the address only. It can read and write Lekha's databases, but it can't create or delete them, which is why each shop's database is made in advance.
 - **A leaked token** is stopped by invalidating the group's tokens in Turso and making a new one.
 - **Each shop is still its own database**, as with files, so one shop's queries can't reach another's books.

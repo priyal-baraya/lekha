@@ -8,9 +8,43 @@ Every test gets its own fresh in-memory database, so tests never touch
 data/lekha.db and cannot affect each other.
 """
 
+import functools
+import os
+
 import pytest
 
+import database
 from database import create_schema, get_connection, load_sample_data
+
+# LEKHA_TEST_THROUGH_TURSO=1 runs every test through turso.py, the hosted
+# Lekha's connection to Turso, against a stand-in Turso server on local
+# files (tests/fake_turso.py). GitHub runs the suite both ways.
+THROUGH_TURSO = os.environ.get("LEKHA_TEST_THROUGH_TURSO") == "1"
+
+
+@pytest.fixture(autouse=True)
+def through_turso(monkeypatch):
+    if not THROUGH_TURSO:
+        yield
+        return
+    import turso
+    from tests.fake_turso import FakeTurso
+
+    real = database._turso_connection
+    servers = []
+
+    @functools.wraps(real)
+    def stand_in(target):
+        remote = real(target)          # still Turso proper when a test sets LEKHA_TURSO_URL
+        if remote is not None:
+            return remote
+        servers.append(FakeTurso(str(target)))
+        return turso.Connection(servers[-1])
+
+    monkeypatch.setattr(database, "_turso_connection", stand_in)
+    yield
+    for server in servers:
+        server.close_all()
 
 
 @pytest.fixture

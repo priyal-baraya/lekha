@@ -723,3 +723,13 @@ Checked against **real Turso** (`scripts/check_turso.py 2`): all three databases
 ### One shop name per owner: **586 passed**, twice
 
 Tests first, failing first: the same owner can't make "Test Shop" twice (nor "  test   SHOP "), another person can, and staff of a "Kitaab Corner" can still start their own. A page test: Get started refuses the duplicate and says why.
+
+### A faster connection to Turso: **603 passed**, twice
+
+Measured before changing anything: queries and connections per page counted through stand-in files, and each step of a query timed against real Turso (above, in the decision log).
+
+17 new tests for `turso.py`, written first: each query is one request; a save sends BEGIN with its first statement (an UPDATE and an INSERT in a `with` block: 3 requests in all); nothing is left open between requests; a transaction isn't seen by another connection until it commits; closing mid-transaction discards it; values of every kind come back unchanged; a value sqlite3 can't store is refused; through a local HTTP server: one connection reused for five queries with the token sent every time, a refused request never showing the token, Turso out of reach as a database error, and a stale connection retried for a read but never for a change; the log line for a page.
+
+**The whole suite runs through `turso.py`** against the stand-in Turso (`LEKHA_TEST_THROUGH_TURSO=1`). Two tests forced a failure with a temporary trigger, which Turso refuses; they now use an ordinary one, and expect `IntegrityError` both ways again, since Turso's error codes say exactly what was refused.
+
+**Against real Turso:** 16 behaviours checked on a scratch table (all pass), which found that Turso sends blobs in base64 without its `=` padding; fixed, and the stand-in now does the same. `scripts/check_turso.py 2` (now also checking values, refused values and that an unfinished save isn't seen by others): all three databases ready, about 230 ms a query from India (was about 500). Pages timed against the real databases, old code and new: about three times faster (decision log). bandit clean; pip-audit finds nothing.
