@@ -156,7 +156,7 @@ def person_with_shop(username: str, shop_name: str) -> tuple[int, int]:
         ("insights", "What the numbers suggest"),
     ],
 )
-def test_page_opens_without_errors(sample_file, page, expected):
+def test_page_opens_without_errors(sample_file, fixed_now, page, expected):
     app = run_page(page)
     assert not app.exception, app.exception
     assert not app.error
