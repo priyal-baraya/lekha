@@ -1,6 +1,5 @@
 """Tests for services/inventory.py, run against the fictional sample data."""
 
-import os
 import sqlite3
 from datetime import datetime
 
@@ -113,15 +112,11 @@ def test_failure_inside_transaction_rolls_back_stock(sample_db):
     # every insert. The rollback must undo the UPDATE too.
     sample_db.execute(
         """
-        CREATE TEMP TRIGGER refuse_history BEFORE INSERT ON stock_adjustments
+        CREATE TRIGGER refuse_history BEFORE INSERT ON stock_adjustments
         BEGIN SELECT RAISE(ABORT, 'history table unavailable'); END
         """
     )
-    # SQLite calls a trigger's refusal a broken rule (IntegrityError).
-    # Turso's driver passes on only the message, so through it
-    # (LEKHA_SQLITE_DRIVER=libsql) it's a general database error.
-    refused = sqlite3.OperationalError if os.environ.get("LEKHA_SQLITE_DRIVER") == "libsql" else sqlite3.IntegrityError
-    with pytest.raises(refused):
+    with pytest.raises(sqlite3.IntegrityError):
         correct_stock(sample_db, 1, 8, 5, "shelf_count", now=NOW)
     assert stock(sample_db, 1) == 8
     assert adjustment_count(sample_db) == 0

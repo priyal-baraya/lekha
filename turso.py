@@ -1,35 +1,52 @@
-"""Turso's driver, made to behave like Python's sqlite3 for Lekha.
+"""Lekha's connection to Turso, made to behave like Python's sqlite3.
 
 The hosted Lekha keeps its data in Turso (an online SQLite) instead of
 files, because Streamlit Community Cloud can wipe files on any restart.
 database.get_connection() uses this module when LEKHA_TURSO_URL is set
 (docs/hosting.md); otherwise Lekha uses SQLite files, as always.
 
-Turso's Python driver (libsql) is close to sqlite3 but not the same, so
-this wraps it to fill the gaps Lekha relies on:
+It talks to Turso's HTTP API directly (Hrana over HTTP, version 2): each
+request is a "pipeline" of statements, sent as JSON. That's faster than
+Turso's own Python driver, which was measured taking two round trips a
+query and setting up a new secure connection every time:
 
-  * rows that can be read by column name: row["title"] (sqlite3.Row);
-  * named parameters, such as :start, which the driver doesn't accept;
-  * looping over a cursor's rows;
-  * sqlite3's own errors: IntegrityError when the database refuses data,
-    OperationalError for other database problems (the driver raises a
-    plain ValueError for both).
+  * one round trip per query, and a transaction's BEGIN travels with its
+    first statement;
+  * one secure connection per Turso database, kept open and shared by
+    every page (a pool), instead of a new one each time.
+
+It fills the gaps between Turso and sqlite3 that Lekha relies on: rows
+read by column name (row["title"]), :named parameters, sqlite3's own
+errors (IntegrityError when the database refuses data), and sqlite3's
+transactions (an INSERT, UPDATE or DELETE starts one; commit() or a
+`with conn:` block ends it).
 
 Each Lekha file becomes one Turso database: accounts.db is "accounts",
 shops/shop_3.db is "shop-3". LEKHA_TURSO_URL is the address with {name}
 where that goes, for example libsql://lekha-{name}-yourname.turso.io.
 """
 
+import base64
+import http.client
+import json
+import logging
 import re
 import sqlite3
+import ssl
+import threading
+import time
 from collections.abc import Iterator, Mapping
-from contextlib import contextmanager
 from functools import lru_cache
 from pathlib import Path
 
-import libsql
-
 SHOP_FILE = re.compile(r"shop_(\d+)\.db")
+TIMEOUT_SECONDS = 15
+IDLE_SECONDS = 20              # an unused connection older than this is replaced
+MAX_RESPONSE_BYTES = 32_000_000
+STARTS_TRANSACTION = {"INSERT", "UPDATE", "DELETE", "REPLACE"}   # as sqlite3 does
+READ_ONLY = {"SELECT", "PRAGMA", "EXPLAIN", "VALUES"}
+
+log = logging.getLogger(__name__)
 
 
 # ------------------------------------------------------ where the data lives
@@ -49,29 +66,16 @@ def address(template: str, name: str) -> str:
     """The template's address with this database's name in it."""
     if "{name}" not in template:
         raise ValueError("LEKHA_TURSO_URL needs {name} where the database name goes.")
-    if not template.startswith(("libsql://", "https://", "wss://")):
+    if not template.startswith(("libsql://", "https://")):
         raise ValueError("LEKHA_TURSO_URL must start with libsql:// (an encrypted connection).")
     return template.replace("{name}", name)
 
 
-# ------------------------------------------------------------------ errors
-
-@contextmanager
-def _sqlite3_errors() -> Iterator[None]:
-    """Turn the driver's errors into the sqlite3 ones Lekha catches."""
-    try:
-        yield
-    except sqlite3.Error:
-        raise
-    except TypeError as problem:
-        raise sqlite3.ProgrammingError(str(problem)) from None
-    except Exception as problem:   # the driver raises ValueError, or its own Error
-        message = str(problem)
-        # sqlite3 calls these IntegrityError: a broken rule (UNIQUE, CHECK,
-        # NOT NULL, FOREIGN KEY) or the wrong kind of value in a STRICT table.
-        if any(sign in message.lower() for sign in ("constraint failed", "cannot store", "datatype mismatch")):
-            raise sqlite3.IntegrityError(message) from None
-        raise sqlite3.OperationalError(message) from None
+def _host(url: str) -> str:
+    host = url.split("://", 1)[1].split("/", 1)[0]
+    if not re.fullmatch(r"[A-Za-z0-9.-]+", host):
+        raise ValueError("LEKHA_TURSO_URL has an unexpected address in it.")
+    return host
 
 
 # --------------------------------------------------------------- parameters
@@ -129,7 +133,194 @@ def _bind(sql: str, parameters) -> tuple[str, tuple]:
     return sql, tuple(parameters)
 
 
-# --------------------------------------------------------------------- rows
+@lru_cache(maxsize=512)
+def _first_word(sql: str) -> str:
+    """The statement's first keyword, after any comments: sqlite3 decides
+    from it whether a transaction starts."""
+    text = re.sub(r"^(\s+|--[^\n]*\n?|/\*.*?\*/)+", "", sql, flags=re.DOTALL)
+    match = re.match(r"[A-Za-z]+", text)
+    return match.group(0).upper() if match else ""
+
+
+# ------------------------------------------------------------------ values
+
+def _encode(value) -> dict:
+    if value is None:
+        return {"type": "null"}
+    if isinstance(value, bool | int):
+        return {"type": "integer", "value": str(int(value))}
+    if isinstance(value, float):
+        return {"type": "float", "value": value}
+    if isinstance(value, str):
+        return {"type": "text", "value": value}
+    if isinstance(value, bytes | bytearray | memoryview):
+        return {"type": "blob", "base64": base64.b64encode(bytes(value)).decode("ascii")}
+    raise sqlite3.ProgrammingError(f"Error binding parameter: type {type(value).__name__!r} is not supported")
+
+
+def _decode(value: dict):
+    kind = value.get("type")
+    if kind == "null":
+        return None
+    if kind == "integer":
+        return int(value["value"])
+    if kind == "float":
+        return float(value["value"])
+    if kind == "text":
+        return value["value"]
+    if kind == "blob":
+        text = value["base64"]
+        return base64.b64decode(text + "=" * (-len(text) % 4))   # Turso leaves out the padding
+    raise sqlite3.OperationalError(f"Turso sent a value of an unknown type: {kind!r}")
+
+
+def _statement(sql: str, values: tuple) -> dict:
+    return {"type": "execute", "stmt": {"sql": sql, "args": [_encode(v) for v in values]}}
+
+
+def _raise_for(result: dict) -> None:
+    """Raise sqlite3's error for a failed statement, as sqlite3 would."""
+    if result.get("type") == "ok":
+        return
+    error = result.get("error") or {}
+    message = str(error.get("message", "Turso refused the statement")).removeprefix("SQLite error: ")
+    if str(error.get("code", "")).startswith("SQLITE_CONSTRAINT"):
+        # A broken rule (UNIQUE, CHECK, NOT NULL, FOREIGN KEY) or the wrong
+        # kind of value in a STRICT table.
+        raise sqlite3.IntegrityError(message)
+    raise sqlite3.OperationalError(message)
+
+
+# ----------------------------------------------------------------- network
+
+class _Stats(threading.local):
+    """Requests to Turso made by this page run (each page runs in its own thread)."""
+    requests = 0
+    seconds = 0.0
+
+
+stats = _Stats()
+
+
+def reset_stats() -> None:
+    stats.requests = 0
+    stats.seconds = 0.0
+
+
+def page_summary(page: str, total_seconds: float) -> str:
+    """One line for the log: how much of a page's time was spent waiting for Turso."""
+    return f"{page}: {stats.requests} requests to Turso, {stats.seconds:.2f} s of {total_seconds:.2f} s"
+
+
+class _Pool:
+    """Open HTTPS connections to Turso, kept for the next request.
+
+    Setting up a secure connection takes several round trips, so one is
+    reused for as long as it stays open. A connection is used by one
+    request at a time; requests at the same moment get one each."""
+
+    def __init__(self):
+        self._idle: dict[str, list[tuple[http.client.HTTPSConnection, float]]] = {}
+        self._lock = threading.Lock()
+        self._tls = ssl.create_default_context()        # checks Turso's certificate
+
+    def take(self, host: str) -> tuple[http.client.HTTPConnection, bool]:
+        with self._lock:
+            idle = self._idle.setdefault(host, [])
+            while idle:
+                conn, last_used = idle.pop()
+                if time.monotonic() - last_used < IDLE_SECONDS:
+                    return conn, True
+                conn.close()
+        return self.new(host), False
+
+    def new(self, host: str) -> http.client.HTTPConnection:
+        return http.client.HTTPSConnection(host, timeout=TIMEOUT_SECONDS, context=self._tls)
+
+    def give_back(self, host: str, conn: http.client.HTTPConnection) -> None:
+        with self._lock:
+            self._idle.setdefault(host, []).append((conn, time.monotonic()))
+
+    def clear(self) -> None:
+        with self._lock:
+            for idle in self._idle.values():
+                for conn, _ in idle:
+                    conn.close()
+            self._idle.clear()
+
+
+_pool = _Pool()
+_STALE = (http.client.RemoteDisconnected, http.client.CannotSendRequest, ConnectionResetError,
+          ConnectionAbortedError, BrokenPipeError)
+
+
+class HttpTransport:
+    """Sends pipelines to one Turso database over HTTPS."""
+
+    def __init__(self, url: str, token: str, pool: _Pool = _pool):
+        if not token:
+            raise ValueError("A Turso token is needed.")
+        self.host = _host(url)
+        self._headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        self._pool = pool
+
+    def pipeline(self, body: dict) -> dict:
+        data = json.dumps(body).encode("utf-8")
+        # A stale reused connection fails before Turso sees the request; that
+        # is only retried when the request can't have changed anything.
+        retry_ok = body.get("baton") is None and all(
+            r["type"] != "execute" or _first_word(r["stmt"]["sql"]) in READ_ONLY
+            for r in body["requests"] if r["type"] in ("execute", "sequence"))
+        if any(r["type"] == "sequence" for r in body["requests"]):
+            retry_ok = False
+        started = time.perf_counter()
+        try:
+            conn, reused = self._pool.take(self.host)
+            try:
+                status, raw = self._send(conn, data)
+            except _STALE:
+                conn.close()
+                if not (reused and retry_ok):
+                    raise
+                conn = self._pool.new(self.host)
+                status, raw = self._send(conn, data)
+            except BaseException:
+                conn.close()
+                raise
+        except (OSError, http.client.HTTPException) as problem:
+            raise sqlite3.OperationalError(f"Couldn't reach Turso ({type(problem).__name__}).") from None
+        finally:
+            stats.requests += 1
+            stats.seconds += time.perf_counter() - started
+        if status != 200:
+            conn.close()
+            raise sqlite3.OperationalError(f"Turso refused the request (HTTP {status}): {_error_text(raw)}")
+        self._pool.give_back(self.host, conn)
+        try:
+            return json.loads(raw)
+        except ValueError:
+            raise sqlite3.OperationalError("Turso sent an answer that isn't JSON.") from None
+
+    def _send(self, conn: http.client.HTTPConnection, data: bytes) -> tuple[int, bytes]:
+        conn.request("POST", "/v2/pipeline", body=data, headers=self._headers)
+        response = conn.getresponse()
+        raw = response.read(MAX_RESPONSE_BYTES + 1)
+        if len(raw) > MAX_RESPONSE_BYTES:
+            conn.close()
+            raise sqlite3.OperationalError("Turso's answer was too large.")
+        return response.status, raw
+
+
+def _error_text(raw: bytes) -> str:
+    """Turso's own short explanation, never anything we sent (so never the token)."""
+    try:
+        text = str(json.loads(raw).get("error", ""))
+    except (ValueError, AttributeError):
+        text = ""
+    return text[:200] or "no details"
+
+
+# -------------------------------------------------------------------- rows
 
 class Row(tuple):
     """A row read by position or by column name, like sqlite3.Row."""
@@ -153,81 +344,116 @@ class Row(tuple):
 
 
 class Cursor:
-    def __init__(self, raw):
-        self._raw = raw
-        self._names: tuple[str, ...] = ()
-        self._index: dict[str, int] = {}
+    def __init__(self, connection: "Connection"):
+        self._connection = connection
+        self._rows: list[Row] = []
+        self._position = 0
+        self.description = None
+        self.lastrowid = None
+        self.rowcount = -1
+        self.arraysize = 1
 
-    def _remember_columns(self) -> None:
-        description = self._raw.description or ()
-        self._names = tuple(column[0] for column in description)
-        self._index = {}
-        for position, name in enumerate(self._names):
-            self._index.setdefault(name.lower(), position)   # the first wins, as in sqlite3
+    def _take(self, result: dict) -> None:
+        cols = result.get("cols") or []
+        names = tuple(str(col.get("name")) for col in cols)
+        index: dict[str, int] = {}
+        for position, name in enumerate(names):
+            index.setdefault(name.lower(), position)      # the first wins, as in sqlite3
+        self._rows = [Row([_decode(v) for v in row], names, index) for row in result.get("rows") or []]
+        self._position = 0
+        self.description = tuple((name, None, None, None, None, None, None) for name in names) or None
+        rowid = result.get("last_insert_rowid")
+        self.lastrowid = int(rowid) if rowid is not None else None
+        self.rowcount = -1 if names else int(result.get("affected_row_count") or 0)
 
     def execute(self, sql: str, parameters=()) -> "Cursor":
         sql, values = _bind(sql, parameters)
-        with _sqlite3_errors():
-            self._raw.execute(sql, values)
-        self._remember_columns()
+        self._take(self._connection._run([(sql, values)])[-1])
         return self
 
     def executemany(self, sql: str, seq_of_parameters) -> "Cursor":
-        rows = [_bind(sql, parameters) for parameters in seq_of_parameters]
-        if rows:
-            with _sqlite3_errors():
-                self._raw.executemany(rows[0][0], [values for _, values in rows])
-        self._remember_columns()
+        statements = [_bind(sql, parameters) for parameters in seq_of_parameters]
+        if statements:
+            results = self._connection._run(statements)
+            self._take(results[-1])
+            self.rowcount = sum(int(r.get("affected_row_count") or 0) for r in results)
         return self
 
-    def _row(self, values):
-        return None if values is None else Row(values, self._names, self._index)
-
     def fetchone(self) -> Row | None:
-        with _sqlite3_errors():
-            return self._row(self._raw.fetchone())
+        if self._position >= len(self._rows):
+            return None
+        self._position += 1
+        return self._rows[self._position - 1]
 
     def fetchmany(self, size: int | None = None) -> list[Row]:
-        with _sqlite3_errors():
-            values = self._raw.fetchmany(size) if size is not None else self._raw.fetchmany()
-        return [self._row(v) for v in values or []]   # Turso gives None for "no rows"
+        size = self.arraysize if size is None else size
+        rows = self._rows[self._position:self._position + size]
+        self._position += len(rows)
+        return rows
 
     def fetchall(self) -> list[Row]:
-        with _sqlite3_errors():
-            values = self._raw.fetchall()
-        return [self._row(v) for v in values or []]   # Turso gives None for "no rows"
+        rows = self._rows[self._position:]
+        self._position = len(self._rows)
+        return rows
 
     def __iter__(self) -> Iterator[Row]:
         while (row := self.fetchone()) is not None:
             yield row
 
-    @property
-    def description(self):
-        return self._raw.description
-
-    @property
-    def lastrowid(self):
-        return self._raw.lastrowid
-
-    @property
-    def rowcount(self) -> int:
-        return self._raw.rowcount
-
     def close(self) -> None:
-        self._raw.close()
+        self._rows = []
 
 
 class Connection:
-    """A sqlite3-style connection to a Turso database (or a local file)."""
+    """A sqlite3-style connection to one Turso database.
 
-    def __init__(self, raw):
-        self._raw = raw
+    A "stream" on Turso is a run of requests sharing one server-side
+    connection, kept open by sending back its baton. Outside a transaction
+    each request closes its stream (nothing is left open); inside one, the
+    stream stays open until COMMIT or ROLLBACK."""
+
+    def __init__(self, transport):
+        self._transport = transport
+        self._baton: str | None = None
+        self._in_transaction = False
         # Accepted so database.get_connection can treat both kinds alike;
         # rows are always Row, which reads like sqlite3.Row.
         self.row_factory = None
 
+    @property
+    def in_transaction(self) -> bool:
+        return self._in_transaction
+
+    def _send(self, requests: list[dict], keep_open: bool) -> list[dict]:
+        body = {"baton": self._baton,
+                "requests": requests + [{"type": "get_autocommit"}] + ([] if keep_open else [{"type": "close"}])}
+        response = self._transport.pipeline(body)
+        results = response.get("results") or []
+        if len(results) < len(requests) + 1:
+            raise sqlite3.OperationalError("Turso's answer was incomplete.")
+        self._baton = response.get("baton") if keep_open else None
+        state = results[len(requests)]
+        if state.get("type") == "ok":
+            self._in_transaction = not state["response"].get("is_autocommit", True)
+        if not keep_open:
+            self._in_transaction = False
+        return results[:len(requests)]
+
+    def _run(self, statements: list[tuple[str, tuple]]) -> list[dict]:
+        """Send statements in one request, starting a transaction first when
+        sqlite3 would (before INSERT, UPDATE, DELETE or REPLACE)."""
+        first = _first_word(statements[0][0])
+        begins = not self._in_transaction and first in STARTS_TRANSACTION
+        ends = first in {"COMMIT", "END"} or (first == "ROLLBACK" and " TO " not in statements[0][0].upper())
+        keep_open = (self._in_transaction or begins or first in {"BEGIN", "SAVEPOINT"}) and not ends
+        requests = ([_statement("BEGIN", ())] if begins else []) + [_statement(s, v) for s, v in statements]
+        results = self._send(requests, keep_open)
+        for result in results:
+            _raise_for(result)
+        return [r["response"]["result"] for r in results[1 if begins else 0:]]
+
     def cursor(self) -> Cursor:
-        return Cursor(self._raw.cursor())
+        return Cursor(self)
 
     def execute(self, sql: str, parameters=()) -> Cursor:
         return self.cursor().execute(sql, parameters)
@@ -236,28 +462,32 @@ class Connection:
         return self.cursor().executemany(sql, seq_of_parameters)
 
     def executescript(self, script: str) -> Cursor:
-        if self.in_transaction:      # sqlite3 commits first, too
+        """Run several statements in one request. Like sqlite3, it commits
+        a pending transaction first. A script that begins a transaction
+        must also end it (Lekha's migrations do)."""
+        if self._in_transaction:
             self.commit()
-        cursor = self.cursor()
-        with _sqlite3_errors():
-            cursor._raw.executescript(script)
-        return cursor
-
-    @property
-    def in_transaction(self) -> bool:
-        return bool(self._raw.in_transaction)
+        _raise_for(self._send([{"type": "sequence", "sql": script}], keep_open=False)[0])
+        return self.cursor()
 
     def commit(self) -> None:
-        with _sqlite3_errors():
-            self._raw.commit()
+        if self._in_transaction:
+            _raise_for(self._send([_statement("COMMIT", ())], keep_open=False)[0])
 
     def rollback(self) -> None:
-        with _sqlite3_errors():
-            self._raw.rollback()
+        if self._in_transaction:
+            _raise_for(self._send([_statement("ROLLBACK", ())], keep_open=False)[0])
 
     def close(self) -> None:
-        with _sqlite3_errors():
-            self._raw.close()
+        """Close the stream if one is open; like sqlite3, an uncommitted
+        transaction is discarded."""
+        if self._baton is not None:
+            try:
+                self._send([], keep_open=False)
+            except sqlite3.Error:
+                log.info("Couldn't close a Turso stream; Turso ends it by itself")
+            self._baton = None
+            self._in_transaction = False
 
     def __enter__(self) -> "Connection":
         return self
@@ -272,10 +502,5 @@ class Connection:
 
 
 def connect(target: str, auth_token: str | None = None) -> Connection:
-    """Open a Turso database (an address and token) or a local file."""
-    with _sqlite3_errors():
-        if auth_token:
-            raw = libsql.connect(database=target, auth_token=auth_token)
-        else:
-            raw = libsql.connect(target)
-    return Connection(raw)
+    """Open a Turso database: its address and a token."""
+    return Connection(HttpTransport(target, auth_token or ""))

@@ -933,3 +933,15 @@ Tests now never read the real `.streamlit/secrets.toml` and can't reach the inte
 **What it costs:** each shop's database is made in advance by hand (the app holds no key that could create or delete databases); every query crosses the internet (about half a second from India to Virginia; less from Community Cloud); the app sleeps after 12 hours without visitors; Turso's free plan keeps only one day of history.
 
 **One shop name per owner (21 Nov):** on the hosted Lekha, a test owner got two shops called "Test Shop", made 5 seconds apart. Every query now crosses the internet, so "Create shop" was slow to answer and was clicked again. That used up both prepared shop databases. Lekha now refuses a second shop with the same name (ignoring capitals and spaces) for the same owner: "You already have a shop called Test Shop." Other people, and staff of a shop with that name, can still use it. The empty duplicate was removed from Turso, with the owner's agreement.
+
+**A faster connection to Turso (24 Nov):** the hosted pages were slow. Measured first:
+
+- Every page opened 4 connections and made 9 to 24 queries (Overview 16, Insights 24).
+- Turso's Python driver (`libsql`) took **two round trips per query** (about 480 ms from India, where one trip is about 240 ms) and set up a new secure connection each time (over a second).
+- Turso's HTTP API answers a query in **one** round trip, and ten queries sent together take no longer than one.
+
+So `turso.py` now talks to the HTTP API itself, with no driver: one request per query, a transaction's BEGIN sent with its first statement, and one secure connection per database kept open and shared (a pool). Against the real databases from India: Overview 11.9 s → 3.9 s, Books 7.4 s → 2.3 s, the first page after start-up 34.7 s → 11.2 s. The `libsql` package (a compiled package, last released September 2025) is gone.
+
+**Considered and set aside for now:** sending a page's queries together (the biggest remaining saving, but each page would need rewriting), and Turso's local copies ("embedded replicas"), which read from a file on the server, but whose own documentation warns against reading while they update, which several visitors at once would do.
+
+**How it's tested:** a stand-in Turso (`tests/fake_turso.py`) answers the same JSON with sqlite3, copying what the real one did (`SQLITE_CONSTRAINT` for every refused value, no `PRAGMA user_version = N`, no temporary tables, blobs without base64 padding). Every test runs a second time through `turso.py` against it, and `scripts/check_turso.py` runs the key behaviours against the real Turso.

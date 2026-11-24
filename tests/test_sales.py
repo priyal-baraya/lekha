@@ -6,7 +6,6 @@ book 5 costs 44900 with 0 in stock, book 9 costs 27500 with 1 in stock.
 Completed revenue is 1,114,400 paise from 14 sales and 29 copies.
 """
 
-import os
 import sqlite3
 from datetime import datetime
 
@@ -199,13 +198,10 @@ def test_cancel_failure_rolls_back_status_and_stock(sample_db):
     # and the stock refund before it must be undone.
     sale_id = record_sale(sample_db, [SaleLine(1, 2, 39900)], now=NOW)
     sample_db.execute(
-        "CREATE TEMP TRIGGER refuse_cancel BEFORE INSERT ON sale_cancellations "
+        "CREATE TRIGGER refuse_cancel BEFORE INSERT ON sale_cancellations "
         "BEGIN SELECT RAISE(ABORT, 'cancellation table unavailable'); END"
     )
-    # Through Turso's driver a trigger's refusal is a general database
-    # error (see test_inventory.py); either way nothing is half-saved.
-    refused = sqlite3.OperationalError if os.environ.get("LEKHA_SQLITE_DRIVER") == "libsql" else sqlite3.IntegrityError
-    with pytest.raises(refused):
+    with pytest.raises(sqlite3.IntegrityError):
         cancel_sale(sample_db, sale_id, "Mistake", now=NOW)
     assert get_sale(sample_db, sale_id)["status"] == "completed"
     assert stock(sample_db, 1) == 6

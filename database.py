@@ -113,20 +113,18 @@ def where_data_lives() -> str:
 
 
 def _turso_connection(target: Path | str):
-    """A connection through Turso's driver, or None to use sqlite3.
+    """A connection to Turso, or None to use sqlite3.
 
     On the hosted Lekha (LEKHA_TURSO_URL set), each of Lekha's files is a
-    Turso database instead (turso.py). LEKHA_SQLITE_DRIVER=libsql sends
-    local files through the same driver, so the tests can check it
-    behaves like sqlite3. In-memory databases never go to Turso."""
+    Turso database instead (turso.py). In-memory databases never go to
+    Turso. (The tests can send everything through turso.py instead, to a
+    stand-in Turso: LEKHA_TEST_THROUGH_TURSO=1, see tests/conftest.py.)"""
     if uses_turso() and str(target) != ":memory:":
         token = os.environ.get("LEKHA_TURSO_TOKEN")
         if not token:
             raise RuntimeError("LEKHA_TURSO_URL is set, so LEKHA_TURSO_TOKEN must be too.")
         url = turso.address(os.environ["LEKHA_TURSO_URL"], turso.database_name(target))
         return turso.connect(url, auth_token=token)
-    if os.environ.get("LEKHA_SQLITE_DRIVER") == "libsql":
-        return turso.connect(str(target))
     return None
 
 

@@ -15,10 +15,12 @@ Run with:
 
 import logging
 import sqlite3
+import time
 
 import streamlit as st
 
-from database import connect_accounts, ensure_shop_database, use_database
+import turso
+from database import connect_accounts, ensure_shop_database, use_database, uses_turso
 from services import accounts
 from ui import components as ui
 from ui import session
@@ -92,6 +94,11 @@ def account_pages(memberships: list[accounts.Membership]) -> list:
     return pages
 
 
+# On the hosted Lekha, each page writes one line to the log: how long it
+# waited for Turso (turso.page_summary).
+turso.reset_stats()
+started = time.perf_counter()
+page_title = "Sign in"
 try:
     sign_in_from_google()
     session.check_still_valid()      # idle too long, or password changed elsewhere
@@ -134,6 +141,7 @@ try:
 
     # Each page names itself in the browser tab ("Books · Lekha"), so
     # screen readers and people with several tabs can tell them apart.
+    page_title = page.title
     st.set_page_config(page_title=f"{page.title} · Lekha")
     page.run()
 except sqlite3.Error:
@@ -149,3 +157,6 @@ except Exception:
         "Something went wrong on this page. Nothing was saved halfway: sales, stock corrections "
         "and book changes are saved all-or-nothing. Reload the page to try again."
     )
+finally:
+    if uses_turso():
+        print(turso.page_summary(page_title, time.perf_counter() - started), flush=True)
