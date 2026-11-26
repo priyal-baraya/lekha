@@ -733,3 +733,7 @@ Measured before changing anything: queries and connections per page counted thro
 **The whole suite runs through `turso.py`** against the stand-in Turso (`LEKHA_TEST_THROUGH_TURSO=1`). Two tests forced a failure with a temporary trigger, which Turso refuses; they now use an ordinary one, and expect `IntegrityError` both ways again, since Turso's error codes say exactly what was refused.
 
 **Against real Turso:** 16 behaviours checked on a scratch table (all pass), which found that Turso sends blobs in base64 without its `=` padding; fixed, and the stand-in now does the same. `scripts/check_turso.py 2` (now also checking values, refused values and that an unfinished save isn't seen by others): all three databases ready, about 230 ms a query from India (was about 500). Pages timed against the real databases, old code and new: about three times faster (decision log). bandit clean; pip-audit finds nothing.
+
+### Insights test pinned to a date: **603 passed**, twice
+
+On 25 Nov the "every page opens" test for Insights started failing on main: it opened Insights on the fictional sample data with the real date, and the sample sales had fallen out of the last 30 days, so the page showed "No data yet". The four "every page opens" tests now use `fixed_now` (12 Nov 2026), as the other page tests do.
